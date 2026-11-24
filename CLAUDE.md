@@ -1,0 +1,18 @@
+# Phúc Vị Foods
+
+Web bán thực phẩm có chương trình cộng tác viên (CTV/affiliate). Bản DEMO, 1 người làm cùng AI.
+
+## Quy ước
+- Trả lời tiếng Việt, ngắn gọn, có cấu trúc.
+- Tên bảng/cột/biến bằng tiếng Anh; comment và tài liệu bằng tiếng Việt.
+- Chỉ commit khi người dùng nói rõ. Không push. Không sửa file `.env`.
+- HwinGroup (`C:\Users\Admin\Desktop\HwinGroup`) chỉ để tham khảo, không sao chép.
+
+## Công nghệ
+NestJS + DDD + microservice (pnpm + Turborepo), Next.js, PostgreSQL (mỗi service một database, không khóa ngoại xuyên service), Prisma, RabbitMQ (outbox), Docker Compose, Caddy, GitHub Actions. Thư viện dùng chung: `packages/shared-library`.
+
+## Dữ liệu
+- Khóa chính UUID (UUIDv7 sinh ở app, DB có default `gen_random_uuid()`).
+- Tiền: số nguyên VND (BigInt), không dùng số thực.
+- 3 database: `identity_db` (identity), `commerce_db` (catalog, ordering, customer), `affiliate_db` (affiliate, tracking, commission). Mỗi miền một Postgres schema, có `outbox_events` riêng, để tách 7 service sau này.
+- Tham chiếu giữa các miền chỉ lưu UUID, không khóa ngoại.

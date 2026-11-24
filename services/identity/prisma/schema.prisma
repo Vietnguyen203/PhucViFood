@@ -1,0 +1,58 @@
+// Identity service: tài khoản đăng nhập (ADMIN, AFFILIATE).
+// Database: identity_db, schema: identity.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("IDENTITY_DATABASE_URL")
+  schemas  = ["identity"]
+}
+
+enum UserRole {
+  ADMIN
+  AFFILIATE
+
+  @@schema("identity")
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+
+  @@schema("identity")
+}
+
+model User {
+  id           String     @id @default(uuid(7)) @db.Uuid
+  email        String     @unique // luôn chữ thường (CHECK trong migration)
+  passwordHash String     @map("password_hash")
+  role         UserRole
+  status       UserStatus @default(ACTIVE)
+  lastLoginAt  DateTime?  @map("last_login_at") @db.Timestamptz(6)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("users")
+  @@schema("identity")
+}
+
+// Transactional outbox: ghi cùng transaction nghiệp vụ, relay đẩy lên RabbitMQ.
+model OutboxEvent {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  aggregateType String    @map("aggregate_type")
+  aggregateId   String    @map("aggregate_id") @db.Uuid
+  eventType     String    @map("event_type")
+  payload       Json
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  publishedAt   DateTime? @map("published_at") @db.Timestamptz(6)
+  attempts      Int       @default(0)
+  lastError     String?   @map("last_error")
+  nextAttemptAt DateTime  @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+
+  @@map("outbox_events")
+  @@schema("identity")
+}
