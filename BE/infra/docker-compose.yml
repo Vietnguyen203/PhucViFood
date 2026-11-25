@@ -19,5 +19,26 @@ services:
       timeout: 3s
       retries: 10
 
+  # Message broker cho sự kiện giữa các service (transactional outbox đẩy vào đây).
+  # Giao diện quản trị: http://localhost:15672
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: phucvi-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-phucvi}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-phucvi}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - phucvi-rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
 volumes:
   phucvi-pgdata:
+  phucvi-rabbitmq:

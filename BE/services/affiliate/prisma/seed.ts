@@ -1,7 +1,7 @@
 // Seed affiliate_db: 2 CTV, link theo kênh, tương tác, hoa hồng ở đủ trạng thái, 1 đợt chi trả.
 import {
   AFFILIATES, AFFILIATE_SETTINGS, CLICKS, COMMISSIONS, LINKS, PAYOUTS, TRACKING_EVENTS, ADMIN_ID,
-} from '@phucvi/shared-library';
+} from '@phucvi/shared-library/seed-data';
 import { PrismaClient } from '../generated/client';
 
 const prisma = new PrismaClient();

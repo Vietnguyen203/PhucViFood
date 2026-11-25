@@ -1,7 +1,48 @@
 {
   "name": "@phucvi/shared-library",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
+  "description": "Thư viện dùng chung: khung API chuẩn, CRUD tự sinh, messaging/outbox, contracts.",
   "main": "src/index.ts",
-  "types": "src/index.ts"
+  "types": "src/index.ts",
+  "exports": {
+    ".": { "types": "./src/index.ts", "default": "./src/index.ts" },
+    "./utils": { "types": "./src/utils/index.ts", "default": "./src/utils/index.ts" },
+    "./contracts": { "types": "./src/contracts/index.ts", "default": "./src/contracts/index.ts" },
+    "./api": { "types": "./src/api/index.ts", "default": "./src/api/index.ts" },
+    "./crud": { "types": "./src/crud/index.ts", "default": "./src/crud/index.ts" },
+    "./messaging": { "types": "./src/messaging/index.ts", "default": "./src/messaging/index.ts" },
+    "./seed-data": { "types": "./src/seed-data.ts", "default": "./src/seed-data.ts" }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:integration": "cross-env RUN_INTEGRATION=1 vitest run test/integration"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.0"
+  },
+  "devDependencies": {
+    "@nestjs/common": "^11.2.11",
+    "@nestjs/core": "^11.2.11",
+    "@nestjs/platform-express": "^11.2.11",
+    "@nestjs/testing": "^11.2.11",
+    "@prisma/client": "6.19.3",
+    "@types/amqplib": "^0.10.8",
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.0.0",
+    "cross-env": "^7.0.3",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.7"
+  }
 }

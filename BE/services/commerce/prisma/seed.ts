@@ -1,7 +1,7 @@
 // Seed commerce_db: danh mục, sản phẩm, khách, đơn ở đủ trạng thái, lịch sử, ghi chú CSKH, settings.
 import {
   ADMIN_ID, CARE_NOTES, CATEGORIES, CUSTOMERS, CUSTOMER_SETTINGS, ORDERING_SETTINGS, ORDERS, PRODUCTS,
-} from '@phucvi/shared-library';
+} from '@phucvi/shared-library/seed-data';
 import { PrismaClient } from '../generated/client';
 
 const prisma = new PrismaClient();

@@ -1,0 +1,47 @@
+// Giá trị enum dùng trong sự kiện giữa các service. Phải khớp enum trong Prisma schema của từng service.
+// (Prisma enum nằm trong client sinh riêng của mỗi service nên không import chéo được.)
+
+export const OrderStatus = {
+  PLACED: 'PLACED', CONFIRMED: 'CONFIRMED', SHIPPING: 'SHIPPING', DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED', CANCELLED: 'CANCELLED', RETURNED: 'RETURNED',
+} as const;
+export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
+
+export const PaymentMethod = { COD: 'COD', BANK_QR: 'BANK_QR' } as const;
+export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod];
+
+export const PaymentStatus = { PENDING: 'PENDING', UNPAID: 'UNPAID', PAID: 'PAID', REFUNDED: 'REFUNDED' } as const;
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
+
+export const AttributionSource = { LINK: 'LINK', CODE: 'CODE' } as const;
+export type AttributionSource = (typeof AttributionSource)[keyof typeof AttributionSource];
+
+export const ReceivedBy = { CUSTOMER: 'CUSTOMER', ADMIN: 'ADMIN' } as const;
+export type ReceivedBy = (typeof ReceivedBy)[keyof typeof ReceivedBy];
+
+export const ActorType = { SYSTEM: 'SYSTEM', CUSTOMER: 'CUSTOMER', ADMIN: 'ADMIN' } as const;
+export type ActorType = (typeof ActorType)[keyof typeof ActorType];
+
+export const AffiliateStatus = { PENDING: 'PENDING', ACTIVE: 'ACTIVE', SUSPENDED: 'SUSPENDED', REJECTED: 'REJECTED' } as const;
+export type AffiliateStatus = (typeof AffiliateStatus)[keyof typeof AffiliateStatus];
+
+export const CommissionStatus = { ESTIMATED: 'ESTIMATED', CONFIRMED: 'CONFIRMED', PAID: 'PAID', CANCELLED: 'CANCELLED' } as const;
+export type CommissionStatus = (typeof CommissionStatus)[keyof typeof CommissionStatus];
+
+export const UserRole = { ADMIN: 'ADMIN', AFFILIATE: 'AFFILIATE' } as const;
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
+
+/** Luồng trạng thái đơn hợp lệ. Dùng để chặn chuyển trạng thái sai ở tầng ứng dụng. */
+export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
+  PLACED: ['CONFIRMED', 'CANCELLED'],
+  CONFIRMED: ['SHIPPING', 'CANCELLED'],
+  SHIPPING: ['DELIVERED', 'CANCELLED'],
+  DELIVERED: ['COMPLETED', 'RETURNED'],
+  COMPLETED: [],
+  CANCELLED: [],
+  RETURNED: [],
+};
+
+export function canTransitionOrder(from: OrderStatus, to: OrderStatus): boolean {
+  return ORDER_STATUS_TRANSITIONS[from].includes(to);
+}

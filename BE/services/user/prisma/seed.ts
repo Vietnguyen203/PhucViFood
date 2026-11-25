@@ -1,6 +1,6 @@
 // Seed user_db: 1 admin + 2 tài khoản CTV. Chỉ dùng dev/demo.
 import { hashSync } from 'bcryptjs';
-import { USERS } from '@phucvi/shared-library';
+import { USERS } from '@phucvi/shared-library/seed-data';
 import { PrismaClient } from '../generated/client';
 
 // Mật khẩu mẫu chỉ cho môi trường dev local. Đổi ngay nếu dùng ở nơi khác.
