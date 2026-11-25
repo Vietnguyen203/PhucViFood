@@ -1,19 +1,19 @@
 -- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "identity";
+CREATE SCHEMA IF NOT EXISTS "user";
 
 -- CreateEnum
-CREATE TYPE "identity"."UserRole" AS ENUM ('ADMIN', 'AFFILIATE');
+CREATE TYPE "user"."UserRole" AS ENUM ('ADMIN', 'AFFILIATE');
 
 -- CreateEnum
-CREATE TYPE "identity"."UserStatus" AS ENUM ('ACTIVE', 'DISABLED');
+CREATE TYPE "user"."UserStatus" AS ENUM ('ACTIVE', 'DISABLED');
 
 -- CreateTable
-CREATE TABLE "identity"."users" (
+CREATE TABLE "user"."users" (
     "id" UUID NOT NULL,
     "email" TEXT NOT NULL,
     "password_hash" TEXT NOT NULL,
-    "role" "identity"."UserRole" NOT NULL,
-    "status" "identity"."UserStatus" NOT NULL DEFAULT 'ACTIVE',
+    "role" "user"."UserRole" NOT NULL,
+    "status" "user"."UserStatus" NOT NULL DEFAULT 'ACTIVE',
     "last_login_at" TIMESTAMPTZ(6),
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE "identity"."users" (
 );
 
 -- CreateTable
-CREATE TABLE "identity"."outbox_events" (
+CREATE TABLE "user"."outbox_events" (
     "id" UUID NOT NULL,
     "aggregate_type" TEXT NOT NULL,
     "aggregate_id" UUID NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE "identity"."outbox_events" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "users_email_key" ON "identity"."users"("email");
+CREATE UNIQUE INDEX "users_email_key" ON "user"."users"("email");
 
 
 -- ═══════════════════════════════════════════════════════════════
@@ -46,9 +46,9 @@ CREATE UNIQUE INDEX "users_email_key" ON "identity"."users"("email");
 -- ═══════════════════════════════════════════════════════════════
 
 -- Email luôn chữ thường để UNIQUE không phân biệt hoa thường.
-ALTER TABLE "identity"."users"
+ALTER TABLE "user"."users"
   ADD CONSTRAINT "users_email_lowercase_chk" CHECK ("email" = lower("email"));
 
 -- Relay chỉ quét các sự kiện chưa gửi.
 CREATE INDEX "outbox_events_pending_idx"
-  ON "identity"."outbox_events" ("next_attempt_at") WHERE "published_at" IS NULL;
+  ON "user"."outbox_events" ("next_attempt_at") WHERE "published_at" IS NULL;

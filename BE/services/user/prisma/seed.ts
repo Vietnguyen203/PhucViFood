@@ -1,4 +1,4 @@
-// Seed identity_db: 1 admin + 2 tài khoản CTV. Chỉ dùng dev/demo.
+// Seed user_db: 1 admin + 2 tài khoản CTV. Chỉ dùng dev/demo.
 import { hashSync } from 'bcryptjs';
 import { USERS } from '@phucvi/shared-library';
 import { PrismaClient } from '../generated/client';
@@ -14,7 +14,7 @@ async function main() {
   await prisma.user.createMany({
     data: USERS.map((u) => ({ id: u.id, email: u.email, role: u.role, passwordHash })),
   });
-  console.log(`identity: đã seed ${USERS.length} tài khoản`);
+  console.log(`user: đã seed ${USERS.length} tài khoản`);
 }
 
 main().finally(() => prisma.$disconnect());

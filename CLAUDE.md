@@ -14,12 +14,12 @@ NestJS + DDD + microservice (pnpm + Turborepo), Next.js, PostgreSQL (mỗi servi
 ## Dữ liệu
 - Khóa chính UUID (UUIDv7 sinh ở app bằng `@default(uuid(7))` của Prisma, DB không có default).
 - Tiền: số nguyên VND (BigInt), không dùng số thực.
-- 3 database: `identity_db` (identity), `commerce_db` (catalog, ordering, customer), `affiliate_db` (affiliate, tracking, commission). Mỗi miền một Postgres schema, có `outbox_events` riêng, để tách 7 service sau này.
+- 3 database: `user_db` (user), `commerce_db` (catalog, ordering, customer), `affiliate_db` (affiliate, tracking, commission). Mỗi miền một Postgres schema, có `outbox_events` riêng, để tách 7 service sau này.
 - Tham chiếu giữa các miền chỉ lưu UUID, không khóa ngoại.
 
 ## Cấu trúc thư mục
 - `FE/`: giao diện (React + Vite, xuất từ Figma Make).
-- `BE/services/`: các service (identity, commerce, affiliate).
+- `BE/services/`: các service (user, commerce, affiliate).
 - `BE/packages/`: thư viện dùng chung.
 - `BE/infra/`: Docker Compose, Postgres.
 - `BE/docs/`: tài liệu database và truy vấn mẫu.

@@ -1,5 +1,5 @@
 // Identity service: tài khoản đăng nhập (ADMIN, AFFILIATE).
-// Database: identity_db, schema: identity.
+// Database: user_db, schema: user.
 
 generator client {
   provider = "prisma-client-js"
@@ -8,22 +8,22 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("IDENTITY_DATABASE_URL")
-  schemas  = ["identity"]
+  url      = env("USER_DATABASE_URL")
+  schemas  = ["user"]
 }
 
 enum UserRole {
   ADMIN
   AFFILIATE
 
-  @@schema("identity")
+  @@schema("user")
 }
 
 enum UserStatus {
   ACTIVE
   DISABLED
 
-  @@schema("identity")
+  @@schema("user")
 }
 
 model User {
@@ -37,7 +37,7 @@ model User {
   updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("users")
-  @@schema("identity")
+  @@schema("user")
 }
 
 // Transactional outbox: ghi cùng transaction nghiệp vụ, relay đẩy lên RabbitMQ.
@@ -54,5 +54,5 @@ model OutboxEvent {
   nextAttemptAt DateTime  @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
 
   @@map("outbox_events")
-  @@schema("identity")
+  @@schema("user")
 }

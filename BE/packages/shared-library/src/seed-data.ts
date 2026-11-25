@@ -17,7 +17,7 @@ const hours = (d: Date, h: number): Date => new Date(d.getTime() + h * 3600_000)
 export const SHIPPING_FLAT = 30_000;
 export const FREE_SHIP_THRESHOLD = 500_000;
 
-// ───────────────────────── identity ─────────────────────────
+// ───────────────────────── user ─────────────────────────
 
 export const USERS = [
   { id: seedId(G.user, 1), email: 'admin@phucvifoods.vn', role: 'ADMIN' as const },

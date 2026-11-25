@@ -227,7 +227,7 @@ model CareNote {
   note           String
   contactChannel ContactChannel? @map("contact_channel")
   contactedAt    DateTime        @default(now()) @map("contacted_at") @db.Timestamptz(6)
-  createdBy      String          @map("created_by") @db.Uuid // identity.users.id
+  createdBy      String          @map("created_by") @db.Uuid // user.users.id
   createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
@@ -291,7 +291,7 @@ model Customer {
 
 model ExportLog {
   id         String   @id @default(uuid(7)) @db.Uuid
-  exportedBy String   @map("exported_by") @db.Uuid // identity.users.id của admin
+  exportedBy String   @map("exported_by") @db.Uuid // user.users.id của admin
   filters    Json?
   rowCount   Int      @map("row_count")
   format     String   @default("xlsx")

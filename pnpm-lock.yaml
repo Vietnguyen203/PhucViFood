@@ -58,7 +58,7 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
-  BE/services/identity:
+  BE/services/user:
     dependencies:
       '@phucvi/shared-library':
         specifier: workspace:*

@@ -52,7 +52,7 @@ enum ConfirmSource {
 
 model Affiliate {
   id                String          @id @default(uuid(7)) @db.Uuid
-  userId            String          @unique @map("user_id") @db.Uuid // identity.users.id (không FK)
+  userId            String          @unique @map("user_id") @db.Uuid // user.users.id (không FK)
   fullName          String          @map("full_name")
   phone             String          @unique // +84xxxxxxxxx
   referralCode      String          @unique @map("referral_code") // 4-12 ký tự a-z0-9, lưu chữ thường
@@ -187,7 +187,7 @@ model Payout {
   paidAt           DateTime     @map("paid_at") @db.Timestamptz(6)
   paymentReference String?      @map("payment_reference")
   note             String?
-  createdBy        String       @map("created_by") @db.Uuid // identity.users.id của admin
+  createdBy        String       @map("created_by") @db.Uuid // user.users.id của admin
   createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   commissions      Commission[]
 

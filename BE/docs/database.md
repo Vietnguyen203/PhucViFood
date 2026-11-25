@@ -8,7 +8,7 @@ Tài liệu mô tả database cho bản DEMO. Nguồn sự thật là các file 
 
 | Service | Database | Schema (miền) |
 |---|---|---|
-| identity | `identity_db` | `identity` |
+| user | `user_db` | `user` |
 | commerce | `commerce_db` | `catalog`, `ordering`, `customer` |
 | affiliate | `affiliate_db` | `affiliate`, `tracking`, `commission` |
 | gateway | không có database | |
@@ -24,7 +24,7 @@ Tài liệu mô tả database cho bản DEMO. Nguồn sự thật là các file 
 
 ## 2. Sơ đồ ERD
 
-### 2.1 identity
+### 2.1 user
 ```mermaid
 erDiagram
   users {
@@ -45,7 +45,7 @@ erDiagram
 
   affiliates {
     uuid id PK
-    uuid user_id UK "identity.users"
+    uuid user_id UK "user.users"
     text full_name
     text phone UK
     text referral_code UK
@@ -92,7 +92,7 @@ erDiagram
     uuid affiliate_id "không FK"
     bigint total_amount
     timestamptz paid_at
-    uuid created_by "identity.users"
+    uuid created_by "user.users"
   }
 ```
 Mỗi schema `affiliate` và `commission` còn có `outbox_events` (và `settings` ở `affiliate`, `inbox_events` ở `commission`).
@@ -181,7 +181,7 @@ Mỗi schema `catalog`, `ordering`, `customer` còn có `outbox_events`; `orderi
 ### 2.4 Tham chiếu giữa các miền (chỉ lưu UUID)
 ```mermaid
 flowchart LR
-  subgraph identity
+  subgraph user
     users
   end
   subgraph affiliate_db
@@ -242,7 +242,7 @@ Copy-Item .env.example .env          # chỉ chỉnh khi cần
 pnpm db:up                           # Postgres 17 tại localhost:5433, tạo 3 database
 ```
 
-Các script `pnpm db:generate`, `pnpm db:migrate`, `pnpm db:seed` đọc biến `IDENTITY_DATABASE_URL`, `COMMERCE_DATABASE_URL`, `AFFILIATE_DATABASE_URL` từ môi trường (xem `.env.example`). Tài khoản mẫu và mật khẩu dev nằm trong `BE/services/identity/prisma/seed.ts`.
+Các script `pnpm db:generate`, `pnpm db:migrate`, `pnpm db:seed` đọc biến `USER_DATABASE_URL`, `COMMERCE_DATABASE_URL`, `AFFILIATE_DATABASE_URL` từ môi trường (xem `.env.example`). Tài khoản mẫu và mật khẩu dev nằm trong `BE/services/user/prisma/seed.ts`.
 
 Tạo migration mới: sửa `schema.prisma`, chạy `pnpm --filter @phucvi/<service> exec prisma migrate dev --name <tên>` (cần database đang chạy), rồi kiểm tra file `migration.sql` có xóa nhầm `CHECK` hoặc partial index tự viết không.
 
