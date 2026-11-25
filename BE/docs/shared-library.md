@@ -67,6 +67,8 @@ Service nào cũng import `AuthGuardsModule.forRoot({ secret, issuer, accessTtlS
 @Roles('ADMIN') @Get('orders') list(@CurrentUser() user: AuthUser) { ... }
 @Public() @Get('products') catalog() { ... }
 ```
+`InternalKeyGuard` bảo vệ API nội bộ giữa các service (header `x-internal-key`, so sánh an toàn thời gian). Dùng cùng `@Public()` và `@UseGuards(InternalKeyGuard)`; service đăng ký khóa bằng provider `INTERNAL_API_KEY`.
+
 `verifyAccessToken` chỉ chấp nhận HS256 và đúng issuer, từ chối `alg: none`, token hết hạn, giả mạo, thiếu trường hoặc sai vai trò. Chỉ service `user` ký token (`signAccessToken`); các service khác chỉ kiểm tra. Xem `user-service.md`.
 
 ## 2. CRUD tự sinh (`/crud`)

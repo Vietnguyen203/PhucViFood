@@ -117,6 +117,7 @@ Mỗi schema `affiliate` và `commission` còn có `outbox_events` (và `setting
 ```mermaid
 erDiagram
   categories ||--o{ products : "thuộc"
+  products ||--o{ stock_movements : "ghi tồn kho"
 
   categories {
     uuid id PK
@@ -132,8 +133,17 @@ erDiagram
     int stock_quantity
     timestamptz deleted_at
   }
+  stock_movements {
+    uuid id PK
+    uuid product_id FK
+    int delta "âm = giảm tồn"
+    smallint reason "StockMovementReasonCode"
+    uuid order_id "không FK, null khi điều chỉnh tay"
+    text note
+    uuid created_by "user.users"
+  }
 ```
-Schema `catalog` còn có `outbox_events` và `inbox_events`.
+`stock_movements` là sổ cái tồn kho: mọi thay đổi `stock_quantity` đều có một dòng. Partial unique `(order_id, product_id, reason)` giúp giữ hàng và trả hàng idempotent theo đơn. Schema `catalog` còn có `outbox_events` và `inbox_events`. Chi tiết xem `catalog-service.md`.
 
 ### 2.4 customer_db
 ```mermaid
@@ -274,6 +284,7 @@ Nguồn sự thật: `BE/packages/shared-library/src/contracts/codes.ts`. Có te
 | `ordering.orders.received_by` | 1 CUSTOMER, 2 ADMIN |
 | `ordering.order_status_history.actor_type` | 1 SYSTEM, 2 CUSTOMER, 3 ADMIN |
 | `ordering.care_notes.contact_channel` | 1 CALL, 2 ZALO, 3 SMS |
+| `catalog.stock_movements.reason` | 1 ORDER_PLACED (giữ hàng), 2 ORDER_CANCELLED (trả hàng), 3 ADMIN_ADJUSTMENT |
 
 **Quy tắc**
 - Không bao giờ đổi số của giá trị đã có hay dùng lại số cũ (dữ liệu và `CHECK` phụ thuộc vào chúng). Thêm giá trị mới thì lấy số kế tiếp, đồng thời viết migration sửa `CHECK`.

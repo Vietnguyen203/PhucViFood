@@ -44,10 +44,31 @@ model Product {
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   category      Category  @relation(fields: [categoryId], references: [id])
+  movements     StockMovement[]
 
   @@index([categoryId])
   @@index([isVisible, deletedAt])
   @@map("products")
+  @@schema("catalog")
+}
+
+// Sổ cái tồn kho: mọi thay đổi stock_quantity (trừ tồn đầu kỳ của seed) đều có một dòng ở đây.
+// Mã lý do (SMALLINT, shared-library contracts/codes.ts): 1 ORDER_PLACED (giữ hàng), 2 ORDER_CANCELLED (trả hàng), 3 ADMIN_ADJUSTMENT.
+// Partial unique (order_id, product_id, reason) trong migration giúp giữ hàng và trả hàng idempotent theo đơn.
+model StockMovement {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  delta     Int // âm = giảm tồn, dương = tăng tồn; khác 0
+  reason    Int      @db.SmallInt // StockMovementReasonCode
+  orderId   String?  @map("order_id") @db.Uuid // ordering.orders.id (không FK)
+  note      String?
+  createdBy String?  @map("created_by") @db.Uuid // user.users.id của admin khi điều chỉnh tay
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@index([productId, createdAt])
+  @@index([orderId])
+  @@map("stock_movements")
   @@schema("catalog")
 }
 

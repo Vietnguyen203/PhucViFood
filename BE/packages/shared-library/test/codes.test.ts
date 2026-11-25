@@ -3,7 +3,7 @@ import {
   ActorType, ActorTypeCodec, AffiliateStatus, AffiliateStatusCodec, AttributionSource, AttributionSourceCodec,
   CommissionStatus, CommissionStatusCodec, ContactChannelCodec, ConfirmSourceCodec, OrderStatus, OrderStatusCode,
   OrderStatusCodec, PaymentMethod, PaymentMethodCodec, PaymentStatus, PaymentStatusCodec, ReceivedBy, ReceivedByCodec,
-  TrackingEventTypeCodec, UserRole, UserRoleCode, UserRoleCodec, UserStatus, UserStatusCodec, createCodec, type EnumCodec,
+  StockMovementReasonCodec, TrackingEventTypeCodec, UserRole, UserRoleCode, UserRoleCodec, UserStatus, UserStatusCodec, createCodec, type EnumCodec,
 } from '../src/contracts';
 import { parseListQuery } from '../src/crud';
 
@@ -25,6 +25,7 @@ const FROZEN: Array<[string, EnumCodec<string>, Record<string, number>]> = [
   ['ReceivedBy', ReceivedByCodec, { CUSTOMER: 1, ADMIN: 2 }],
   ['ActorType', ActorTypeCodec, { SYSTEM: 1, CUSTOMER: 2, ADMIN: 3 }],
   ['ContactChannel', ContactChannelCodec, { CALL: 1, ZALO: 2, SMS: 3 }],
+  ['StockMovementReason', StockMovementReasonCodec, { ORDER_PLACED: 1, ORDER_CANCELLED: 2, ADMIN_ADJUSTMENT: 3 }],
 ];
 
 describe('mã số enum (khóa cứng)', () => {

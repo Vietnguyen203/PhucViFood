@@ -1,7 +1,6 @@
 import { Controller, Get, Headers, HttpCode, Inject, Param, Post, UseGuards } from '@nestjs/common';
 import { ParamTypes, ValidBody } from '@phucvi/shared-library/api';
-import { Public } from '@phucvi/shared-library/auth';
-import { InternalKeyGuard } from '../common/internal-key.guard';
+import { InternalKeyGuard, Public } from '@phucvi/shared-library/auth';
 import { ClickDto, ResolveAttributionDto } from './dto';
 import { ReferralService } from './referral.service';
 

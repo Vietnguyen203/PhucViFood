@@ -5,4 +5,5 @@ export * from './vn-date';
 export * from './attribution';
 export * from './mask-name';
 export * from './customer-segments';
+export * from './slug';
 export * from './uuid';

@@ -4,6 +4,7 @@
     "src/**/*.ts",
     "test/**/*.ts",
     "prisma/**/*.ts",
+    "vitest.config.mts",
     "generated/**/*.d.ts",
     "../../packages/shared-library/src/**/*.ts"
   ]

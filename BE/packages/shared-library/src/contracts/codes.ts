@@ -27,6 +27,9 @@ export enum ReceivedByCode { CUSTOMER = 1, ADMIN = 2 }
 export enum ActorTypeCode { SYSTEM = 1, CUSTOMER = 2, ADMIN = 3 }
 export enum ContactChannelCode { CALL = 1, ZALO = 2, SMS = 3 }
 
+/** Lý do thay đổi tồn kho (catalog.stock_movements.reason). */
+export enum StockMovementReasonCode { ORDER_PLACED = 1, ORDER_CANCELLED = 2, ADMIN_ADJUSTMENT = 3 }
+
 /** Chuyển qua lại giữa tên chuỗi (dùng ngoài DB) và mã số (lưu trong DB). */
 export interface EnumCodec<Name extends string> {
   /** Tên các giá trị, theo thứ tự mã số tăng dần. */
@@ -87,3 +90,4 @@ export const AttributionSourceCodec = createCodec(AttributionSourceCode);
 export const ReceivedByCodec = createCodec(ReceivedByCode);
 export const ActorTypeCodec = createCodec(ActorTypeCode);
 export const ContactChannelCodec = createCodec(ContactChannelCode);
+export const StockMovementReasonCodec = createCodec(StockMovementReasonCode);
