@@ -1,5 +1,5 @@
 # Postgres dùng chung một container cho môi trường dev; mỗi service một database riêng.
-# Chạy: docker compose -f infra/docker-compose.yml up -d
+# Chạy: docker compose -f BE/infra/docker-compose.yml up -d
 services:
   postgres:
     image: postgres:17-alpine

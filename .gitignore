@@ -12,3 +12,7 @@ coverage/
 # Prisma client sinh ra
 generated/
 .pnpm-store/
+
+# IDE
+.idea/
+.vscode/

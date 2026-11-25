@@ -1,6 +1,6 @@
 # Thiết kế cơ sở dữ liệu Phúc Vị Foods
 
-Tài liệu mô tả database cho bản DEMO. Nguồn sự thật là các file `services/*/prisma/schema.prisma` và migration `init` (có phần SQL tay ở cuối file).
+Tài liệu mô tả database cho bản DEMO. Nguồn sự thật là các file `BE/services/*/prisma/schema.prisma` và migration `init` (có phần SQL tay ở cuối file).
 
 ## 1. Cấu trúc tổng quan
 
@@ -217,7 +217,7 @@ flowchart LR
 | Vòng đời hoa hồng | `ESTIMATED` → `CONFIRMED` → `PAID`; `CANCELLED` khi đơn hủy hoặc hoàn. CHECK bảo đảm mỗi trạng thái có đủ mốc thời gian (`confirmed_at`, `paid_at` + `payout_id`, `cancelled_at`). |
 | Đơn lưu snapshot | `order_items.product_name`, `unit_price`; `orders.ship_*`. Sửa sản phẩm hay khách sau này không làm sai đơn cũ. |
 | Thanh toán tách riêng | `payment_method` + `payment_status`. COD: `PENDING` → `PAID` (khi shipper nộp tiền). Chuyển khoản QR: `UNPAID` → `PAID` (admin đối soát tay). `REFUNDED` cho đơn hoàn. CHECK không cho trộn trạng thái của hai phương thức. |
-| Hàng chờ CSKH | Partial index `orders_cskh_queue_idx (delivered_at) WHERE status = 'DELIVERED'`; truy vấn ở `docs/queries/01-cskh-queue.sql`. |
+| Hàng chờ CSKH | Partial index `orders_cskh_queue_idx (delivered_at) WHERE status = 'DELIVERED'`; truy vấn ở `BE/docs/queries/01-cskh-queue.sql`. |
 | Phân loại khách | Không lưu cột. Tính khi truy vấn từ đơn, ngưỡng ở `customer.settings` (xem 4.2). |
 | CTV chỉ thấy tên viết tắt | Che dữ liệu ở API; DB chỉ có `ship_name` đầy đủ. |
 | Chỉ ADMIN xuất khách | Mỗi lần xuất ghi `customer.export_logs`. |
@@ -225,7 +225,7 @@ flowchart LR
 ## 4. Quyết định thiết kế cần biết
 
 1. **Địa chỉ dùng tỉnh/thành + phường/xã** (`province`, `ward`) thay cho tỉnh/quận, vì cấp quận/huyện đã bỏ từ 1/7/2025.
-2. **Phân loại khách join hai miền** (`customer` và `ordering`). Trong bản 4 service, hai miền cùng `commerce_db` nên join được. Khi tách thành 7 service phải thay bằng API thống kê đơn hoặc projection cập nhật qua sự kiện. Chỗ này được ghi chú ngay đầu `docs/queries/03-customer-segments.sql`.
+2. **Phân loại khách join hai miền** (`customer` và `ordering`). Trong bản 4 service, hai miền cùng `commerce_db` nên join được. Khi tách thành 7 service phải thay bằng API thống kê đơn hoặc projection cập nhật qua sự kiện. Chỗ này được ghi chú ngay đầu `BE/docs/queries/03-customer-segments.sql`.
 3. **Đơn hoàn sau khi hoa hồng đã PAID** chưa có nhánh xử lý. Quy tắc cho demo: chặn ở tầng ứng dụng, admin xử lý tay và ghi chú. `CHECK` hiện chỉ cho phép `CANCELLED` kèm `cancelled_at`, không có bút toán điều chỉnh.
 4. **Phí ship** nằm ở `ordering.settings` (`shipping.flat_fee` = 30.000, `shipping.free_threshold` = 500.000). Đây là giá trị mẫu, cần công ty xác nhận.
 5. **Ngưỡng phân loại khách** ở `customer.settings` là giá trị mẫu: VIP khi từ 5 đơn hợp lệ hoặc từ 5.000.000đ; khách quen từ 2 đơn; hoạt động trong 60 ngày; sắp rời trong 120 ngày; quá 120 ngày là đã rời.
@@ -242,7 +242,7 @@ Copy-Item .env.example .env          # chỉ chỉnh khi cần
 pnpm db:up                           # Postgres 17 tại localhost:5433, tạo 3 database
 ```
 
-Các script `pnpm db:generate`, `pnpm db:migrate`, `pnpm db:seed` đọc biến `IDENTITY_DATABASE_URL`, `COMMERCE_DATABASE_URL`, `AFFILIATE_DATABASE_URL` từ môi trường (xem `.env.example`). Tài khoản mẫu và mật khẩu dev nằm trong `services/identity/prisma/seed.ts`.
+Các script `pnpm db:generate`, `pnpm db:migrate`, `pnpm db:seed` đọc biến `IDENTITY_DATABASE_URL`, `COMMERCE_DATABASE_URL`, `AFFILIATE_DATABASE_URL` từ môi trường (xem `.env.example`). Tài khoản mẫu và mật khẩu dev nằm trong `BE/services/identity/prisma/seed.ts`.
 
 Tạo migration mới: sửa `schema.prisma`, chạy `pnpm --filter @phucvi/<service> exec prisma migrate dev --name <tên>` (cần database đang chạy), rồi kiểm tra file `migration.sql` có xóa nhầm `CHECK` hoặc partial index tự viết không.
 
@@ -255,7 +255,7 @@ Tạo migration mới: sửa `schema.prisma`, chạy `pnpm --filter @phucvi/<ser
 
 ## 7. Truy vấn kiểm chứng
 
-Nằm ở `docs/queries/`; chạy bằng `docker exec -i phucvi-postgres psql -U postgres -d <db> < file.sql`.
+Nằm ở `BE/docs/queries/`; chạy bằng `docker exec -i phucvi-postgres psql -U postgres -d <db> < file.sql`.
 
 | File | Database | Mục đích |
 |---|---|---|

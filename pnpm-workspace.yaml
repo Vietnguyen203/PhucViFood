@@ -1,7 +1,7 @@
 packages:
-  - "apps/*"
-  - "packages/*"
-  - "services/*"
+  - "FE"
+  - "BE/packages/*"
+  - "BE/services/*"
 
 # pnpm 10 chặn script cài đặt mặc định; cho phép các gói cần build (Prisma, esbuild).
 onlyBuiltDependencies:

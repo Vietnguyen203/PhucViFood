@@ -1,6 +1,6 @@
 -- Phân loại khách tính khi truy vấn (chạy trên commerce_db), ngưỡng đọc từ customer.settings.
 -- Lưu ý: truy vấn join hai schema customer và ordering. Khi tách thành service riêng,
--- thay bằng API thống kê đơn hoặc projection (xem docs/database.md).
+-- thay bằng API thống kê đơn hoặc projection (xem BE/docs/database.md).
 -- "Đơn hợp lệ" = đơn không ở trạng thái CANCELLED hoặc RETURNED.
 WITH cfg AS (
   SELECT

@@ -1,0 +1,10 @@
+{
+  "description": "Manage affiliate partnerships, track referrals and commissions, and help businesses and creators grow revenue through performance-based marketing.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
