@@ -96,7 +96,7 @@ Test tích hợp tạo dữ liệu riêng (CTV `IT-*`, đơn `IT-*`) rồi dọn
 
 ## 6. Giới hạn hiện tại
 
-- Chưa có giới hạn tốc độ cho API công khai (`click`, `events`): có thể bị spam làm đầy bảng `tracking`. Cần chặn ở Caddy hoặc gateway; bảng nên partition hoặc dọn định kỳ.
+- Chưa có giới hạn tốc độ cho API công khai (`click`, `events`): có thể bị spam làm đầy bảng `tracking`. Gateway đã giới hạn theo IP (xem `gateway-service.md`); bảng nên partition hoặc dọn định kỳ.
 - Khóa nội bộ dùng chung một giá trị; chưa xoay vòng.
 - Nếu xử lý một sự kiện lỗi và phải thử lại, thứ tự giữa các sự kiện của cùng đơn không còn được bảo đảm (retry đưa tin về cuối queue).
 - Chưa có thông báo cho CTV khi được duyệt hoặc được chi trả.

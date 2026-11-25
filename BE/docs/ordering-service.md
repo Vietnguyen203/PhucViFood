@@ -115,7 +115,7 @@ Test tích hợp dùng máy chủ HTTP giả (`test/integration/fake-downstream.
 ## 7. Giới hạn hiện tại
 
 - Bồi hoàn sau lỗi tạo đơn là cố gắng tối đa: nếu catalog cũng sập đúng lúc đó, hàng giữ không được trả và chỉ có log lỗi. Chưa có cơ chế hết hạn giữ hàng.
-- Khách tra cứu và hủy bằng mã đơn + SĐT, chưa giới hạn tốc độ (nên chặn ở Caddy hoặc gateway).
+- Khách tra cứu và hủy bằng mã đơn + SĐT; gateway giới hạn tra cứu theo IP (mặc định 30 lần/phút) để chống dò mã (xem `gateway-service.md`).
 - Mã QR thanh toán chưa sinh ảnh (VietQR); mới trả thông tin chuyển khoản.
 - Chưa tách đơn nhiều kiện, chưa có mã giảm giá, chưa tích hợp đơn vị vận chuyển.
 - Hủy đơn đã thanh toán không tự hoàn tiền: admin ghi nhận `REFUNDED` bằng tay.

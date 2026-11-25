@@ -79,4 +79,4 @@ Test tích hợp tạo dữ liệu riêng (slug bắt đầu bằng `it-`) rồi
 - Chưa có biến thể (size, vị) hay nhiều ảnh cho một sản phẩm.
 - Chưa có cảnh báo sắp hết hàng; chưa phát sự kiện khi tồn kho hoặc giá thay đổi.
 - Chưa giữ hàng có thời hạn: hàng đã giữ cho đơn chỉ được trả khi đơn bị hủy hoặc ordering gọi `release`.
-- API công khai chưa có giới hạn tốc độ (nên chặn ở Caddy hoặc gateway).
+- API công khai được gateway giới hạn tốc độ theo IP; gọi thẳng vào service thì không có giới hạn (xem `gateway-service.md`).

@@ -94,8 +94,8 @@ Tài khoản mẫu (admin và 2 CTV) tạo bởi seed; mật khẩu dev nằm tr
 
 ## 6. Giới hạn hiện tại
 
-- Chưa giới hạn tốc độ theo IP (chỉ khóa theo tài khoản). Cần thêm khi đưa ra internet, thường làm ở Caddy hoặc gateway.
+- Giới hạn tốc độ theo IP do gateway đảm nhận (đăng nhập, đăng ký, làm mới token: mặc định 20 lần/phút/IP); gọi thẳng vào service thì không có.
 - Chưa có quên mật khẩu qua email, xác minh email, đăng nhập 2 bước.
 - Token ký HS256 bằng khóa chung: service nào có khóa đều ký được token. Khi tách nhiều service nên chuyển sang khóa bất đối xứng (RS256 hoặc EdDSA) để chỉ service user giữ khóa ký.
-- Khóa tài khoản theo email nên kẻ xấu có thể cố ý khóa tài khoản người khác 15 phút. Đây là đánh đổi thường gặp; giảm thiểu bằng giới hạn theo IP ở gateway.
+- Khóa tài khoản theo email nên kẻ xấu có thể cố ý khóa tài khoản người khác 15 phút. Đây là đánh đổi thường gặp; giảm thiểu bằng giới hạn theo IP ở gateway (đã có).
 - Service chạy bằng `tsx` (chưa có bước build production). `tsconfig.json` của service phải có `../../packages/shared-library/src/**/*.ts` trong `include`, nếu không `tsx` không áp dụng `experimentalDecorators` cho mã của thư viện.
