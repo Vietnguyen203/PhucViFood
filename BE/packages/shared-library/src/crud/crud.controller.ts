@@ -76,5 +76,12 @@ export function createCrudController(options: CrudControllerOptions): Type<unkno
     HttpCode(200)(proto, 'remove', descriptorOf('remove'));
     Param('id')(proto, 'remove', 0);
   }
+  // Khai báo kiểu tham số thủ công (tsx/esbuild không phát metadata) để Nest không cảnh báo thiếu metadata.
+  // Kiểu nguyên thủy/Object được ValidationPipe bỏ qua; body đã có pipe riêng với expectedType.
+  const paramTypes: Record<string, unknown[]> = {
+    list: [Object], get: [String], create: [Object], update: [String, Object], remove: [String],
+  };
+  for (const [method, types] of Object.entries(paramTypes)) Reflect.defineMetadata('design:paramtypes', types, proto, method);
+
   return GeneratedCrudController;
 }

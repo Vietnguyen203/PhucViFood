@@ -88,6 +88,8 @@ pnpm --filter @phucvi/user test               # unit
 pnpm --filter @phucvi/user test:integration   # cần Postgres + RabbitMQ đang chạy
 ```
 
+Thử bằng Postman: collection và environment ở `BE/postman/` (xem `BE/postman/README.md`), chạy được cả trong app lẫn bằng Postman CLI.
+
 Tài khoản mẫu (admin và 2 CTV) tạo bởi seed; mật khẩu dev nằm trong `BE/services/user/prisma/seed.ts`.
 
 ## 6. Giới hạn hiện tại
