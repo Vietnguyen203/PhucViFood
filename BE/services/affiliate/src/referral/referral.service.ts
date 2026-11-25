@@ -31,6 +31,12 @@ export class ReferralService {
     return normalized ? this.prisma.affiliate.findUnique({ where: { referralCode: normalized } }) : Promise.resolve(null);
   }
 
+  /** Tra hồ sơ CTV theo tài khoản đăng nhập (user service). Dùng cho service khác biết CTV nào đang đăng nhập. */
+  async lookupByUser(userId: string): Promise<{ affiliateId: string; referralCode: string; status: string } | null> {
+    const a = await this.prisma.affiliate.findUnique({ where: { userId } });
+    return a ? { affiliateId: a.id, referralCode: a.referralCode, status: AffiliateStatusCodec.toName(a.status) } : null;
+  }
+
   /** CTV còn hiệu lực tại thời điểm `at`: ACTIVE và trong thời hạn hợp đồng. */
   async findActiveByCode(code: string | null | undefined, at: Date = new Date()): Promise<Affiliate | null> {
     const a = await this.findByCode(code);

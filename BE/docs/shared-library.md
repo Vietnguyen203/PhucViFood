@@ -45,6 +45,7 @@ Service trả về `PageResult(items, total, page, pageSize)` để có `meta.pa
 | `NOT_FOUND` | 404 | Không có bản ghi hoặc route |
 | `CONFLICT` | 409 | Trùng giá trị duy nhất (Prisma P2002), vi phạm tham chiếu (P2003) |
 | `BUSINESS_RULE_VIOLATION` | 422 | Vi phạm quy tắc nghiệp vụ hoặc CHECK của DB (P2004) |
+| `SERVICE_UNAVAILABLE` | 503 | Service phụ thuộc không phản hồi hoặc lỗi; client có thể thử lại |
 | `INTERNAL_ERROR` | 500 | Lỗi không lường trước; chi tiết chỉ ghi log, không trả cho client |
 
 Ném lỗi nghiệp vụ bằng `AppException`: `throw AppException.businessRule('Đơn đã giao, không thể hủy')`.

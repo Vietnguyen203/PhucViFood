@@ -373,6 +373,18 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
       api('POST', '/internal/attribution/resolve', { body, headers: key ? { 'x-internal-key': key } : {} });
     const phoneOfCustomer = () => `09${digits(8)}`;
 
+    it('tra CTV theo tài khoản đăng nhập (cho service khác); cần khóa nội bộ', async () => {
+      const a = await makeAffiliate();
+      const lookup = (userId: string, key: string | null = INTERNAL_KEY) =>
+        api('GET', `/internal/affiliates/by-user/${userId}`, { headers: key ? { 'x-internal-key': key } : {} });
+      const found = await lookup(a.userId);
+      expect(found.status).toBe(200);
+      expect(found.body.data).toEqual({ affiliateId: a.id, referralCode: a.referralCode, status: 'ACTIVE' });
+      expect((await lookup(uuidv7())).status).toBe(404);
+      expect((await lookup('abc')).status).toBe(400);
+      expect((await lookup(a.userId, null)).status).toBe(401);
+    });
+
     it('thiếu hoặc sai khóa nội bộ bị từ chối', async () => {
       expect((await resolve({ customerPhone: phoneOfCustomer() }, null)).status).toBe(401);
       expect((await resolve({ customerPhone: phoneOfCustomer() }, 'sai-khoa-sai-khoa-sai-khoa-1')).status).toBe(401);

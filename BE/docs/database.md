@@ -177,6 +177,7 @@ erDiagram
   orders {
     uuid id PK
     text code UK
+    text idempotency_key UK "chống đặt trùng, null nếu client không gửi"
     uuid customer_id "không FK"
     smallint status "OrderStatusCode"
     smallint payment_method "PaymentMethodCode"

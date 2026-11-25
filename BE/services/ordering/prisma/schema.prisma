@@ -29,6 +29,8 @@ datasource db {
 model Order {
   id                String               @id @default(uuid(7)) @db.Uuid
   code              String               @unique // PV-yymmdd-XXXX
+  // Khóa chống đặt trùng do client gửi (header Idempotency-Key): cùng khóa thì trả lại đúng đơn đã tạo.
+  idempotencyKey    String?              @unique @map("idempotency_key")
   customerId        String               @map("customer_id") @db.Uuid // customer.customers.id (không FK)
   status            Int                  @default(1) @db.SmallInt // OrderStatusCode, mặc định 1 = PLACED
   paymentMethod     Int                  @map("payment_method") @db.SmallInt // PaymentMethodCode

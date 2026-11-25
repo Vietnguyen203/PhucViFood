@@ -19,6 +19,7 @@ Tiền tố `/api`. JWT lấy từ service `user` (cùng `JWT_ACCESS_SECRET`).
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
 | POST | `/internal/attribution/resolve` | Ordering hỏi lúc đặt hàng: đơn gắn CTV nào, có hoa hồng không, tỷ lệ bao nhiêu |
+| GET | `/internal/affiliates/by-user/:userId` | Tra hồ sơ CTV theo tài khoản đăng nhập (ordering dùng cho màn hình đơn của CTV); 404 nếu chưa có hồ sơ |
 
 **CTV (vai trò AFFILIATE)**
 

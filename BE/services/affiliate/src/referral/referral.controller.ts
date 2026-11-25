@@ -1,5 +1,6 @@
 import { Controller, Get, Headers, HttpCode, Inject, Param, Post, UseGuards } from '@nestjs/common';
-import { ParamTypes, ValidBody } from '@phucvi/shared-library/api';
+import { AppException, ParamTypes, ValidBody } from '@phucvi/shared-library/api';
+import { isUuid } from '@phucvi/shared-library/utils';
 import { InternalKeyGuard, Public } from '@phucvi/shared-library/auth';
 import { ClickDto, ResolveAttributionDto } from './dto';
 import { ReferralService } from './referral.service';
@@ -19,6 +20,22 @@ export class PublicReferralController {
   @Get(':code') @ParamTypes(String)
   validate(@Param('code') code: string) {
     return this.referral.validate(code);
+  }
+}
+
+/** API nội bộ: tra CTV theo tài khoản đăng nhập (cần header x-internal-key). */
+@Public()
+@UseGuards(InternalKeyGuard)
+@Controller('internal/affiliates')
+export class InternalAffiliatesController {
+  constructor(@Inject(ReferralService) private readonly referral: ReferralService) {}
+
+  @Get('by-user/:userId') @ParamTypes(String)
+  async byUser(@Param('userId') userId: string) {
+    if (!isUuid(userId)) throw AppException.validation([{ field: 'userId', messages: ['userId phải là UUID'] }]);
+    const found = await this.referral.lookupByUser(userId);
+    if (!found) throw AppException.notFound('Tài khoản này chưa có hồ sơ cộng tác viên');
+    return found;
   }
 }
 

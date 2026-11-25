@@ -1,0 +1,120 @@
+# Service ordering (đơn hàng)
+
+Thư mục: `BE/services/ordering` (gói `@phucvi/ordering`). Database `ordering_db`, schema `ordering`. Cổng mặc định 3004.
+
+Ordering là service điều phối: khi khách đặt hàng nó gọi **affiliate** (ghi nhận CTV), **customer** (lấy khách) và **catalog** (giữ hàng), rồi tạo đơn và phát sự kiện cho các service còn lại.
+
+## 1. API
+
+Tiền tố `/api`. JWT lấy từ service `user` (cùng `JWT_ACCESS_SECRET`).
+
+**Khách (công khai, không cần tài khoản)**
+
+| Method | Đường dẫn | Mô tả |
+|---|---|---|
+| POST | `/public/orders` | Đặt hàng. Header `Idempotency-Key` (8-100 ký tự chữ, số, `. _ -`) chống đặt trùng |
+| GET | `/public/orders/:code?phone=` | Tra cứu đơn bằng mã đơn và SĐT đã dùng khi đặt |
+| POST | `/public/orders/:code/confirm-received` | Khách xác nhận đã nhận hàng (chỉ khi đơn đã giao) |
+| POST | `/public/orders/:code/cancel` | Khách tự hủy (chỉ khi PLACED hoặc CONFIRMED) |
+
+Body đặt hàng: `items[{productId, quantity}]`, `customer{fullName, phone, email?, province, ward, addressLine, marketingConsent?}`, `paymentMethod` (`COD` hoặc `BANK_QR`), `referralCode?`, `cookie?` (đúng như API click của affiliate trả về), `note?`. **Giá và tên sản phẩm không nhận từ client**, luôn lấy từ catalog; gửi thêm trường lạ bị từ chối.
+
+Phản hồi: mã đơn `PV-yymmdd-XXXX`, trạng thái, tiền (`subtotalAmount`, `shippingFee`, `totalAmount`), `items`, và với `BANK_QR` có `transferInstructions` (ngân hàng, số tài khoản, số tiền, nội dung chuyển khoản là mã đơn). Gửi lại cùng `Idempotency-Key` trả HTTP 200 với `replayed: true`.
+
+Tra cứu và thao tác của khách yêu cầu khớp mã đơn và SĐT; sai một trong hai đều 404 (không lộ mã đơn nào tồn tại).
+
+**ADMIN**
+
+| Method | Đường dẫn | Mô tả |
+|---|---|---|
+| GET | `/orders` | Danh sách: `filter[status]`, `filter[paymentMethod]`, `filter[paymentStatus]`, `filter[affiliateId]`, `filter[customerId]`, `filter[placedAt]`, `q` (mã, tên, SĐT), `sort`, phân trang |
+| GET | `/orders/:id` | Chi tiết: sản phẩm, lịch sử trạng thái, ghi chú CSKH, ghi nhận CTV |
+| POST | `/orders/:id/confirm`, `ship`, `deliver`, `complete` | Chuyển trạng thái theo luồng |
+| POST | `/orders/:id/cancel`, `return` | Hủy (từ PLACED, CONFIRMED, SHIPPING) hoặc ghi nhận trả hàng (từ DELIVERED); bắt buộc `reason` |
+| POST | `/orders/:id/payment` | Ghi nhận thanh toán `{status: PAID \| REFUNDED, note?}` |
+| GET | `/orders/cskh-queue` | Hàng chờ CSKH: đơn DELIVERED chưa COMPLETED, giao lâu nhất lên đầu, kèm số ngày chờ và ghi chú liên hệ gần nhất |
+| POST | `/orders/:id/care-notes` | Ghi chú liên hệ khách `{note, contactChannel?: CALL \| ZALO \| SMS}` |
+
+**CTV (vai trò AFFILIATE)**
+
+| Method | Đường dẫn | Mô tả |
+|---|---|---|
+| GET | `/me/orders`, `/me/orders/:id` | Đơn do mình giới thiệu. Khách chỉ hiện **tên viết tắt** (vd `N.V.A`), không có SĐT hay địa chỉ |
+
+## 2. Quy trình đặt hàng
+
+Mỗi bước chỉ chạy khi bước trước thành công, nên lỗi sớm thì chưa có gì phải hoàn tác:
+
+1. **Affiliate** `resolve`: đơn gắn CTV nào, có hoa hồng không, tỷ lệ bao nhiêu. Chỉ gọi khi khách có mã hoặc cookie; không có thì tính khách vãng lai.
+2. **Customer** `upsert`: tìm hoặc tạo khách theo SĐT.
+3. **Catalog** `reserve`: trừ tồn kho, nhận snapshot tên, giá, quy cách.
+4. **Tạo đơn** (đơn, dòng hàng, lịch sử PLACED, sự kiện `order.placed`) trong **một transaction**. Bước này lỗi thì gọi catalog `release` để trả hàng.
+
+Tiền được tính lại ở ordering từ snapshot (không tin `lineTotal` hay `subtotal` của service khác). Phí ship theo `ordering.settings` (`shipping.flat_fee` 30.000đ; miễn phí từ `shipping.free_threshold` 500.000đ trên giá sản phẩm).
+
+**Lỗi trả cho khách**
+
+| HTTP | Khi nào |
+|---|---|
+| 400 | Dữ liệu sai (SĐT, thiếu địa chỉ, trường lạ, tổng số lượng một sản phẩm quá 1000...) |
+| 409 | Không đủ tồn kho, kèm `details: [{productId, requested, available}]` |
+| 422 | Có sản phẩm không còn được bán |
+| 503 `SERVICE_UNAVAILABLE` | Affiliate, customer hoặc catalog không phản hồi hoặc lỗi, hoặc quá thời gian chờ. Khách có thể thử lại (dùng cùng `Idempotency-Key`) |
+
+**Idempotency-Key:** id đơn được suy ra từ khóa, nên gửi lại hay gửi song song cùng khóa luôn ra cùng một đơn và hàng chỉ bị giữ một lần.
+
+## 3. Luồng trạng thái
+
+`PLACED → CONFIRMED → SHIPPING → DELIVERED → COMPLETED`; nhánh `CANCELLED` (từ PLACED, CONFIRMED, SHIPPING) và `RETURNED` (từ DELIVERED). Mọi lần đổi ghi lịch sử (`order_status_history`) và phát `ordering.order.status_changed`; cập nhật nguyên tử nên nhiều admin thao tác cùng lúc chỉ một thao tác thành công.
+
+- **Hoàn tất:** khách tự xác nhận (`receivedBy = CUSTOMER`) hoặc admin chuyển sau khi CSKH xử lý (`ADMIN`). Hoa hồng của CTV được xác nhận theo.
+- **Đơn chuyển khoản** (`BANK_QR`) phải được admin ghi nhận **đã thanh toán** mới giao được.
+- **Thanh toán:** COD `PENDING → PAID` (admin ghi nhận đã thu), chuyển khoản `UNPAID → PAID` (đối soát tay), `PAID → REFUNDED`. Mỗi lần đổi ghi vào lịch sử đơn (dòng có `fromStatus = toStatus` và ghi chú). Không ghi nhận thanh toán cho đơn đã hủy hoặc đã trả.
+- **Hủy đơn** phát sự kiện nên catalog tự trả hàng và affiliate tự hủy hoa hồng.
+
+## 4. Hợp đồng với các service khác
+
+Ordering gọi API nội bộ (header `x-internal-key`):
+
+| Service | API | Ghi chú |
+|---|---|---|
+| catalog | `POST /internal/stock/reserve`, `release` | Xem `catalog-service.md` |
+| affiliate | `POST /internal/attribution/resolve`, `GET /internal/affiliates/by-user/:userId` | Xem `affiliate-service.md` |
+| customer | `POST /internal/customers/upsert` | **Service customer chưa viết; đây là hợp đồng nó phải cài đặt** |
+
+`POST /internal/customers/upsert`: body `{phone (+84...), fullName, email?, province?, ward?, addressLine?, marketingConsent?, firstAffiliateId?, firstChannelCode?}`, trả `{id, phone, isNew}`. Tìm khách theo SĐT chuẩn hóa; chưa có thì tạo (lưu nguồn đầu tiên, và thời điểm đồng ý nếu `marketingConsent`); đã có thì cập nhật tên và địa chỉ gần nhất, không ghi đè nguồn đầu tiên.
+
+Sự kiện ordering phát ra: `ordering.order.placed` (kèm `commissionRateBps` để affiliate tạo hoa hồng; `items` để các service khác dùng) và `ordering.order.status_changed`.
+
+## 5. Cấu hình
+
+| Biến | Mặc định | Ghi chú |
+|---|---|---|
+| `ORDERING_DATABASE_URL`, `RABBITMQ_URL` | bắt buộc | |
+| `JWT_ACCESS_SECRET` | bắt buộc, từ 32 ký tự | Cùng giá trị với service user |
+| `INTERNAL_API_KEY` | bắt buộc, từ 24 ký tự | Khóa gọi API nội bộ của catalog, affiliate, customer |
+| `CATALOG_URL`, `AFFILIATE_URL`, `CUSTOMER_URL` | `http://localhost:3003/api`, `3002`, `3005` | |
+| `DOWNSTREAM_TIMEOUT_MS` | 5000 | Thời gian chờ mỗi lần gọi service khác |
+| `PORT` | 3004 | |
+| `OUTBOX_RELAY_ENABLED` | `true` | |
+
+Cấu hình trong DB (`ordering.settings`): `shipping.flat_fee`, `shipping.free_threshold`, `payment.bank_name`, `payment.bank_account_no`, `payment.bank_account_holder` (giá trị mẫu, cần thay bằng tài khoản thật của công ty).
+
+## 6. Chạy và kiểm thử
+
+```powershell
+pnpm --filter @phucvi/ordering dev                 # cần .env có JWT_ACCESS_SECRET và INTERNAL_API_KEY; cần catalog, affiliate, customer đang chạy
+pnpm --filter @phucvi/ordering test                # unit
+pnpm --filter @phucvi/ordering test:integration    # cần Postgres + RabbitMQ; catalog, affiliate, customer được giả bằng máy chủ HTTP
+```
+
+Test tích hợp dùng máy chủ HTTP giả (`test/integration/fake-downstream.ts`) để kiểm tra cả các nhánh lỗi: service phụ thuộc sập, treo, hết hàng, tạo đơn lỗi sau khi giữ hàng. Luồng đầu cuối với catalog và affiliate **thật** đã được chạy tay (đặt hàng, giữ hàng, hoa hồng qua RabbitMQ, hủy đơn trả hàng).
+
+## 7. Giới hạn hiện tại
+
+- Chưa có service customer; ordering gọi `POST /internal/customers/upsert` theo hợp đồng ở mục 4.
+- Bồi hoàn sau lỗi tạo đơn là cố gắng tối đa: nếu catalog cũng sập đúng lúc đó, hàng giữ không được trả và chỉ có log lỗi. Chưa có cơ chế hết hạn giữ hàng.
+- Khách tra cứu và hủy bằng mã đơn + SĐT, chưa giới hạn tốc độ (nên chặn ở Caddy hoặc gateway).
+- Mã QR thanh toán chưa sinh ảnh (VietQR); mới trả thông tin chuyển khoản.
+- Chưa tách đơn nhiều kiện, chưa có mã giảm giá, chưa tích hợp đơn vị vận chuyển.
+- Hủy đơn đã thanh toán không tự hoàn tiền: admin ghi nhận `REFUNDED` bằng tay.
