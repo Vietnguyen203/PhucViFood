@@ -32,6 +32,8 @@ class FakeOrdering {
   stats = new Map<string, FakeStat>();
   recent = new Map<string, unknown[]>();
   calls = 0;
+  /** Số lần tới sẽ trả 503 rồi mới hoạt động lại (lỗi tạm thời). */
+  failNext = 0;
 
   async start() {
     this.server = createServer((req, res) => {
@@ -41,6 +43,7 @@ class FakeOrdering {
         const send = (status: number, body: unknown) => { res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
         if (req.headers['x-internal-key'] !== INTERNAL_KEY) return send(401, { success: false, error: { code: 'UNAUTHORIZED', message: 'sai khóa' } });
         this.calls++;
+        if (this.failNext > 0) { this.failNext--; return send(503, { success: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'tạm thời' } }); }
         if (this.mode === 'down') return send(500, { success: false, error: { code: 'INTERNAL_ERROR', message: 'lỗi' } });
         if (this.mode === 'hang') await new Promise((r) => setTimeout(r, 4000));
         const url = req.url ?? '';
@@ -102,7 +105,8 @@ describe.skipIf(!enabled)('service customer (HTTP + Postgres thật, ordering đ
     process.env.CUSTOMER_DATABASE_URL = DB_URL;
     config = loadConfig({
       CUSTOMER_DATABASE_URL: DB_URL, RABBITMQ_URL: RABBIT_URL, JWT_ACCESS_SECRET: 'integration-test-secret-integration-test-secret',
-      JWT_ISSUER: 'phucvi-it', INTERNAL_API_KEY: INTERNAL_KEY, OUTBOX_RELAY_ENABLED: 'false', DOWNSTREAM_TIMEOUT_MS: '1500', ORDERING_URL: `${ordering.url}/api`,
+      JWT_ISSUER: 'phucvi-it', INTERNAL_API_KEY: INTERNAL_KEY, OUTBOX_RELAY_ENABLED: 'false', DOWNSTREAM_TIMEOUT_MS: '1500',
+      DOWNSTREAM_BREAKER_THRESHOLD: '1000', DOWNSTREAM_RETRY_ATTEMPTS: '2', DOWNSTREAM_RETRY_BASE_MS: '10', ORDERING_URL: `${ordering.url}/api`,
     });
     app = await NestFactory.create(AppModule.forRoot(config), { logger: false });
     setupApp(app, { globalPrefix: 'api' });
@@ -112,7 +116,7 @@ describe.skipIf(!enabled)('service customer (HTTP + Postgres thật, ordering đ
     originalSettings = (await prisma.setting.findMany({ where: { key: { in: SEGMENT_KEYS } } })).map((s) => ({ key: s.key, value: s.value }));
   });
 
-  beforeEach(() => { ordering.mode = 'ok'; });
+  beforeEach(() => { ordering.mode = 'ok'; ordering.failNext = 0; });
 
   afterAll(async () => {
     for (const s of originalSettings) await prisma.setting.update({ where: { key: s.key }, data: { value: s.value as number, updatedBy: null } });
@@ -362,6 +366,20 @@ describe.skipIf(!enabled)('service customer (HTTP + Postgres thật, ordering đ
       const d = await api('GET', `/customers/${s.vip.id}`, { token: t });
       expect(d.status).toBe(200);
       expect(d.body.data).toMatchObject({ statsAvailable: false, tier: null, recentOrders: null });
+    });
+
+    it('ordering lỗi 503 tạm thời một lần: tự thử lại, vẫn có thống kê và phân loại; lỗi kéo dài thì 503', async () => {
+      const t = admin();
+      const c = await makeCustomer();
+      ordering.set(c.id, 6, 700_000, 10);
+      ordering.failNext = 1;
+      const d = await api('GET', `/customers/${c.id}`, { token: t });
+      expect(d.status).toBe(200);
+      expect(d.body.data).toMatchObject({ statsAvailable: true, tier: 'VIP' });
+
+      ordering.failNext = 5; // nhiều hơn số lần thử (2)
+      const list = await api('GET', q(c.province ?? '', '&tier=VIP'), { token: t });
+      expect(list.status).toBe(503);
     });
 
     it('ordering treo: hết thời gian chờ rồi trả 503 thay vì treo theo', async () => {

@@ -165,6 +165,28 @@ Mã số không bao giờ đổi hay dùng lại (có test khóa cứng). Bảng
 
 **Sự kiện hiện có** (`contracts/events.ts`): `user.user.created`, `ordering.order.placed`, `ordering.order.status_changed`, `affiliate.affiliate.status_changed`, `commission.commission.status_changed`. Thêm sự kiện: khai báo ở `EventTypes` và `EventPayloads`, kiểu payload tự được kiểm tra khi gọi `outbox.add`. Đổi tên hoặc đổi nghĩa payload là thay đổi phá vỡ, phải tăng `version`.
 
+## 3b. Gọi service khác: retry và ngắt mạch (`/http`)
+
+`callDownstream(target, method, path, body?, { idempotent? })` gọi API nội bộ (`x-internal-key`), trả `data` của phong bì chuẩn, mọi lỗi là `DownstreamError`. `createDownstreamTarget(...)` tạo đích **cho một service** kèm retry và circuit breaker; mỗi service một đích (một breaker), dùng chung cho mọi lời gọi tới service đó trong tiến trình.
+
+**Retry** (tối đa `DOWNSTREAM_RETRY_ATTEMPTS` lần, chờ tăng gấp đôi có ngẫu nhiên hóa từ `DOWNSTREAM_RETRY_BASE_MS`, trần 2 giây):
+- Chỉ lời gọi **idempotent**: GET mặc định là có; POST phải đánh dấu `idempotent: true`, và chỉ khi API phía sau chịu được gọi lặp (giữ hàng theo `orderId`, tạo-hoặc-cập-nhật khách theo SĐT, tra cứu/tính toán bằng POST).
+- Chỉ thử lại khi **không kết nối được** hoặc service trả **502/503/504**. Không thử lại khi quá thời gian chờ (service đang treo, thử thêm chỉ nhân đôi thời gian chờ), 500 (thường lặp lại), hay 4xx (lỗi của yêu cầu).
+
+**Circuit breaker** (`CLOSED -> OPEN -> HALF_OPEN`):
+- `DOWNSTREAM_BREAKER_THRESHOLD` lần lỗi hạ tầng **liên tiếp** (không phản hồi, quá thời gian chờ, 5xx) thì ngắt mạch; trong `DOWNSTREAM_BREAKER_OPEN_MS` mọi lời gọi báo lỗi ngay (`code = CIRCUIT_OPEN`, `status = null`), không chạm service, không chờ hết timeout.
+- Hết thời gian ngắt: chỉ một lời gọi thử được đi qua; thành công thì đóng mạch, lỗi thì ngắt lại.
+- Lỗi 4xx tính là service còn khỏe (không đếm lỗi). Với nơi gọi, mạch ngắt giống "service không phản hồi" (`status = null`) nên các nhánh 503 và bồi hoàn hiện có không phải đổi.
+
+| Biến | Mặc định | Ghi chú |
+|---|---|---|
+| `DOWNSTREAM_RETRY_ATTEMPTS` | 3 | Tổng số lần thử, kể cả lần đầu; 1 = tắt retry |
+| `DOWNSTREAM_RETRY_BASE_MS` | 100 | |
+| `DOWNSTREAM_BREAKER_THRESHOLD` | 5 | |
+| `DOWNSTREAM_BREAKER_OPEN_MS` | 10000 | |
+
+Hiện dùng ở ordering (catalog, affiliate, customer) và customer (ordering). Trạng thái breaker nằm trong bộ nhớ từng tiến trình; chuyển trạng thái được ghi log (`Mạch tới catalog: CLOSED -> OPEN`).
+
 ## 4. Quy tắc nghiệp vụ dùng chung (`/utils`)
 
 | Hàm | Mục đích |

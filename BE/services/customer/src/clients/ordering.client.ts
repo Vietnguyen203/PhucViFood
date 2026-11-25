@@ -1,6 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { AppException } from '@phucvi/shared-library/api';
-import { callDownstream, type DownstreamTarget } from '@phucvi/shared-library/http';
+import { callDownstream, createDownstreamTarget, type DownstreamTarget } from '@phucvi/shared-library/http';
 import type { CustomerOrderStats } from '@phucvi/shared-library/utils';
 import { APP_CONFIG, AppConfig } from '../config/app-config';
 
@@ -14,7 +14,11 @@ export class OrderingClient {
   private readonly target: DownstreamTarget;
 
   constructor(@Inject(APP_CONFIG) config: AppConfig) {
-    this.target = { service: 'ordering', baseUrl: config.orderingUrl, internalKey: config.internalApiKey, timeoutMs: config.downstreamTimeoutMs };
+    this.target = createDownstreamTarget(
+      { service: 'ordering', baseUrl: config.orderingUrl, internalKey: config.internalApiKey, timeoutMs: config.downstreamTimeoutMs },
+      config.downstreamResilience,
+      new Logger(OrderingClient.name),
+    );
   }
 
   /** Thống kê theo khách. Khách không có đơn hợp lệ không có trong Map (nghĩa là 0 đơn). Lỗi thì ném DownstreamError. */
@@ -24,7 +28,7 @@ export class OrderingClient {
     for (let i = 0; i < customerIds.length; i += CHUNK) chunks.push(customerIds.slice(i, i + CHUNK));
     const results = await Promise.all(chunks.map((ids) =>
       callDownstream<{ stats: Array<{ customerId: string; validOrders: number; totalSpent: number; lastOrderAt: string }> }>(
-        this.target, 'POST', '/internal/customers/order-stats', { customerIds: ids })));
+        this.target, 'POST', '/internal/customers/order-stats', { customerIds: ids }, { idempotent: true }))); // chỉ đọc
     for (const r of results) {
       for (const s of r.stats) out.set(s.customerId, { validOrders: s.validOrders, totalSpent: s.totalSpent, lastOrderAt: new Date(s.lastOrderAt) });
     }

@@ -76,6 +76,8 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
     config = loadConfig({
       ORDERING_DATABASE_URL: DB_URL, RABBITMQ_URL: RABBIT_URL, JWT_ACCESS_SECRET: 'integration-test-secret-integration-test-secret',
       JWT_ISSUER: 'phucvi-it', INTERNAL_API_KEY: INTERNAL_KEY, OUTBOX_RELAY_ENABLED: 'false', DOWNSTREAM_TIMEOUT_MS: '1500',
+      // Nhiều test cố ý làm service lỗi liên tiếp: nâng ngưỡng để mạch không ngắt chéo giữa các test. Retry giữ 2 lần, chờ ngắn.
+      DOWNSTREAM_BREAKER_THRESHOLD: '1000', DOWNSTREAM_RETRY_ATTEMPTS: '2', DOWNSTREAM_RETRY_BASE_MS: '10',
       CATALOG_URL: `${fake.url}/catalog/api`, AFFILIATE_URL: `${fake.url}/affiliate/api`, CUSTOMER_URL: `${fake.url}/customer/api`,
     });
     app = await NestFactory.create(AppModule.forRoot(config), { logger: false });
@@ -248,6 +250,26 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
       const r2 = await place({ items: [{ productId: p.id, quantity: 1 }] });
       expect(r2.status).toBe(503);
       expect(await orderCount(r2.phone)).toBe(0);
+    });
+
+    it('lỗi tạm thời 503 của catalog, customer, affiliate: tự thử lại, đơn vẫn thành công, kho chỉ trừ MỘT lần', async () => {
+      const aff = fake.addAffiliate({ code: `it${rand(6)}` });
+      const p = product({ stock: 5 });
+      fake.failNext = { catalog: 1, customer: 1, affiliate: 1 };
+      const r = await place({ items: [{ productId: p.id, quantity: 2 }], referralCode: aff.code });
+      expect(r.status).toBe(201);
+      expect(fake.calls).toMatchObject({ reserve: 1, upsert: 1, resolve: 1 }); // lần 503 bị chặn trước khi vào xử lý
+      expect(fake.stockOf(p.id)).toBe(3);
+      expect(await orderCount(r.phone)).toBe(1);
+    });
+
+    it('lỗi tạm thời kéo dài quá số lần thử: vẫn 503 như cũ, chưa giữ hàng', async () => {
+      const p = product({ stock: 5 });
+      fake.failNext.customer = 5; // nhiều hơn số lần thử (2)
+      const r = await place({ items: [{ productId: p.id, quantity: 1 }] });
+      expect(r.status).toBe(503);
+      expect(fake.calls.reserve).toBe(0);
+      expect(fake.stockOf(p.id)).toBe(5);
     });
 
     it('service phụ thuộc treo: hết thời gian chờ thì trả 503 thay vì treo theo', async () => {

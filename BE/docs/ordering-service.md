@@ -97,6 +97,7 @@ Sự kiện ordering phát ra: `ordering.order.placed` (kèm `commissionRateBps`
 | `INTERNAL_API_KEY` | bắt buộc, từ 24 ký tự | Khóa gọi API nội bộ của catalog, affiliate, customer |
 | `CATALOG_URL`, `AFFILIATE_URL`, `CUSTOMER_URL` | `http://localhost:3003/api`, `3002`, `3005` | |
 | `DOWNSTREAM_TIMEOUT_MS` | 5000 | Thời gian chờ mỗi lần gọi service khác |
+| `DOWNSTREAM_RETRY_ATTEMPTS`, `DOWNSTREAM_RETRY_BASE_MS`, `DOWNSTREAM_BREAKER_THRESHOLD`, `DOWNSTREAM_BREAKER_OPEN_MS` | 3, 100, 5, 10000 | Retry và ngắt mạch khi gọi service khác (xem `shared-library.md` mục 3b) |
 | `PORT` | 3004 | |
 | `OUTBOX_RELAY_ENABLED` | `true` | |
 

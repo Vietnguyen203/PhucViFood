@@ -22,6 +22,9 @@ export class FakeDownstream {
   readonly userToAffiliate = new Map<string, string>();
   readonly customers = new Map<string, string>(); // SĐT -> id
 
+  /** Số lần tới sẽ trả 503 rồi mới hoạt động lại (giả lập lỗi tạm thời để thử retry). */
+  failNext: Record<'catalog' | 'affiliate' | 'customer', number> = { catalog: 0, affiliate: 0, customer: 0 };
+
   calls = { reserve: 0, release: 0, resolve: 0, upsert: 0, lookup: 0 };
   lastResolve: Record<string, any> | null = null;
   lastUpsert: Record<string, any> | null = null;
@@ -56,6 +59,7 @@ export class FakeDownstream {
 
   reset(): void {
     this.mode = { catalog: 'ok', affiliate: 'ok', customer: 'ok' };
+    this.failNext = { catalog: 0, affiliate: 0, customer: 0 };
     this.calls = { reserve: 0, release: 0, resolve: 0, upsert: 0, lookup: 0 };
     this.lastResolve = null;
     this.lastUpsert = null;
@@ -80,6 +84,7 @@ export class FakeDownstream {
     const service = url.startsWith('/catalog/') ? 'catalog' : url.startsWith('/affiliate/') ? 'affiliate' : 'customer';
 
     if (req.headers['x-internal-key'] !== this.key) return this.fail(res, 401, 'UNAUTHORIZED', 'Thiếu hoặc sai khóa nội bộ');
+    if (this.failNext[service] > 0) { this.failNext[service]--; return this.fail(res, 503, 'SERVICE_UNAVAILABLE', 'Tạm thời không khả dụng'); }
     if (this.mode[service] === 'down') return this.fail(res, 500, 'INTERNAL_ERROR', 'Lỗi hệ thống');
     if (this.mode[service] === 'hang') await new Promise((r) => setTimeout(r, 4000));
 

@@ -1,4 +1,5 @@
 import type { JwtConfig } from '@phucvi/shared-library/auth';
+import { readResilienceEnv, type ResilienceConfig } from '@phucvi/shared-library/http';
 
 export const APP_CONFIG = Symbol('APP_CONFIG');
 
@@ -12,6 +13,8 @@ export interface AppConfig {
   orderingUrl: string;
   /** Thời gian chờ tối đa mỗi lần gọi ordering (ms). */
   downstreamTimeoutMs: number;
+  /** Retry và ngắt mạch khi gọi service khác. */
+  downstreamResilience: ResilienceConfig;
   /** Tắt relay outbox (dùng khi test hoặc chạy relay ở tiến trình riêng). */
   relayEnabled: boolean;
 }
@@ -35,6 +38,7 @@ export function loadConfig(env: Env = process.env): AppConfig {
   if (!Number.isInteger(ttl) || ttl < 60) problems.push('ACCESS_TOKEN_TTL_SECONDS phải là số nguyên từ 60');
   const timeout = Number(env.DOWNSTREAM_TIMEOUT_MS ?? 5000);
   if (!Number.isInteger(timeout) || timeout < 100 || timeout > 60_000) problems.push('DOWNSTREAM_TIMEOUT_MS phải là số nguyên từ 100 đến 60000');
+  const downstreamResilience = readResilienceEnv(env, problems);
   const orderingUrl = (env.ORDERING_URL ?? 'http://localhost:3004/api').replace(/\/+$/, '');
   if (!/^https?:\/\/[^\s]+$/.test(orderingUrl)) problems.push('ORDERING_URL phải là địa chỉ http(s)');
 
@@ -48,6 +52,7 @@ export function loadConfig(env: Env = process.env): AppConfig {
     internalApiKey: internalKey,
     orderingUrl,
     downstreamTimeoutMs: timeout,
+    downstreamResilience,
     relayEnabled: env.OUTBOX_RELAY_ENABLED !== 'false',
   };
 }

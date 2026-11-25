@@ -56,6 +56,7 @@ Danh sách, chi tiết và xuất Excel vẫn chạy nhưng không có thống k
 | `INTERNAL_API_KEY` | bắt buộc, từ 24 ký tự | Cùng giá trị với ordering |
 | `ORDERING_URL` | `http://localhost:3004/api` | |
 | `DOWNSTREAM_TIMEOUT_MS` | 5000 | |
+| `DOWNSTREAM_RETRY_ATTEMPTS`, `DOWNSTREAM_RETRY_BASE_MS`, `DOWNSTREAM_BREAKER_THRESHOLD`, `DOWNSTREAM_BREAKER_OPEN_MS` | 3, 100, 5, 10000 | Retry và ngắt mạch khi gọi service khác (xem `shared-library.md` mục 3b) |
 | `PORT` | 3005 | |
 | `CORS_ORIGINS` | `http://localhost:5173` | |
 | `OUTBOX_RELAY_ENABLED` | `true` | |

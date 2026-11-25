@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { AppException, ErrorCode } from '@phucvi/shared-library/api';
 import type { AttributionSource } from '@phucvi/shared-library/contracts';
 import { APP_CONFIG, AppConfig } from '../config/app-config';
-import { callDownstream, DownstreamError, type DownstreamTarget } from '@phucvi/shared-library/http';
+import { callDownstream, createDownstreamTarget, DownstreamError, type DownstreamTarget } from '@phucvi/shared-library/http';
 
 // ───────── Hợp đồng với service catalog ─────────
 export interface ReservedItem {
@@ -64,11 +64,17 @@ abstract class BaseClient {
   protected readonly target: DownstreamTarget;
 
   constructor(service: string, baseUrl: string, config: AppConfig) {
-    this.target = { service, baseUrl, internalKey: config.internalApiKey, timeoutMs: config.downstreamTimeoutMs };
+    // Mỗi service một đích, tức một breaker riêng: catalog sập không ngắt mạch tới customer.
+    this.target = createDownstreamTarget(
+      { service, baseUrl, internalKey: config.internalApiKey, timeoutMs: config.downstreamTimeoutMs },
+      config.downstreamResilience,
+      this.logger,
+    );
   }
 
-  protected call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
-    return callDownstream<T>(this.target, method, path, body);
+  /** `idempotent`: chỉ đặt true cho POST mà API phía sau chịu được việc gọi lặp (được phép retry). GET luôn retry được. */
+  protected call<T>(method: 'GET' | 'POST', path: string, body?: unknown, idempotent?: boolean): Promise<T> {
+    return callDownstream<T>(this.target, method, path, body, { idempotent });
   }
 }
 
@@ -80,11 +86,12 @@ export class CatalogClient extends BaseClient {
   }
 
   reserve(orderId: string, items: Array<{ productId: string; quantity: number }>): Promise<Reservation> {
-    return this.call('POST', '/internal/stock/reserve', { orderId, items });
+    // Idempotent theo orderId: gọi lại trả bản phát lại, không trừ kho lần hai.
+    return this.call('POST', '/internal/stock/reserve', { orderId, items }, true);
   }
 
   release(orderId: string): Promise<{ released: boolean }> {
-    return this.call('POST', '/internal/stock/release', { orderId });
+    return this.call('POST', '/internal/stock/release', { orderId }, true); // idempotent theo orderId
   }
 }
 
@@ -96,7 +103,7 @@ export class AffiliateClient extends BaseClient {
   }
 
   resolveAttribution(req: AttributionRequest): Promise<Attribution> {
-    return this.call('POST', '/internal/attribution/resolve', req);
+    return this.call('POST', '/internal/attribution/resolve', req, true); // chỉ tính toán, không ghi
   }
 
   /** Trả null nếu tài khoản chưa có hồ sơ CTV. */
@@ -118,6 +125,6 @@ export class CustomerClient extends BaseClient {
   }
 
   upsert(req: CustomerUpsertRequest): Promise<CustomerRef> {
-    return this.call('POST', '/internal/customers/upsert', req);
+    return this.call('POST', '/internal/customers/upsert', req, true); // tạo-hoặc-cập-nhật theo SĐT
   }
 }
