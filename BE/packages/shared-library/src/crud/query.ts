@@ -11,7 +11,12 @@ import { PageParams, parsePageParams } from '../api/pagination';
  *   &filter[price][gte]=100000&filter[price][lte]=300000   (so sánh: gt, gte, lt, lte)
  */
 
-export type FieldType = 'string' | 'number' | 'bigint' | 'boolean' | 'date' | 'uuid' | { enum: readonly string[] };
+/** Cột lưu mã số của một enum: client gửi TÊN (vd status=COMPLETED), where dùng mã số (5). Truyền codec từ contracts. */
+export interface CodecFieldType {
+  codec: { readonly names: readonly string[]; toCode(name: never): number; has(name: string): boolean };
+}
+
+export type FieldType = 'string' | 'number' | 'bigint' | 'boolean' | 'date' | 'uuid' | { enum: readonly string[] } | CodecFieldType;
 
 export interface ListConfig {
   /** Trường cho phép sắp xếp. */
@@ -41,6 +46,9 @@ const OPERATORS = ['gt', 'gte', 'lt', 'lte'] as const;
 
 function coerce(raw: string, type: FieldType, field: string, issues: Issue[]): unknown {
   const bad = (msg: string) => { issues.push({ field: `filter.${field}`, messages: [msg] }); return undefined; };
+  if (typeof type === 'object' && 'codec' in type) {
+    return type.codec.has(raw) ? (type.codec.toCode as (n: string) => number)(raw) : bad(`giá trị phải thuộc: ${type.codec.names.join(', ')}`);
+  }
   if (typeof type === 'object') return type.enum.includes(raw) ? raw : bad(`giá trị phải thuộc: ${type.enum.join(', ')}`);
   switch (type) {
     case 'string': return raw;

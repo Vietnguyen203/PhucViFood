@@ -19,7 +19,7 @@ Tài liệu mô tả database cho bản DEMO. Nguồn sự thật là các file 
 - Mốc thời gian là `timestamptz` (UTC). Ngày hợp đồng là `DATE`.
 - Tham chiếu giữa các miền chỉ lưu UUID, **không khóa ngoại**, kể cả khi hai miền cùng database (vd `orders.customer_id`, `order_items.product_id`). Khóa ngoại chỉ dùng trong cùng một miền.
 - Mỗi schema có thể tách thành service riêng: chuyển schema sang database mới và đổi chuỗi kết nối, không cần đổi cấu trúc bảng.
-- Enum là enum Postgres do Prisma tạo, nằm trong schema của miền sở hữu.
+- **Enum lưu dạng số nguyên** (`SMALLINT`), không dùng enum của Postgres. Mỗi cột có `CHECK` giới hạn giá trị hợp lệ. Trong code dùng enum số (vd `UserRoleCode.ADMIN = 1`) và codec ở `shared-library/contracts/codes.ts`. Bên ngoài DB (API, JWT, sự kiện RabbitMQ) vẫn dùng **tên chuỗi** (`"ADMIN"`); chuyển qua lại bằng codec khi đọc/ghi DB. Xem mục "Mã số enum" bên dưới.
 - Prisma không mô tả được `CHECK` và partial index, nên các ràng buộc này nằm ở cuối `migration.sql` của migration `init`.
 
 ## 2. Sơ đồ ERD
@@ -27,15 +27,30 @@ Tài liệu mô tả database cho bản DEMO. Nguồn sự thật là các file 
 ### 2.1 user
 ```mermaid
 erDiagram
+  users ||--o{ refresh_tokens : "có nhiều phiên"
+
   users {
     uuid id PK
     text email UK
     text password_hash
-    UserRole role
-    UserStatus status
+    smallint role "1 ADMIN, 2 AFFILIATE"
+    smallint status "1 ACTIVE, 2 DISABLED"
     timestamptz last_login_at
+    int failed_login_attempts
+    timestamptz locked_until
+    timestamptz password_changed_at
+  }
+  refresh_tokens {
+    uuid id PK
+    uuid user_id FK
+    uuid family_id "một chuỗi xoay vòng"
+    text token_hash UK "SHA-256, không lưu token gốc"
+    timestamptz expires_at
+    timestamptz revoked_at
+    uuid replaced_by_id
   }
 ```
+Schema `user` còn có `outbox_events`. Cơ chế token xem `user-service.md`.
 
 ### 2.2 affiliate_db
 ```mermaid
@@ -49,7 +64,7 @@ erDiagram
     text full_name
     text phone UK
     text referral_code UK
-    AffiliateStatus status
+    smallint status "AffiliateStatusCode"
     date contract_start
     date contract_end
     int commission_rate_bps
@@ -74,7 +89,7 @@ erDiagram
     uuid id PK
     uuid affiliate_id "không FK"
     uuid visitor_id
-    TrackingEventType type
+    smallint type "TrackingEventTypeCode"
     uuid product_id "không FK"
   }
   commissions {
@@ -84,7 +99,7 @@ erDiagram
     int rate_bps "snapshot"
     bigint base_amount
     bigint amount
-    CommissionStatus status
+    smallint status "CommissionStatusCode"
     uuid payout_id FK
   }
   payouts {
@@ -139,14 +154,14 @@ erDiagram
     uuid id PK
     text code UK
     uuid customer_id "không FK"
-    OrderStatus status
-    PaymentMethod payment_method
-    PaymentStatus payment_status
+    smallint status "OrderStatusCode"
+    smallint payment_method "PaymentMethodCode"
+    smallint payment_status "PaymentStatusCode"
     bigint subtotal_amount
     bigint shipping_fee
     bigint total_amount
     uuid affiliate_id "snapshot, không FK"
-    AttributionSource attribution_source
+    smallint attribution_source "AttributionSourceCode"
     bool is_self_purchase
     text ship_name "snapshot giao hàng"
     timestamptz placed_at
@@ -165,15 +180,15 @@ erDiagram
   order_status_history {
     uuid id PK
     uuid order_id FK
-    OrderStatus from_status
-    OrderStatus to_status
-    ActorType actor_type
+    smallint from_status "OrderStatusCode"
+    smallint to_status "OrderStatusCode"
+    smallint actor_type "ActorTypeCode"
   }
   care_notes {
     uuid id PK
     uuid order_id FK
     text note
-    ContactChannel contact_channel
+    smallint contact_channel "ContactChannelCode"
   }
 ```
 Mỗi schema `catalog`, `ordering`, `customer` còn có `outbox_events`; `ordering` và `customer` có `settings`; `catalog` và `customer` có `inbox_events`.
@@ -217,13 +232,41 @@ flowchart LR
 | Vòng đời hoa hồng | `ESTIMATED` → `CONFIRMED` → `PAID`; `CANCELLED` khi đơn hủy hoặc hoàn. CHECK bảo đảm mỗi trạng thái có đủ mốc thời gian (`confirmed_at`, `paid_at` + `payout_id`, `cancelled_at`). |
 | Đơn lưu snapshot | `order_items.product_name`, `unit_price`; `orders.ship_*`. Sửa sản phẩm hay khách sau này không làm sai đơn cũ. |
 | Thanh toán tách riêng | `payment_method` + `payment_status`. COD: `PENDING` → `PAID` (khi shipper nộp tiền). Chuyển khoản QR: `UNPAID` → `PAID` (admin đối soát tay). `REFUNDED` cho đơn hoàn. CHECK không cho trộn trạng thái của hai phương thức. |
-| Hàng chờ CSKH | Partial index `orders_cskh_queue_idx (delivered_at) WHERE status = 'DELIVERED'`; truy vấn ở `BE/docs/queries/01-cskh-queue.sql`. |
+| Hàng chờ CSKH | Partial index `orders_cskh_queue_idx (delivered_at) WHERE status = 4` (4 = DELIVERED); truy vấn ở `BE/docs/queries/01-cskh-queue.sql`. |
 | Phân loại khách | Không lưu cột. Tính khi truy vấn từ đơn, ngưỡng ở `customer.settings` (xem 4.2). |
 | CTV chỉ thấy tên viết tắt | Che dữ liệu ở API; DB chỉ có `ship_name` đầy đủ. |
 | Chỉ ADMIN xuất khách | Mỗi lần xuất ghi `customer.export_logs`. |
 
+## 3b. Mã số enum
+
+Nguồn sự thật: `BE/packages/shared-library/src/contracts/codes.ts`. Có test khóa cứng các số này (`test/codes.test.ts`).
+
+| Cột | Mã số |
+|---|---|
+| `user.users.role` | 1 ADMIN, 2 AFFILIATE |
+| `user.users.status` | 1 ACTIVE, 2 DISABLED |
+| `affiliate.affiliates.status` | 1 PENDING, 2 ACTIVE, 3 SUSPENDED, 4 REJECTED |
+| `tracking.tracking_events.type` | 1 PRODUCT_VIEW, 2 ADD_TO_CART, 3 CHECKOUT_START |
+| `commission.commissions.status` | 1 ESTIMATED, 2 CONFIRMED, 3 PAID, 4 CANCELLED |
+| `commission.commissions.confirmed_by` | 1 CUSTOMER, 2 ADMIN |
+| `ordering.orders.status`, `order_status_history.from_status`, `to_status` | 1 PLACED, 2 CONFIRMED, 3 SHIPPING, 4 DELIVERED, 5 COMPLETED, 6 CANCELLED, 7 RETURNED |
+| `ordering.orders.payment_method` | 1 COD, 2 BANK_QR |
+| `ordering.orders.payment_status` | 1 PENDING, 2 UNPAID, 3 PAID, 4 REFUNDED |
+| `ordering.orders.attribution_source` | 1 LINK, 2 CODE |
+| `ordering.orders.received_by` | 1 CUSTOMER, 2 ADMIN |
+| `ordering.order_status_history.actor_type` | 1 SYSTEM, 2 CUSTOMER, 3 ADMIN |
+| `ordering.care_notes.contact_channel` | 1 CALL, 2 ZALO, 3 SMS |
+
+**Quy tắc**
+- Không bao giờ đổi số của giá trị đã có hay dùng lại số cũ (dữ liệu và `CHECK` phụ thuộc vào chúng). Thêm giá trị mới thì lấy số kế tiếp, đồng thời viết migration sửa `CHECK`.
+- Số 0 không dùng.
+- Code đọc/ghi qua codec: `UserRoleCodec.toName(row.role)` khi trả ra ngoài, `UserRoleCodec.toCode('ADMIN')` khi ghi DB. Mã hoặc tên lạ ném lỗi thay vì bị bỏ qua.
+- CRUD tự sinh lọc bằng **tên** (`?filter[status]=COMPLETED`) rồi tự đổi sang mã số khi truy vấn.
+- SQL viết tay phải dùng số (kèm chú thích tên), xem `BE/docs/queries/`.
+
 ## 4. Quyết định thiết kế cần biết
 
+0. **Enum dạng số thay vì enum Postgres** (quyết định của chủ dự án). Được: đổi tên giá trị không cần migration, không phụ thuộc kiểu enum riêng của Postgres/Prisma. Mất: đọc SQL và dữ liệu thô khó hơn (`status = 5` thay vì `'COMPLETED'`), phải có codec ở code, và `CHECK` phải tự cập nhật khi thêm giá trị. Migration `20261125120000_int_enums` của cả 3 service chuyển dữ liệu cũ bằng `USING CASE`, đã kiểm chứng giữ nguyên số liệu.
 1. **Địa chỉ dùng tỉnh/thành + phường/xã** (`province`, `ward`) thay cho tỉnh/quận, vì cấp quận/huyện đã bỏ từ 1/7/2025.
 2. **Phân loại khách join hai miền** (`customer` và `ordering`). Trong bản 4 service, hai miền cùng `commerce_db` nên join được. Khi tách thành 7 service phải thay bằng API thống kê đơn hoặc projection cập nhật qua sự kiện. Chỗ này được ghi chú ngay đầu `BE/docs/queries/03-customer-segments.sql`.
 3. **Đơn hoàn sau khi hoa hồng đã PAID** chưa có nhánh xử lý. Quy tắc cho demo: chặn ở tầng ứng dụng, admin xử lý tay và ghi chú. `CHECK` hiện chỉ cho phép `CANCELLED` kèm `cancelled_at`, không có bút toán điều chỉnh.

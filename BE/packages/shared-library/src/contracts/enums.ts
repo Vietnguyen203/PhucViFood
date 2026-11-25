@@ -1,5 +1,5 @@
-// Giá trị enum dùng trong sự kiện giữa các service. Phải khớp enum trong Prisma schema của từng service.
-// (Prisma enum nằm trong client sinh riêng của mỗi service nên không import chéo được.)
+// TÊN enum dùng ở bên ngoài DB: API, JWT, sự kiện giữa các service.
+// DB lưu mã số (SMALLINT) của cùng các giá trị này; mã số và codec nằm ở ./codes.ts.
 
 export const OrderStatus = {
   PLACED: 'PLACED', CONFIRMED: 'CONFIRMED', SHIPPING: 'SHIPPING', DELIVERED: 'DELIVERED',
@@ -30,6 +30,9 @@ export type CommissionStatus = (typeof CommissionStatus)[keyof typeof Commission
 
 export const UserRole = { ADMIN: 'ADMIN', AFFILIATE: 'AFFILIATE' } as const;
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
+
+export const UserStatus = { ACTIVE: 'ACTIVE', DISABLED: 'DISABLED' } as const;
+export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
 
 /** Luồng trạng thái đơn hợp lệ. Dùng để chặn chuyển trạng thái sai ở tầng ứng dụng. */
 export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {

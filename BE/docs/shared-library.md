@@ -10,6 +10,7 @@ Gói chỉ chứa mã nguồn TypeScript, các service import trực tiếp (ch�
 | `@phucvi/shared-library/utils` | Quy tắc nghiệp vụ dùng chung | Không |
 | `@phucvi/shared-library/contracts` | Enum, sự kiện, phong bì | Không |
 | `@phucvi/shared-library/api` | Khung API chuẩn | Có |
+| `@phucvi/shared-library/auth` | Kiểm tra JWT, guard, `@Public`, `@Roles`, `@CurrentUser` | Có |
 | `@phucvi/shared-library/crud` | CRUD tự sinh | Có |
 | `@phucvi/shared-library/messaging` | Outbox, inbox, RabbitMQ | Có |
 | `@phucvi/shared-library/seed-data` | Dữ liệu mẫu cho seed | Không |
@@ -49,6 +50,24 @@ Service trả về `PageResult(items, total, page, pageSize)` để có `meta.pa
 Ném lỗi nghiệp vụ bằng `AppException`: `throw AppException.businessRule('Đơn đã giao, không thể hủy')`.
 
 `createHealthController('tên-service')` tạo `GET /health` cho healthcheck.
+
+**Validate body**: service chạy bằng `tsx` không phát metadata kiểu tham số, nên ValidationPipe toàn cục không biết DTO. Dùng `@ValidBody(Dto)` thay cho `@Body()`:
+```ts
+create(@ValidBody(CreateUserDto) dto: CreateUserDto) { ... }
+```
+Mọi dependency phải khai báo `@Inject(Token)` tường minh (cũng vì lý do trên).
+
+## 1b. Xác thực dùng chung (`/auth`)
+
+Service nào cũng import `AuthGuardsModule.forRoot({ secret, issuer, accessTtlSeconds })` với cùng cấu hình JWT. Hai guard toàn cục được đăng ký:
+- `JwtAuthGuard`: **mặc định mọi route cần access token** (header `Authorization: Bearer ...`), trừ route gắn `@Public()`. Gắn `request.user`.
+- `RolesGuard`: kiểm tra `@Roles('ADMIN')` gắn lên class hoặc method.
+
+```ts
+@Roles('ADMIN') @Get('orders') list(@CurrentUser() user: AuthUser) { ... }
+@Public() @Get('products') catalog() { ... }
+```
+`verifyAccessToken` chỉ chấp nhận HS256 và đúng issuer, từ chối `alg: none`, token hết hạn, giả mạo, thiếu trường hoặc sai vai trò. Chỉ service `user` ký token (`signAccessToken`); các service khác chỉ kiểm tra. Xem `user-service.md`.
 
 ## 2. CRUD tự sinh (`/crud`)
 
@@ -131,6 +150,14 @@ Inbox ghi `message_id` cùng transaction với xử lý, nên broker gửi lặp
 
 **Gắn vào NestJS**: `MessagingModule.forRoot({ serviceName, rabbitUrl, prismaToken, outboxSchemas: ['catalog','ordering','customer'], inboxSchemas: [...] })` kết nối RabbitMQ và chạy relay theo vòng đời ứng dụng; inject `OutboxService`, `InboxService`.
 
+**Enum và mã số** (`contracts/enums.ts`, `contracts/codes.ts`): `enums.ts` giữ TÊN chuỗi dùng ở API, JWT và sự kiện; `codes.ts` giữ MÃ SỐ lưu DB (enum số như `UserRoleCode.ADMIN = 1`) và codec chuyển qua lại:
+```ts
+role: UserRoleCodec.toCode('ADMIN')          // ghi DB: 1
+UserRoleCodec.toName(row.role)               // trả ra ngoài: 'ADMIN'
+filterableFields: { role: { codec: UserRoleCodec } }   // CRUD: client lọc bằng tên, where dùng mã số
+```
+Mã số không bao giờ đổi hay dùng lại (có test khóa cứng). Bảng mã đầy đủ ở `database.md`.
+
 **Sự kiện hiện có** (`contracts/events.ts`): `user.user.created`, `ordering.order.placed`, `ordering.order.status_changed`, `affiliate.affiliate.status_changed`, `commission.commission.status_changed`. Thêm sự kiện: khai báo ở `EventTypes` và `EventPayloads`, kiểu payload tự được kiểm tra khi gọi `outbox.add`. Đổi tên hoặc đổi nghĩa payload là thay đổi phá vỡ, phải tăng `version`.
 
 ## 4. Quy tắc nghiệp vụ dùng chung (`/utils`)
@@ -162,7 +189,8 @@ pnpm --filter @phucvi/shared-library typecheck
 
 ## 6. Giới hạn hiện tại
 
-- Chưa có xác thực và phân quyền (JWT, vai trò ADMIN/AFFILIATE). CRUD nhận `decorators` để gắn guard khi có.
+- Xác thực mới ở mức JWT HS256 dùng khóa chung (chi tiết giới hạn ở `user-service.md`). CRUD nhận `decorators` để gắn `@Roles`.
+- Service dùng thư viện qua `tsx` phải đưa `../../packages/shared-library/src/**/*.ts` vào `include` của `tsconfig.json`, nếu không decorator tham số trong thư viện bị từ chối lúc chạy.
 - Retry của consumer chờ trong bộ nhớ tiến trình: nếu tiến trình tắt giữa lúc chờ thì lần thử lại đó mất (message gốc đã ack). Phù hợp demo; production nên dùng delay queue hoặc để broker redeliver.
 - Message trong dead-letter queue phải đưa lại bằng tay (qua giao diện quản trị RabbitMQ tại `http://localhost:15672`).
 - Thư viện pin NestJS 11 và amqplib 0.10; chưa thử với NestJS 12.

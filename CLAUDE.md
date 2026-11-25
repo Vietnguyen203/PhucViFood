@@ -14,6 +14,7 @@ NestJS + DDD + microservice (pnpm + Turborepo), Next.js, PostgreSQL (mỗi servi
 ## Dữ liệu
 - Khóa chính UUID (UUIDv7 sinh ở app bằng `@default(uuid(7))` của Prisma, DB không có default).
 - Tiền: số nguyên VND (BigInt), không dùng số thực.
+- Enum lưu DB dạng số nguyên (SMALLINT + CHECK), mã số ở `BE/packages/shared-library/src/contracts/codes.ts` (không đổi số đã dùng). Bên ngoài DB (API, JWT, sự kiện) dùng tên chuỗi, chuyển bằng codec.
 - 3 database: `user_db` (user), `commerce_db` (catalog, ordering, customer), `affiliate_db` (affiliate, tracking, commission). Mỗi miền một Postgres schema, có `outbox_events` riêng, để tách 7 service sau này.
 - Tham chiếu giữa các miền chỉ lưu UUID, không khóa ngoại.
 

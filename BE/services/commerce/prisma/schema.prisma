@@ -14,66 +14,17 @@ datasource db {
   schemas  = ["catalog", "ordering", "customer"]
 }
 
-// ───────────────────────── Enums ─────────────────────────
-
-enum OrderStatus {
-  PLACED
-  CONFIRMED
-  SHIPPING
-  DELIVERED
-  COMPLETED
-  CANCELLED
-  RETURNED
-
-  @@schema("ordering")
-}
-
-enum PaymentMethod {
-  COD
-  BANK_QR
-
-  @@schema("ordering")
-}
-
-// COD: PENDING -> PAID (khi shipper nộp tiền). BANK_QR: UNPAID -> PAID (admin đối soát tay).
-enum PaymentStatus {
-  PENDING
-  UNPAID
-  PAID
-  REFUNDED
-
-  @@schema("ordering")
-}
-
-enum AttributionSource {
-  LINK
-  CODE
-
-  @@schema("ordering")
-}
-
-enum ReceivedBy {
-  CUSTOMER
-  ADMIN
-
-  @@schema("ordering")
-}
-
-enum ActorType {
-  SYSTEM
-  CUSTOMER
-  ADMIN
-
-  @@schema("ordering")
-}
-
-enum ContactChannel {
-  CALL
-  ZALO
-  SMS
-
-  @@schema("ordering")
-}
+// ───────────────────────── Mã số enum ─────────────────────────
+// Enum lưu dạng SMALLINT. Mã số định nghĩa ở shared-library (contracts/codes.ts), CHECK trong migration.
+//   orders.status / order_status_history.from_status, to_status:
+//       1 PLACED, 2 CONFIRMED, 3 SHIPPING, 4 DELIVERED, 5 COMPLETED, 6 CANCELLED, 7 RETURNED
+//   orders.payment_method:   1 COD, 2 BANK_QR
+//   orders.payment_status:   1 PENDING, 2 UNPAID, 3 PAID, 4 REFUNDED
+//       COD: PENDING -> PAID (khi shipper nộp tiền). BANK_QR: UNPAID -> PAID (admin đối soát tay).
+//   orders.attribution_source: 1 LINK, 2 CODE
+//   orders.received_by:      1 CUSTOMER, 2 ADMIN
+//   order_status_history.actor_type: 1 SYSTEM, 2 CUSTOMER, 3 ADMIN
+//   care_notes.contact_channel: 1 CALL, 2 ZALO, 3 SMS
 
 // ───────────────────────── schema: catalog ─────────────────────────
 
@@ -148,9 +99,9 @@ model Order {
   id                String             @id @default(uuid(7)) @db.Uuid
   code              String             @unique // PV-yymmdd-XXXX
   customerId        String             @map("customer_id") @db.Uuid // customer.customers.id (không FK)
-  status            OrderStatus        @default(PLACED)
-  paymentMethod     PaymentMethod      @map("payment_method")
-  paymentStatus     PaymentStatus      @map("payment_status")
+  status            Int                @default(1) @db.SmallInt // OrderStatusCode, mặc định 1 = PLACED
+  paymentMethod     Int                @map("payment_method") @db.SmallInt // PaymentMethodCode
+  paymentStatus     Int                @map("payment_status") @db.SmallInt // PaymentStatusCode
   // Tiền (VND). total = subtotal + shipping_fee. Hoa hồng chỉ tính trên subtotal.
   subtotalAmount    BigInt             @map("subtotal_amount")
   shippingFee       BigInt             @default(0) @map("shipping_fee")
@@ -160,7 +111,7 @@ model Order {
   linkId            String?            @map("link_id") @db.Uuid
   channelCode       String?            @map("channel_code")
   referralCodeUsed  String?            @map("referral_code_used") // mã khách nhập hoặc mã từ cookie
-  attributionSource AttributionSource? @map("attribution_source")
+  attributionSource Int?               @map("attribution_source") @db.SmallInt // AttributionSourceCode
   isSelfPurchase    Boolean            @default(false) @map("is_self_purchase") // CTV tự mua: không có hoa hồng
   // Snapshot giao hàng (cấp hành chính sau 1/7/2025: tỉnh/thành + phường/xã)
   shipName          String             @map("ship_name")
@@ -174,7 +125,7 @@ model Order {
   completedAt       DateTime?          @map("completed_at") @db.Timestamptz(6)
   cancelledAt       DateTime?          @map("cancelled_at") @db.Timestamptz(6)
   returnedAt        DateTime?          @map("returned_at") @db.Timestamptz(6)
-  receivedBy        ReceivedBy?        @map("received_by")
+  receivedBy        Int?               @map("received_by") @db.SmallInt // ReceivedByCode
   cancelReason      String?            @map("cancel_reason")
   createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -208,9 +159,9 @@ model OrderItem {
 model OrderStatusHistory {
   id         String       @id @default(uuid(7)) @db.Uuid
   orderId    String       @map("order_id") @db.Uuid
-  fromStatus OrderStatus? @map("from_status")
-  toStatus   OrderStatus  @map("to_status")
-  actorType  ActorType    @map("actor_type")
+  fromStatus Int?         @map("from_status") @db.SmallInt // OrderStatusCode
+  toStatus   Int          @map("to_status") @db.SmallInt // OrderStatusCode
+  actorType  Int          @map("actor_type") @db.SmallInt // ActorTypeCode
   actorId    String?      @map("actor_id") @db.Uuid
   note       String?
   createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -225,7 +176,7 @@ model CareNote {
   id             String          @id @default(uuid(7)) @db.Uuid
   orderId        String          @map("order_id") @db.Uuid
   note           String
-  contactChannel ContactChannel? @map("contact_channel")
+  contactChannel Int?            @map("contact_channel") @db.SmallInt // ContactChannelCode
   contactedAt    DateTime        @default(now()) @map("contacted_at") @db.Timestamptz(6)
   createdBy      String          @map("created_by") @db.Uuid // user.users.id
   createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)

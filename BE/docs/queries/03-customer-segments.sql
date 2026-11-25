@@ -1,7 +1,8 @@
 -- Phân loại khách tính khi truy vấn (chạy trên commerce_db), ngưỡng đọc từ customer.settings.
 -- Lưu ý: truy vấn join hai schema customer và ordering. Khi tách thành service riêng,
 -- thay bằng API thống kê đơn hoặc projection (xem BE/docs/database.md).
--- "Đơn hợp lệ" = đơn không ở trạng thái CANCELLED hoặc RETURNED.
+-- "Đơn hợp lệ" = đơn không ở trạng thái CANCELLED (6) hoặc RETURNED (7).
+-- Trạng thái lưu dạng số (bảng mã đầy đủ ở docs/database.md, mục "Mã số enum").
 WITH cfg AS (
   SELECT
     (SELECT (value #>> '{}')::int    FROM customer.settings WHERE key = 'segment.returning_min_orders') AS returning_min_orders,
@@ -18,7 +19,7 @@ stats AS (
     max(o.placed_at)                  AS last_order_at
   FROM customer.customers c
   LEFT JOIN ordering.orders o
-    ON o.customer_id = c.id AND o.status NOT IN ('CANCELLED', 'RETURNED')
+    ON o.customer_id = c.id AND o.status NOT IN (6, 7) -- CANCELLED, RETURNED
   GROUP BY c.id
 )
 SELECT

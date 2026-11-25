@@ -1,13 +1,15 @@
 -- Hoa hồng theo CTV, tách theo trạng thái (chạy trên affiliate_db). Tiền: VND.
 -- Còn phải trả = CONFIRMED (đã xác nhận, chưa chi). ESTIMATED chỉ là dự kiến.
+-- Trạng thái lưu dạng số: 1 ESTIMATED, 2 CONFIRMED, 3 PAID, 4 CANCELLED
+-- (bảng mã đầy đủ ở docs/database.md, mục "Mã số enum").
 SELECT
   a.referral_code,
   a.full_name,
   count(c.id)                                                          AS commissions,
-  coalesce(sum(c.amount) FILTER (WHERE c.status = 'ESTIMATED'), 0)     AS estimated,
-  coalesce(sum(c.amount) FILTER (WHERE c.status = 'CONFIRMED'), 0)     AS confirmed_unpaid,
-  coalesce(sum(c.amount) FILTER (WHERE c.status = 'PAID'), 0)          AS paid,
-  coalesce(sum(c.amount) FILTER (WHERE c.status = 'CANCELLED'), 0)     AS cancelled
+  coalesce(sum(c.amount) FILTER (WHERE c.status = 1), 0)               AS estimated,
+  coalesce(sum(c.amount) FILTER (WHERE c.status = 2), 0)               AS confirmed_unpaid,
+  coalesce(sum(c.amount) FILTER (WHERE c.status = 3), 0)               AS paid,
+  coalesce(sum(c.amount) FILTER (WHERE c.status = 4), 0)               AS cancelled
 FROM affiliate.affiliates a
 LEFT JOIN commission.commissions c ON c.affiliate_id = a.id
 GROUP BY a.id, a.referral_code, a.full_name

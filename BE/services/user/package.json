@@ -3,21 +3,36 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../../.env src/main.ts",
+    "start": "tsx --env-file-if-exists=../../../.env src/main.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:create": "prisma migrate dev --create-only",
     "db:seed": "tsx prisma/seed.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:integration": "cross-env RUN_INTEGRATION=1 vitest run test/integration"
   },
   "dependencies": {
+    "@nestjs/common": "^11.2.11",
+    "@nestjs/core": "^11.2.11",
+    "@nestjs/platform-express": "^11.2.11",
     "@phucvi/shared-library": "workspace:*",
     "@prisma/client": "6.19.3",
-    "bcryptjs": "^3.0.3"
+    "bcryptjs": "^3.0.3",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@nestjs/testing": "^11.2.11",
+    "@types/express": "^5.0.0",
     "@types/node": "^24.0.0",
+    "cross-env": "^7.0.3",
     "prisma": "6.19.3",
     "tsx": "^4.20.0",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.7"
   }
 }

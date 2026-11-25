@@ -1,4 +1,4 @@
-import { INestApplication, ValidationError, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Type, ValidationError, ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './all-exceptions.filter';
 import { AppException } from './errors';
 import { requestIdMiddleware } from './request-id';
@@ -13,11 +13,13 @@ export function flattenValidationErrors(errors: ValidationError[], parent = ''):
   });
 }
 
-export function createValidationPipe(): ValidationPipe {
+export function createValidationPipe(options: { expectedType?: Type<unknown>; skipMissingProperties?: boolean } = {}): ValidationPipe {
   return new ValidationPipe({
     whitelist: true, // bỏ trường lạ
     forbidNonWhitelisted: true, // và báo lỗi thay vì lờ đi
     transform: true,
+    expectedType: options.expectedType,
+    skipMissingProperties: options.skipMissingProperties ?? false,
     exceptionFactory: (errors) => AppException.validation(flattenValidationErrors(errors)),
   });
 }
