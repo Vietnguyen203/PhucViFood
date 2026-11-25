@@ -41,6 +41,8 @@ export interface OrderPlacedPayload {
   referralCodeUsed: string | null;
   attributionSource: AttributionSource | null;
   isSelfPurchase: boolean;
+  /** Tỷ lệ hoa hồng (bps) chốt tại thời điểm đặt, lấy từ kết quả ghi nhận của service affiliate. null = không có hoa hồng. */
+  commissionRateBps: number | null;
   items: Array<{ productId: string; quantity: number }>;
 }
 

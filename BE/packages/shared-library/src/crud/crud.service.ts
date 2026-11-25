@@ -41,15 +41,21 @@ export class PrismaCrudService<TEntity = any, TCreate = any, TUpdate = any> {
     if (!UUID_REGEX.test(id)) throw AppException.validation([{ field: 'id', messages: ['id phải là UUID'] }]);
   }
 
-  protected whereId(id: string): Record<string, unknown> {
+  protected whereId(id: string, scope?: Record<string, unknown>): Record<string, unknown> {
     const and: Record<string, unknown>[] = [{ id }];
     if (this.config.baseWhere) and.push(this.config.baseWhere);
+    if (scope) and.push(scope);
     if (this.config.softDeleteField) and.push({ [this.config.softDeleteField]: null });
     return { AND: and };
   }
 
-  async list(query: Record<string, unknown>): Promise<PageResult<any>> {
-    const args = parseListQuery(query, this.config);
+  /**
+   * `scope` là điều kiện giới hạn riêng cho từng lần gọi, luôn được áp dụng (vd { affiliateId } để CTV chỉ thấy
+   * dữ liệu của mình). Khác `config.baseWhere` là điều kiện cố định cho cả service.
+   */
+  async list(query: Record<string, unknown>, scope?: Record<string, unknown>): Promise<PageResult<any>> {
+    const baseWhere = scope ? (this.config.baseWhere ? { AND: [this.config.baseWhere, scope] } : scope) : this.config.baseWhere;
+    const args = parseListQuery(query, { ...this.config, baseWhere });
     const [rows, total] = await Promise.all([
       this.delegate.findMany({ where: args.where, orderBy: args.orderBy, skip: args.skip, take: args.take, include: this.config.include }),
       this.delegate.count({ where: args.where }),
@@ -57,15 +63,15 @@ export class PrismaCrudService<TEntity = any, TCreate = any, TUpdate = any> {
     return new PageResult(rows.map((r) => this.toResponse(r)), total, args.page, args.pageSize);
   }
 
-  protected async findOrThrow(id: string): Promise<TEntity> {
+  protected async findOrThrow(id: string, scope?: Record<string, unknown>): Promise<TEntity> {
     this.assertId(id);
-    const found = await this.delegate.findFirst({ where: this.whereId(id), include: this.config.include });
+    const found = await this.delegate.findFirst({ where: this.whereId(id, scope), include: this.config.include });
     if (!found) throw AppException.notFound(`${this.label} không tồn tại`);
     return found;
   }
 
-  async findOne(id: string): Promise<any> {
-    return this.toResponse(await this.findOrThrow(id));
+  async findOne(id: string, scope?: Record<string, unknown>): Promise<any> {
+    return this.toResponse(await this.findOrThrow(id, scope));
   }
 
   async create(dto: TCreate): Promise<any> {

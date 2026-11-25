@@ -166,6 +166,16 @@ describe('API chuẩn + CRUD tự sinh (HTTP thật)', () => {
     expect(r.body.data.map((p: Row) => p.price)).toEqual([180_000, 120_000]); // 390k,220k | 180k,120k | 85k
   });
 
+  it('scope theo từng lần gọi luôn được áp dụng cho danh sách và chi tiết', async () => {
+    const service = app.get(PRODUCT_SERVICE) as PrismaCrudService;
+    const scope = { price: { lte: 100_000n } };
+    const page = await service.list({ sort: 'price' }, scope);
+    expect(page.items.map((p: Row) => Number(p.price))).toEqual([85_000]); // chỉ sản phẩm trong phạm vi
+    const expensive = delegate.rows.find((r) => r.price > 100_000n)!;
+    await expect(service.findOne(expensive.id, scope)).rejects.toMatchObject({ code: 'NOT_FOUND' }); // ngoài phạm vi
+    await expect(service.findOne(expensive.id)).resolves.toBeTruthy();
+  });
+
   it('GET tìm kiếm q và lọc theo khoảng giá', async () => {
     const q = await call('GET', '/products?q=KHÔ');
     expect(q.body.data.map((p: Row) => p.name).sort()).toEqual(['Khô cá lóc', 'Mực khô', 'Tôm khô']);

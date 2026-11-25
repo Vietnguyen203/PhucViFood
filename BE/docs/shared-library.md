@@ -55,7 +55,7 @@ Ném lỗi nghiệp vụ bằng `AppException`: `throw AppException.businessRule
 ```ts
 create(@ValidBody(CreateUserDto) dto: CreateUserDto) { ... }
 ```
-Mọi dependency phải khai báo `@Inject(Token)` tường minh (cũng vì lý do trên).
+Mọi dependency phải khai báo `@Inject(Token)` tường minh (cũng vì lý do trên). Handler có `@Param`/`@Query` thêm `@ParamTypes(String, Object)` (kiểu theo thứ tự tham số) để Nest không cảnh báo thiếu metadata.
 
 ## 1b. Xác thực dùng chung (`/auth`)
 
@@ -110,6 +110,8 @@ Sinh ra: `GET /products`, `GET /products/:id`, `POST /products`, `PATCH /product
 &filter[status]=ACTIVE                (bằng)  |  &filter[status]=A,B   (một trong)
 &filter[price][gte]=100000&filter[price][lte]=300000   (gt, gte, lt, lte)
 ```
+`service.list(query, scope)` và `service.findOne(id, scope)` nhận thêm `scope`: điều kiện giới hạn riêng từng lần gọi, luôn được áp dụng (vd `{ affiliateId }` để CTV chỉ thấy dữ liệu của mình; bản ghi ngoài phạm vi trả 404).
+
 Chỉ trường khai báo trong `sortableFields` và `filterableFields` mới dùng được; trường khác trả `VALIDATION_FAILED`. `pageSize` tối đa 100. Dùng `baseWhere` để giới hạn cứng theo người dùng (vd CTV chỉ thấy đơn của mình).
 
 ## 3. Messaging và transactional outbox (`/messaging`)
