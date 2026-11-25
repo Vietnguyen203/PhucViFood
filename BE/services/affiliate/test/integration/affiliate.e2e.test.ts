@@ -83,7 +83,7 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
     const code = o.code ?? `IT-${rand(8).toUpperCase()}`;
     orderCodes.push(code);
     return createEnvelope({
-      type: EventTypes.ORDER_PLACED, source: 'commerce', aggregateType: 'Order', aggregateId: orderId,
+      type: EventTypes.ORDER_PLACED, source: 'ordering', aggregateType: 'Order', aggregateId: orderId,
       payload: {
         orderId, code, customerId: uuidv7(), placedAt: new Date().toISOString(),
         subtotalAmount: o.subtotal, shippingFee: 30_000, totalAmount: o.subtotal + 30_000,
@@ -94,7 +94,7 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
   };
   const statusEvent = (placed: EventEnvelope<'ordering.order.placed'>, to: 'COMPLETED' | 'CANCELLED' | 'RETURNED' | 'DELIVERED', receivedBy: 'CUSTOMER' | 'ADMIN' | null = null) =>
     createEnvelope({
-      type: EventTypes.ORDER_STATUS_CHANGED, source: 'commerce', aggregateType: 'Order', aggregateId: placed.payload.orderId,
+      type: EventTypes.ORDER_STATUS_CHANGED, source: 'ordering', aggregateType: 'Order', aggregateId: placed.payload.orderId,
       payload: {
         orderId: placed.payload.orderId, code: placed.payload.code, fromStatus: null, toStatus: to, actorType: 'ADMIN',
         actorId: null, at: new Date().toISOString(), receivedBy,
@@ -130,7 +130,7 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
     await app.listen(0);
     base = `${(await app.getUrl()).replace('[::1]', 'localhost')}/api`;
     prisma = app.get(PrismaService);
-    publisher = new RabbitMqClient({ url: RABBIT_URL, serviceName: 'commerce' });
+    publisher = new RabbitMqClient({ url: RABBIT_URL, serviceName: 'ordering' });
     await publisher.connect(5);
     rawConn = await amqp.connect(RABBIT_URL);
   });

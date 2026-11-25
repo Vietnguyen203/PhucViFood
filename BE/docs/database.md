@@ -4,21 +4,22 @@ Tài liệu mô tả database cho bản DEMO. Nguồn sự thật là các file 
 
 ## 1. Cấu trúc tổng quan
 
-3 service có database, mỗi service một database riêng; mỗi miền (bounded context) một Postgres schema:
+5 service có database, mỗi service một database riêng. Tên schema Postgres trùng tên miền:
 
-| Service | Database | Schema (miền) |
-|---|---|---|
-| user | `user_db` | `user` |
-| commerce | `commerce_db` | `catalog`, `ordering`, `customer` |
-| affiliate | `affiliate_db` | `affiliate`, `tracking`, `commission` |
-| gateway | không có database | |
+| Service | Database | Schema | Nội dung |
+|---|---|---|---|
+| user | `user_db` | `user` | Tài khoản đăng nhập, refresh token |
+| catalog | `catalog_db` | `catalog` | Danh mục, sản phẩm, tồn kho |
+| ordering | `ordering_db` | `ordering` | Đơn hàng, lịch sử trạng thái, ghi chú CSKH |
+| customer | `customer_db` | `customer` | Khách hàng, nhật ký xuất dữ liệu, ngưỡng phân loại |
+| affiliate | `affiliate_db` | `affiliate`, `tracking`, `commission` | CTV, link, tương tác, hoa hồng, chi trả |
+| gateway | không có database | | |
 
 **Quy ước chung**
 - Khóa chính `id` kiểu UUID, UUIDv7 sinh ở app (`@default(uuid(7))` của Prisma). DB không có default; seed và SQL tay phải tự cấp `id`.
 - Tiền là `BigInt` VND, không dùng số thực. Tỷ lệ hoa hồng là số nguyên `rate_bps` (1000 = 10,00%).
 - Mốc thời gian là `timestamptz` (UTC). Ngày hợp đồng là `DATE`.
-- Tham chiếu giữa các miền chỉ lưu UUID, **không khóa ngoại**, kể cả khi hai miền cùng database (vd `orders.customer_id`, `order_items.product_id`). Khóa ngoại chỉ dùng trong cùng một miền.
-- Mỗi schema có thể tách thành service riêng: chuyển schema sang database mới và đổi chuỗi kết nối, không cần đổi cấu trúc bảng.
+- Tham chiếu giữa các service chỉ lưu UUID, **không khóa ngoại** (vd `orders.customer_id`, `order_items.product_id`). Khóa ngoại chỉ dùng trong cùng một service. Không join chéo database: cần dữ liệu của service khác thì gọi API nội bộ hoặc nghe sự kiện.
 - **Enum lưu dạng số nguyên** (`SMALLINT`), không dùng enum của Postgres. Mỗi cột có `CHECK` giới hạn giá trị hợp lệ. Trong code dùng enum số (vd `UserRoleCode.ADMIN = 1`) và codec ở `shared-library/contracts/codes.ts`. Bên ngoài DB (API, JWT, sự kiện RabbitMQ) vẫn dùng **tên chuỗi** (`"ADMIN"`); chuyển qua lại bằng codec khi đọc/ghi DB. Xem mục "Mã số enum" bên dưới.
 - Prisma không mô tả được `CHECK` và partial index, nên các ràng buộc này nằm ở cuối `migration.sql` của migration `init`.
 
@@ -112,13 +113,10 @@ erDiagram
 ```
 Mỗi schema `affiliate` và `commission` còn có `outbox_events` (và `settings` ở `affiliate`, `inbox_events` ở `commission`).
 
-### 2.3 commerce_db
+### 2.3 catalog_db
 ```mermaid
 erDiagram
   categories ||--o{ products : "thuộc"
-  orders ||--|{ order_items : "gồm"
-  orders ||--o{ order_status_history : "ghi lịch sử"
-  orders ||--o{ care_notes : "ghi chú CSKH"
 
   categories {
     uuid id PK
@@ -134,6 +132,12 @@ erDiagram
     int stock_quantity
     timestamptz deleted_at
   }
+```
+Schema `catalog` còn có `outbox_events` và `inbox_events`.
+
+### 2.4 customer_db
+```mermaid
+erDiagram
   customers {
     uuid id PK
     text phone UK "+84 chuẩn hóa"
@@ -150,6 +154,16 @@ erDiagram
     jsonb filters
     int row_count
   }
+```
+Schema `customer` còn có `settings` (ngưỡng phân loại khách), `outbox_events` và `inbox_events`.
+
+### 2.5 ordering_db
+```mermaid
+erDiagram
+  orders ||--|{ order_items : "gồm"
+  orders ||--o{ order_status_history : "ghi lịch sử"
+  orders ||--o{ care_notes : "ghi chú CSKH"
+
   orders {
     uuid id PK
     text code UK
@@ -191,9 +205,9 @@ erDiagram
     smallint contact_channel "ContactChannelCode"
   }
 ```
-Mỗi schema `catalog`, `ordering`, `customer` còn có `outbox_events`; `ordering` và `customer` có `settings`; `catalog` và `customer` có `inbox_events`.
+Schema `ordering` còn có `settings` (phí ship, ngưỡng miễn phí ship) và `outbox_events`.
 
-### 2.4 Tham chiếu giữa các miền (chỉ lưu UUID)
+### 2.6 Tham chiếu giữa các service (chỉ lưu UUID)
 ```mermaid
 flowchart LR
   subgraph user
@@ -204,9 +218,13 @@ flowchart LR
     commissions
     payouts
   end
-  subgraph commerce_db
+  subgraph ordering_db
     orders
+  end
+  subgraph customer_db
     customers
+  end
+  subgraph catalog_db
     products
   end
   affiliates -. user_id .-> users
@@ -233,7 +251,7 @@ flowchart LR
 | Đơn lưu snapshot | `order_items.product_name`, `unit_price`; `orders.ship_*`. Sửa sản phẩm hay khách sau này không làm sai đơn cũ. |
 | Thanh toán tách riêng | `payment_method` + `payment_status`. COD: `PENDING` → `PAID` (khi shipper nộp tiền). Chuyển khoản QR: `UNPAID` → `PAID` (admin đối soát tay). `REFUNDED` cho đơn hoàn. CHECK không cho trộn trạng thái của hai phương thức. |
 | Hàng chờ CSKH | Partial index `orders_cskh_queue_idx (delivered_at) WHERE status = 4` (4 = DELIVERED); truy vấn ở `BE/docs/queries/01-cskh-queue.sql`. |
-| Phân loại khách | Không lưu cột. Tính khi truy vấn từ đơn, ngưỡng ở `customer.settings` (xem 4.2). |
+| Phân loại khách | Không lưu cột. Tính khi truy vấn từ thống kê đơn, ngưỡng ở `customer.settings` (xem mục 4, điểm 2). |
 | CTV chỉ thấy tên viết tắt | Che dữ liệu ở API; DB chỉ có `ship_name` đầy đủ. |
 | Chỉ ADMIN xuất khách | Mỗi lần xuất ghi `customer.export_logs`. |
 
@@ -268,7 +286,7 @@ Nguồn sự thật: `BE/packages/shared-library/src/contracts/codes.ts`. Có te
 
 0. **Enum dạng số thay vì enum Postgres** (quyết định của chủ dự án). Được: đổi tên giá trị không cần migration, không phụ thuộc kiểu enum riêng của Postgres/Prisma. Mất: đọc SQL và dữ liệu thô khó hơn (`status = 5` thay vì `'COMPLETED'`), phải có codec ở code, và `CHECK` phải tự cập nhật khi thêm giá trị. Migration `20261125120000_int_enums` của cả 3 service chuyển dữ liệu cũ bằng `USING CASE`, đã kiểm chứng giữ nguyên số liệu.
 1. **Địa chỉ dùng tỉnh/thành + phường/xã** (`province`, `ward`) thay cho tỉnh/quận, vì cấp quận/huyện đã bỏ từ 1/7/2025.
-2. **Phân loại khách join hai miền** (`customer` và `ordering`). Trong bản 4 service, hai miền cùng `commerce_db` nên join được. Khi tách thành 7 service phải thay bằng API thống kê đơn hoặc projection cập nhật qua sự kiện. Chỗ này được ghi chú ngay đầu `BE/docs/queries/03-customer-segments.sql`.
+2. **Phân loại khách không join chéo database.** Thống kê đơn nằm ở `ordering_db`, ngưỡng nằm ở `customer_db`. Service customer lấy thống kê qua API nội bộ của ordering (số đơn hợp lệ, tổng chi, đơn gần nhất; xem `BE/docs/queries/03-customer-order-stats.sql`), rồi phân loại bằng hàm `classifyCustomer()` của shared-library với ngưỡng đọc từ `customer.settings`. Hàm này đã có test với số liệu mẫu; API thống kê của ordering chưa viết.
 3. **Đơn hoàn sau khi hoa hồng đã PAID** chưa có nhánh xử lý. Quy tắc cho demo: chặn ở tầng ứng dụng, admin xử lý tay và ghi chú. `CHECK` hiện chỉ cho phép `CANCELLED` kèm `cancelled_at`, không có bút toán điều chỉnh.
 4. **Phí ship** nằm ở `ordering.settings` (`shipping.flat_fee` = 30.000, `shipping.free_threshold` = 500.000). Đây là giá trị mẫu, cần công ty xác nhận.
 5. **Ngưỡng phân loại khách** ở `customer.settings` là giá trị mẫu: VIP khi từ 5 đơn hợp lệ hoặc từ 5.000.000đ; khách quen từ 2 đơn; hoạt động trong 60 ngày; sắp rời trong 120 ngày; quá 120 ngày là đã rời.
@@ -285,7 +303,7 @@ Copy-Item .env.example .env          # chỉ chỉnh khi cần
 pnpm db:up                           # Postgres 17 tại localhost:5433, tạo 3 database
 ```
 
-Các script `pnpm db:generate`, `pnpm db:migrate`, `pnpm db:seed` đọc biến `USER_DATABASE_URL`, `COMMERCE_DATABASE_URL`, `AFFILIATE_DATABASE_URL` từ môi trường (xem `.env.example`). Tài khoản mẫu và mật khẩu dev nằm trong `BE/services/user/prisma/seed.ts`.
+Các script `pnpm db:generate`, `pnpm db:migrate`, `pnpm db:seed` đọc biến `USER_DATABASE_URL`, `CATALOG_DATABASE_URL`, `ORDERING_DATABASE_URL`, `CUSTOMER_DATABASE_URL`, `AFFILIATE_DATABASE_URL` từ môi trường (xem `.env.example`). Tài khoản mẫu và mật khẩu dev nằm trong `BE/services/user/prisma/seed.ts`.
 
 Tạo migration mới: sửa `schema.prisma`, chạy `pnpm --filter @phucvi/<service> exec prisma migrate dev --name <tên>` (cần database đang chạy), rồi kiểm tra file `migration.sql` có xóa nhầm `CHECK` hoặc partial index tự viết không.
 
@@ -302,6 +320,6 @@ Nằm ở `BE/docs/queries/`; chạy bằng `docker exec -i phucvi-postgres psql
 
 | File | Database | Mục đích |
 |---|---|---|
-| `01-cskh-queue.sql` | `commerce_db` | Hàng chờ CSKH: đơn DELIVERED lâu nhất lên đầu, kèm ghi chú liên hệ |
+| `01-cskh-queue.sql` | `ordering_db` | Hàng chờ CSKH: đơn DELIVERED lâu nhất lên đầu, kèm ghi chú liên hệ |
 | `02-commission-by-affiliate.sql` | `affiliate_db` | Hoa hồng theo CTV, theo trạng thái; đối chiếu tổng đợt chi trả |
-| `03-customer-segments.sql` | `commerce_db` | Phân loại khách (mới/quen/VIP, hoạt động/sắp rời/đã rời), tính khi truy vấn |
+| `03-customer-order-stats.sql` | `ordering_db` | Thống kê đơn theo khách, đầu vào để phân loại khách (mới/quen/VIP, hoạt động/sắp rời/đã rời) |

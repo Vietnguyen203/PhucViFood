@@ -1,11 +1,9 @@
-// Seed commerce_db: danh mục, sản phẩm, khách, đơn ở đủ trạng thái, lịch sử, ghi chú CSKH, settings.
-import {
-  ADMIN_ID, CARE_NOTES, CATEGORIES, CUSTOMERS, CUSTOMER_SETTINGS, ORDERING_SETTINGS, ORDERS, PRODUCTS,
-} from '@phucvi/shared-library/seed-data';
+// Seed ordering_db: 12 đơn ở đủ trạng thái, lịch sử, ghi chú CSKH, cấu hình phí ship. Chỉ dùng dev/demo.
 import {
   ActorTypeCodec, AttributionSourceCodec, ContactChannelCodec, OrderStatusCodec, PaymentMethodCodec,
   PaymentStatusCodec, ReceivedByCodec,
 } from '@phucvi/shared-library/contracts';
+import { ADMIN_ID, CARE_NOTES, ORDERING_SETTINGS, ORDERS } from '@phucvi/shared-library/seed-data';
 import { PrismaClient } from '../generated/client';
 
 const prisma = new PrismaClient();
@@ -13,32 +11,8 @@ const prisma = new PrismaClient();
 async function main() {
   // Xóa theo thứ tự phụ thuộc để chạy lại được nhiều lần.
   await prisma.order.deleteMany(); // cascade: items, history, care notes
-  await prisma.product.deleteMany();
-  await prisma.category.deleteMany();
-  await prisma.customer.deleteMany();
-  await prisma.exportLog.deleteMany();
-  await prisma.orderingSetting.deleteMany();
-  await prisma.customerSetting.deleteMany();
-
-  await prisma.category.createMany({ data: CATEGORIES });
-  await prisma.product.createMany({
-    data: PRODUCTS.map((p) => ({
-      id: p.id, categoryId: p.categoryId, name: p.name, slug: p.slug, sku: p.sku, unit: p.unit,
-      price: BigInt(p.price), originalPrice: p.originalPrice ? BigInt(p.originalPrice) : null,
-      stockQuantity: p.stock,
-    })),
-  });
-
-  await prisma.customer.createMany({
-    data: CUSTOMERS.map((c) => ({
-      id: c.id, phone: c.phone, fullName: c.fullName, email: c.email, province: c.province, ward: c.ward,
-      addressLine: c.addressLine, firstAffiliateId: c.firstAffiliateId, firstChannelCode: c.firstChannelCode,
-      marketingConsent: c.consent, consentAt: c.consentAt,
-    })),
-  });
-
-  await prisma.orderingSetting.createMany({ data: ORDERING_SETTINGS });
-  await prisma.customerSetting.createMany({ data: CUSTOMER_SETTINGS });
+  await prisma.setting.deleteMany();
+  await prisma.setting.createMany({ data: ORDERING_SETTINGS });
 
   for (const o of ORDERS) {
     await prisma.order.create({
@@ -78,14 +52,7 @@ async function main() {
     })),
   });
 
-  await prisma.exportLog.create({
-    data: { exportedBy: ADMIN_ID, filters: { segment: 'VIP' }, rowCount: 1, format: 'xlsx' },
-  });
-
-  console.log(
-    `commerce: ${CATEGORIES.length} danh mục, ${PRODUCTS.length} sản phẩm, ${CUSTOMERS.length} khách, ` +
-      `${ORDERS.length} đơn, ${CARE_NOTES.length} ghi chú CSKH`,
-  );
+  console.log(`ordering: ${ORDERS.length} đơn, ${CARE_NOTES.length} ghi chú CSKH, ${ORDERING_SETTINGS.length} cấu hình`);
 }
 
 main().finally(() => prisma.$disconnect());

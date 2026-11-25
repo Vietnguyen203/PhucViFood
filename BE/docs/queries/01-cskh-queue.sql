@@ -1,4 +1,4 @@
--- Hàng chờ CSKH (chạy trên commerce_db):
+-- Hàng chờ CSKH (chạy trên ordering_db):
 -- đơn DELIVERED chưa COMPLETED, đơn giao lâu nhất lên đầu, kèm ghi chú liên hệ gần nhất.
 -- Trạng thái lưu dạng số: 4 = DELIVERED (bảng mã đầy đủ ở docs/database.md, mục "Mã số enum").
 SELECT

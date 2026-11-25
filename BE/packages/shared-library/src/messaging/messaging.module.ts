@@ -17,7 +17,7 @@ export interface MessagingModuleOptions {
   rabbitUrl: string;
   /** Token provider của PrismaClient của service (đã đăng ký trong module). */
   prismaToken: InjectionToken;
-  /** Các Postgres schema có bảng outbox_events (service commerce có 3: catalog, ordering, customer). */
+  /** Các Postgres schema có bảng outbox_events (mỗi service thường có một; affiliate có 2: affiliate, commission). */
   outboxSchemas: string[];
   /** Các schema có bảng inbox_events. */
   inboxSchemas?: string[];

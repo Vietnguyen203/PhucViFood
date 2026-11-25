@@ -1,0 +1,92 @@
+// Customer service: khách hàng và nhật ký xuất dữ liệu.
+// Database: customer_db, schema: customer.
+// Phân loại khách (mới/quen/VIP, hoạt động/sắp rời/đã rời) KHÔNG lưu cột: tính khi truy vấn từ đơn hàng.
+// Đơn hàng nằm ở service ordering nên customer lấy thống kê đơn qua API nội bộ của ordering, không join chéo database.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CUSTOMER_DATABASE_URL")
+  schemas  = ["customer"]
+}
+
+model Customer {
+  id                 String    @id @default(uuid(7)) @db.Uuid
+  phone              String    @unique // +84xxxxxxxxx (9 chữ số sau +84)
+  fullName           String    @map("full_name")
+  email              String?
+  province           String?
+  ward               String?
+  addressLine        String?   @map("address_line") // địa chỉ gần nhất; lịch sử nằm ở snapshot của đơn
+  firstAffiliateId   String?   @map("first_affiliate_id") @db.Uuid // nguồn đầu tiên (không FK)
+  firstChannelCode   String?   @map("first_channel_code")
+  marketingConsent   Boolean   @default(false) @map("marketing_consent")
+  consentAt          DateTime? @map("consent_at") @db.Timestamptz(6)
+  consentWithdrawnAt DateTime? @map("consent_withdrawn_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([province])
+  @@index([firstAffiliateId])
+  @@map("customers")
+  @@schema("customer")
+}
+
+// Mỗi lần ADMIN xuất Excel danh sách khách đều ghi lại.
+model ExportLog {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  exportedBy String   @map("exported_by") @db.Uuid // user.users.id của admin
+  filters    Json?
+  rowCount   Int      @map("row_count")
+  format     String   @default("xlsx")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([createdAt])
+  @@map("export_logs")
+  @@schema("customer")
+}
+
+// Ngưỡng phân loại khách (VIP, quen, hoạt động, sắp rời...).
+model Setting {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  key         String   @unique
+  value       Json
+  description String?
+  updatedBy   String?  @map("updated_by") @db.Uuid
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("settings")
+  @@schema("customer")
+}
+
+model InboxEvent {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  messageId   String   @map("message_id") @db.Uuid
+  consumer    String
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz(6)
+
+  @@unique([messageId, consumer])
+  @@map("inbox_events")
+  @@schema("customer")
+}
+
+// Transactional outbox: ghi cùng transaction nghiệp vụ, relay đẩy lên RabbitMQ.
+model OutboxEvent {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  aggregateType String    @map("aggregate_type")
+  aggregateId   String    @map("aggregate_id") @db.Uuid
+  eventType     String    @map("event_type")
+  payload       Json
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  publishedAt   DateTime? @map("published_at") @db.Timestamptz(6)
+  attempts      Int       @default(0)
+  lastError     String?   @map("last_error")
+  nextAttemptAt DateTime  @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+
+  @@map("outbox_events")
+  @@schema("customer")
+}

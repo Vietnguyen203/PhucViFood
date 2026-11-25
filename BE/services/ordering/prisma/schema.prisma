@@ -1,0 +1,149 @@
+// Ordering service: đơn hàng, lịch sử trạng thái, ghi chú CSKH.
+// Database: ordering_db, schema: ordering.
+// Quy tắc: không khóa ngoại sang service khác. customer_id, product_id, affiliate_id chỉ lưu UUID;
+// tên, giá, địa chỉ giao hàng lưu snapshot trong đơn để sửa dữ liệu gốc không làm sai đơn cũ.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("ORDERING_DATABASE_URL")
+  schemas  = ["ordering"]
+}
+
+// ───────────────────────── Mã số enum ─────────────────────────
+// Enum lưu dạng SMALLINT. Mã số định nghĩa ở shared-library (contracts/codes.ts), CHECK trong migration.
+//   orders.status / order_status_history.from_status, to_status:
+//       1 PLACED, 2 CONFIRMED, 3 SHIPPING, 4 DELIVERED, 5 COMPLETED, 6 CANCELLED, 7 RETURNED
+//   orders.payment_method:   1 COD, 2 BANK_QR
+//   orders.payment_status:   1 PENDING, 2 UNPAID, 3 PAID, 4 REFUNDED
+//       COD: PENDING -> PAID (khi shipper nộp tiền). BANK_QR: UNPAID -> PAID (admin đối soát tay).
+//   orders.attribution_source: 1 LINK, 2 CODE
+//   orders.received_by:      1 CUSTOMER, 2 ADMIN
+//   order_status_history.actor_type: 1 SYSTEM, 2 CUSTOMER, 3 ADMIN
+//   care_notes.contact_channel: 1 CALL, 2 ZALO, 3 SMS
+
+model Order {
+  id                String               @id @default(uuid(7)) @db.Uuid
+  code              String               @unique // PV-yymmdd-XXXX
+  customerId        String               @map("customer_id") @db.Uuid // customer.customers.id (không FK)
+  status            Int                  @default(1) @db.SmallInt // OrderStatusCode, mặc định 1 = PLACED
+  paymentMethod     Int                  @map("payment_method") @db.SmallInt // PaymentMethodCode
+  paymentStatus     Int                  @map("payment_status") @db.SmallInt // PaymentStatusCode
+  // Tiền (VND). total = subtotal + shipping_fee. Hoa hồng chỉ tính trên subtotal.
+  subtotalAmount    BigInt               @map("subtotal_amount")
+  shippingFee       BigInt               @default(0) @map("shipping_fee")
+  totalAmount       BigInt               @map("total_amount")
+  // Snapshot ghi nhận CTV tại thời điểm đặt. Hết hạn/không hợp lệ => affiliate_id null (khách vãng lai).
+  affiliateId       String?              @map("affiliate_id") @db.Uuid // affiliate.affiliates.id (không FK)
+  linkId            String?              @map("link_id") @db.Uuid
+  channelCode       String?              @map("channel_code")
+  referralCodeUsed  String?              @map("referral_code_used") // mã khách nhập hoặc mã từ cookie
+  attributionSource Int?                 @map("attribution_source") @db.SmallInt // AttributionSourceCode
+  isSelfPurchase    Boolean              @default(false) @map("is_self_purchase") // CTV tự mua: không có hoa hồng
+  // Snapshot giao hàng (cấp hành chính sau 1/7/2025: tỉnh/thành + phường/xã)
+  shipName          String               @map("ship_name")
+  shipPhone         String               @map("ship_phone")
+  shipProvince      String               @map("ship_province")
+  shipWard          String               @map("ship_ward")
+  shipAddressLine   String               @map("ship_address_line")
+  customerNote      String?              @map("customer_note")
+  placedAt          DateTime             @default(now()) @map("placed_at") @db.Timestamptz(6)
+  deliveredAt       DateTime?            @map("delivered_at") @db.Timestamptz(6)
+  completedAt       DateTime?            @map("completed_at") @db.Timestamptz(6)
+  cancelledAt       DateTime?            @map("cancelled_at") @db.Timestamptz(6)
+  returnedAt        DateTime?            @map("returned_at") @db.Timestamptz(6)
+  receivedBy        Int?                 @map("received_by") @db.SmallInt // ReceivedByCode
+  cancelReason      String?              @map("cancel_reason")
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  items             OrderItem[]
+  history           OrderStatusHistory[]
+  careNotes         CareNote[]
+
+  @@index([customerId, placedAt])
+  @@index([affiliateId, placedAt])
+  @@index([status, placedAt])
+  @@index([placedAt])
+  @@map("orders")
+  @@schema("ordering")
+}
+
+model OrderItem {
+  id          String @id @default(uuid(7)) @db.Uuid
+  orderId     String @map("order_id") @db.Uuid
+  productId   String @map("product_id") @db.Uuid // catalog.products.id (không FK)
+  productName String @map("product_name") // snapshot
+  unitPrice   BigInt @map("unit_price") // snapshot
+  quantity    Int
+  lineTotal   BigInt @map("line_total")
+  order       Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, productId])
+  @@map("order_items")
+  @@schema("ordering")
+}
+
+model OrderStatusHistory {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  orderId    String   @map("order_id") @db.Uuid
+  fromStatus Int?     @map("from_status") @db.SmallInt // OrderStatusCode
+  toStatus   Int      @map("to_status") @db.SmallInt // OrderStatusCode
+  actorType  Int      @map("actor_type") @db.SmallInt // ActorTypeCode
+  actorId    String?  @map("actor_id") @db.Uuid
+  note       String?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  @@map("order_status_history")
+  @@schema("ordering")
+}
+
+model CareNote {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  orderId        String   @map("order_id") @db.Uuid
+  note           String
+  contactChannel Int?     @map("contact_channel") @db.SmallInt // ContactChannelCode
+  contactedAt    DateTime @default(now()) @map("contacted_at") @db.Timestamptz(6)
+  createdBy      String   @map("created_by") @db.Uuid // user.users.id
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, contactedAt])
+  @@map("care_notes")
+  @@schema("ordering")
+}
+
+// Cấu hình của ordering (phí ship, ngưỡng miễn phí ship...).
+model Setting {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  key         String   @unique
+  value       Json
+  description String?
+  updatedBy   String?  @map("updated_by") @db.Uuid
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("settings")
+  @@schema("ordering")
+}
+
+// Transactional outbox: ghi cùng transaction nghiệp vụ, relay đẩy lên RabbitMQ.
+model OutboxEvent {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  aggregateType String    @map("aggregate_type")
+  aggregateId   String    @map("aggregate_id") @db.Uuid
+  eventType     String    @map("event_type")
+  payload       Json
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  publishedAt   DateTime? @map("published_at") @db.Timestamptz(6)
+  attempts      Int       @default(0)
+  lastError     String?   @map("last_error")
+  nextAttemptAt DateTime  @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+
+  @@map("outbox_events")
+  @@schema("ordering")
+}

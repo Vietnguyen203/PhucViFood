@@ -1,0 +1,81 @@
+// Catalog service: danh mục và sản phẩm.
+// Database: catalog_db, schema: catalog.
+// Quy tắc: không khóa ngoại sang service khác. Đơn hàng (service ordering) chỉ lưu product_id kèm snapshot tên và giá.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CATALOG_DATABASE_URL")
+  schemas  = ["catalog"]
+}
+
+model Category {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  name      String
+  slug      String    @unique
+  sortOrder Int       @default(0) @map("sort_order")
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  products  Product[]
+
+  @@map("categories")
+  @@schema("catalog")
+}
+
+model Product {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  categoryId    String    @map("category_id") @db.Uuid
+  name          String
+  slug          String    @unique
+  sku           String?   @unique
+  description   String?
+  unit          String? // vd "hộp 500g"
+  price         BigInt // VND
+  originalPrice BigInt?   @map("original_price") // giá gốc, >= price
+  imageUrl      String?   @map("image_url")
+  stockQuantity Int       @default(0) @map("stock_quantity")
+  isVisible     Boolean   @default(true) @map("is_visible")
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6) // xóa mềm vì đơn cũ vẫn tham chiếu
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  category      Category  @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId])
+  @@index([isVisible, deletedAt])
+  @@map("products")
+  @@schema("catalog")
+}
+
+// Inbox: consumer ghi message_id để xử lý idempotent (vd trừ tồn kho khi nhận order.placed).
+model InboxEvent {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  messageId   String   @map("message_id") @db.Uuid
+  consumer    String
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz(6)
+
+  @@unique([messageId, consumer])
+  @@map("inbox_events")
+  @@schema("catalog")
+}
+
+// Transactional outbox: ghi cùng transaction nghiệp vụ, relay đẩy lên RabbitMQ.
+model OutboxEvent {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  aggregateType String    @map("aggregate_type")
+  aggregateId   String    @map("aggregate_id") @db.Uuid
+  eventType     String    @map("event_type")
+  payload       Json
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  publishedAt   DateTime? @map("published_at") @db.Timestamptz(6)
+  attempts      Int       @default(0)
+  lastError     String?   @map("last_error")
+  nextAttemptAt DateTime  @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+
+  @@map("outbox_events")
+  @@schema("catalog")
+}

@@ -11,7 +11,7 @@ describe('contracts: phong bì sự kiện', () => {
       orderId: 'o', code: 'PV-1', fromStatus: 'DELIVERED', toStatus: 'COMPLETED', actorType: 'CUSTOMER',
       actorId: null, at: '2026-11-25T00:00:00Z', receivedBy: 'CUSTOMER',
     },
-    source: 'commerce', aggregateType: 'Order', aggregateId: '01930000-0000-7000-8000-000000007001',
+    source: 'ordering', aggregateType: 'Order', aggregateId: '01930000-0000-7000-8000-000000007001',
   });
 
   it('sinh id UUIDv7, version 1, thời gian ISO', () => {

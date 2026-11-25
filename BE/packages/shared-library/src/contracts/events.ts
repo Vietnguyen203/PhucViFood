@@ -16,7 +16,7 @@ export const EventTypes = {
   COMMISSION_STATUS_CHANGED: 'commission.commission.status_changed',
 } as const;
 
-export type ServiceName = 'gateway' | 'user' | 'commerce' | 'affiliate';
+export type ServiceName = 'gateway' | 'user' | 'catalog' | 'ordering' | 'customer' | 'affiliate';
 
 // Số tiền trong payload là số nguyên VND (number, an toàn trong JSON); dùng toSafeNumber() khi đổi từ bigint.
 
