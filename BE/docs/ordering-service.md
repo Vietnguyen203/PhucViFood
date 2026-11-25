@@ -80,9 +80,11 @@ Ordering gọi API nội bộ (header `x-internal-key`):
 |---|---|---|
 | catalog | `POST /internal/stock/reserve`, `release` | Xem `catalog-service.md` |
 | affiliate | `POST /internal/attribution/resolve`, `GET /internal/affiliates/by-user/:userId` | Xem `affiliate-service.md` |
-| customer | `POST /internal/customers/upsert` | **Service customer chưa viết; đây là hợp đồng nó phải cài đặt** |
+| customer | `POST /internal/customers/upsert` | Xem `customer-service.md` |
 
 `POST /internal/customers/upsert`: body `{phone (+84...), fullName, email?, province?, ward?, addressLine?, marketingConsent?, firstAffiliateId?, firstChannelCode?}`, trả `{id, phone, isNew}`. Tìm khách theo SĐT chuẩn hóa; chưa có thì tạo (lưu nguồn đầu tiên, và thời điểm đồng ý nếu `marketingConsent`); đã có thì cập nhật tên và địa chỉ gần nhất, không ghi đè nguồn đầu tiên.
+
+Ordering cũng **cung cấp** API nội bộ cho customer (`x-internal-key`): `POST /internal/customers/order-stats` (`{customerIds[≤500]}` → số đơn hợp lệ, tổng chi, ngày đặt gần nhất; đơn `CANCELLED`/`RETURNED` không tính; khách chưa có đơn bị bỏ qua) và `GET /internal/customers/:customerId/orders?limit=` (1..50, mặc định 10).
 
 Sự kiện ordering phát ra: `ordering.order.placed` (kèm `commissionRateBps` để affiliate tạo hoa hồng; `items` để các service khác dùng) và `ordering.order.status_changed`.
 
@@ -108,11 +110,10 @@ pnpm --filter @phucvi/ordering test                # unit
 pnpm --filter @phucvi/ordering test:integration    # cần Postgres + RabbitMQ; catalog, affiliate, customer được giả bằng máy chủ HTTP
 ```
 
-Test tích hợp dùng máy chủ HTTP giả (`test/integration/fake-downstream.ts`) để kiểm tra cả các nhánh lỗi: service phụ thuộc sập, treo, hết hàng, tạo đơn lỗi sau khi giữ hàng. Luồng đầu cuối với catalog và affiliate **thật** đã được chạy tay (đặt hàng, giữ hàng, hoa hồng qua RabbitMQ, hủy đơn trả hàng).
+Test tích hợp dùng máy chủ HTTP giả (`test/integration/fake-downstream.ts`) để kiểm tra cả các nhánh lỗi: service phụ thuộc sập, treo, hết hàng, tạo đơn lỗi sau khi giữ hàng. Luồng đầu cuối với catalog, affiliate và customer **thật** đã được chạy tay (đặt hàng, giữ hàng, hoa hồng qua RabbitMQ, upsert khách, hủy đơn trả hàng).
 
 ## 7. Giới hạn hiện tại
 
-- Chưa có service customer; ordering gọi `POST /internal/customers/upsert` theo hợp đồng ở mục 4.
 - Bồi hoàn sau lỗi tạo đơn là cố gắng tối đa: nếu catalog cũng sập đúng lúc đó, hàng giữ không được trả và chỉ có log lỗi. Chưa có cơ chế hết hạn giữ hàng.
 - Khách tra cứu và hủy bằng mã đơn + SĐT, chưa giới hạn tốc độ (nên chặn ở Caddy hoặc gateway).
 - Mã QR thanh toán chưa sinh ảnh (VietQR); mới trả thông tin chuyển khoản.

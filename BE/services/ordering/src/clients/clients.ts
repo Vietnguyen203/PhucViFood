@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { AppException, ErrorCode } from '@phucvi/shared-library/api';
 import type { AttributionSource } from '@phucvi/shared-library/contracts';
 import { APP_CONFIG, AppConfig } from '../config/app-config';
-import { callDownstream, DownstreamError, type DownstreamTarget } from './downstream';
+import { callDownstream, DownstreamError, type DownstreamTarget } from '@phucvi/shared-library/http';
 
 // ───────── Hợp đồng với service catalog ─────────
 export interface ReservedItem {

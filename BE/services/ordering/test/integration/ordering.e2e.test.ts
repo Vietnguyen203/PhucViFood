@@ -563,6 +563,54 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
     });
   });
 
+  // ═════════════════════════ API nội bộ cho service customer ═════════════════════════
+  describe('API nội bộ: thống kê đơn theo khách', () => {
+    const post = (body: object, key: string | null = INTERNAL_KEY) =>
+      api('POST', '/internal/customers/order-stats', { body, headers: key ? { 'x-internal-key': key } : {} });
+
+    it('cần khóa nội bộ', async () => {
+      expect((await post({ customerIds: [uuidv7()] }, null)).status).toBe(401);
+      expect((await post({ customerIds: [uuidv7()] }, 'sai-khoa-sai-khoa-sai-khoa-1')).status).toBe(401);
+      expect((await api('GET', `/internal/customers/${uuidv7()}/orders`)).status).toBe(401);
+    });
+
+    it('số đơn hợp lệ, tổng chi, đơn gần nhất; bỏ qua đơn hủy và trả hàng; khách chưa có đơn không xuất hiện', async () => {
+      const t = admin();
+      const phone = newPhone();
+      const a = await place({ phone, items: [{ productId: product({ price: 100_000 }).id, quantity: 1 }] }); // 130.000 gồm ship
+      const b = await place({ phone, items: [{ productId: product({ price: 600_000 }).id, quantity: 1 }] }); // 600.000 miễn ship
+      const c = await place({ phone, items: [{ productId: product({ price: 50_000 }).id, quantity: 1 }] }); // sẽ hủy
+      const customerId = fake.customers.get(toE164(phone))!;
+      await api('POST', `/orders/${(await dbOrder(c.body.data.code)).id}/cancel`, { token: t, body: { reason: 'Khách hủy' } });
+
+      const stranger = uuidv7();
+      const r = await post({ customerIds: [customerId, stranger, customerId] });
+      expect(r.status).toBe(200);
+      expect(r.body.data.stats).toHaveLength(1);
+      const lastPlaced = (await dbOrder(b.body.data.code)).placedAt;
+      expect(r.body.data.stats[0]).toMatchObject({ customerId, validOrders: 2, totalSpent: 130_000 + 600_000 });
+      expect(new Date(r.body.data.stats[0].lastOrderAt).getTime()).toBeLessThanOrEqual(lastPlaced.getTime());
+      void a;
+
+      expect((await post({ customerIds: [] })).status).toBe(400);
+      expect((await post({ customerIds: ['abc'] })).status).toBe(400);
+      expect((await post({ customerIds: Array.from({ length: 501 }, () => uuidv7()) })).status).toBe(400);
+    });
+
+    it('các đơn gần nhất của một khách (mới nhất trước), kể cả đơn đã hủy', async () => {
+      const phone = newPhone();
+      const first = await place({ phone });
+      const second = await place({ phone });
+      const customerId = fake.customers.get(toE164(phone))!;
+      const r = await api('GET', `/internal/customers/${customerId}/orders?limit=5`, { headers: { 'x-internal-key': INTERNAL_KEY } });
+      expect(r.status).toBe(200);
+      expect(r.body.data.map((o: any) => o.code)).toEqual([second.body.data.code, first.body.data.code]);
+      expect(r.body.data[0]).toMatchObject({ status: 'PLACED', totalAmount: expect.any(Number) });
+      expect((await api('GET', `/internal/customers/${customerId}/orders?limit=0`, { headers: { 'x-internal-key': INTERNAL_KEY } })).status).toBe(400);
+      expect((await api('GET', '/internal/customers/abc/orders', { headers: { 'x-internal-key': INTERNAL_KEY } })).status).toBe(400);
+    });
+  });
+
   it('trạng thái lưu dạng số trong DB, API trả tên chuỗi', async () => {
     const r = await place({ payment: 'BANK_QR' });
     const raw = await prisma.$queryRawUnsafe<Array<{ status: number; payment_method: number; payment_status: number }>>(

@@ -12,6 +12,7 @@
     "./api": { "types": "./src/api/index.ts", "default": "./src/api/index.ts" },
     "./auth": { "types": "./src/auth/index.ts", "default": "./src/auth/index.ts" },
     "./crud": { "types": "./src/crud/index.ts", "default": "./src/crud/index.ts" },
+    "./http": { "types": "./src/http/index.ts", "default": "./src/http/index.ts" },
     "./messaging": { "types": "./src/messaging/index.ts", "default": "./src/messaging/index.ts" },
     "./seed-data": { "types": "./src/seed-data.ts", "default": "./src/seed-data.ts" }
   },

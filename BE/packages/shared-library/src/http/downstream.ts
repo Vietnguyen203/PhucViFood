@@ -1,4 +1,4 @@
-import { INTERNAL_KEY_HEADER } from '@phucvi/shared-library/auth';
+import { INTERNAL_KEY_HEADER } from '../auth/internal-key.guard';
 
 /** Lỗi khi gọi service khác. `status` null nghĩa là không có phản hồi (mạng, hết thời gian chờ). */
 export class DownstreamError extends Error {
