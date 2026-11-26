@@ -221,3 +221,28 @@ body.store-scale .home-page { min-height: calc(100vh / var(--store-zoom)); }
 @media (min-width: 1900px) { body.store-scale { --store-zoom: 1.45; } }
 @media (min-width: 2300px) { body.store-scale { --store-zoom: 1.75; } }
 @media (min-width: 2800px) { body.store-scale { --store-zoom: 2.1; } }
+
+/* ───────── Trang giỏ hàng ───────── */
+.shop-cart-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+.shop-cart-lines { list-style: none; margin: 0; padding: 6px 20px; }
+.shop-cart-lines li { display: grid; grid-template-columns: 88px 1fr auto; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--shop-line); }
+.shop-cart-lines li:last-child { border-bottom: 0; }
+.shop-cart-lines img { width: 88px; height: 88px; object-fit: cover; border-radius: 12px; background: #eee3d6; }
+.shop-cart-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.shop-cart-info small { color: var(--shop-muted); }
+.shop-cart-info > span { color: var(--shop-red); font-weight: 600; }
+.shop-cart-summary { position: sticky; top: 16px; display: grid; gap: 10px; }
+.shop-cart-summary h2 { margin: 0; }
+.shop-cart-summary dl { margin: 0; display: grid; gap: 8px; }
+.shop-cart-summary dl div { display: flex; justify-content: space-between; gap: 10px; }
+.shop-cart-summary dl .total { padding-top: 10px; border-top: 1px solid var(--shop-line); font-weight: 700; font-size: 16px; }
+.shop-cart-summary dd, .shop-cart-summary dt { margin: 0; }
+.shop-cart-summary .shop-btn { width: 100%; text-align: center; box-sizing: border-box; text-decoration: none; }
+.shop-link-btn { background: none; border: 0; padding: 4px; color: var(--shop-muted); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
+.shop-drawer > footer .shop-link-btn { display: block; margin: 8px auto 0; }
+@media (max-width: 860px) {
+  .shop-cart-layout { grid-template-columns: 1fr; }
+  .shop-cart-summary { position: static; }
+  .shop-cart-lines li { grid-template-columns: 64px 1fr auto; gap: 12px; }
+  .shop-cart-lines img { width: 64px; height: 64px; }
+}

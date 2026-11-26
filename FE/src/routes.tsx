@@ -1,5 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router";
 import RootLayout from "./components/RootLayout";
+import CartPage from "./pages/CartPage";
+import CategoryPage from "./pages/CategoryPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import CTVPage from "./pages/CTVPage";
 import HomePage from "./pages/HomePage";
@@ -25,6 +27,8 @@ const router = createBrowserRouter([
       { path: "/ctv", Component: CTVPage },
       { path: "/san-pham/:slug", Component: ProductPage },
       { path: "/tim-kiem", Component: SearchPage },
+      { path: "/danh-muc/:slug", Component: CategoryPage },
+      { path: "/gio-hang", Component: CartPage },
       { path: "/thanh-toan", Component: CheckoutPage },
       // Tra cứu đơn bằng mã đơn + SĐT; có mã trên đường dẫn thì tự tra cứu khi vừa đặt hàng xong.
       { path: "/don-hang/:code?", Component: OrderPage },

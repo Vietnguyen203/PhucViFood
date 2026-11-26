@@ -62,7 +62,7 @@ export default function ProductPage() {
         {p && (
           <>
             <nav className="shop-crumbs" aria-label="Đường dẫn">
-              <Link to="/">Trang chủ</Link> / {p.category ? <Link to="/#categories">{p.category.name}</Link> : <span>Sản phẩm</span>} / <span>{p.name}</span>
+              <Link to="/">Trang chủ</Link> / {p.category ? <Link to={`/danh-muc/${p.category.slug}`}>{p.category.name}</Link> : <span>Sản phẩm</span>} / <span>{p.name}</span>
             </nav>
             <div className="shop-detail">
               <div className="shop-detail-image">
