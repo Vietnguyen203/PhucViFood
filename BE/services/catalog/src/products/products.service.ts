@@ -106,14 +106,15 @@ export class ProductsService extends PrismaCrudService<ProductWithCategory, Crea
     const current = await this.findOrThrow(id);
     if (dto.categoryId) await this.assertCategory(dto.categoryId);
     // Kiểm tra giá gốc theo giá mới (hoặc giá hiện có nếu không đổi).
-    assertPrices(dto.price ?? current.price, dto.originalPrice ?? current.originalPrice);
+    // originalPrice: null nghĩa là bỏ giá gốc (hết giảm giá); undefined là giữ nguyên.
+    assertPrices(dto.price ?? current.price, dto.originalPrice === undefined ? current.originalPrice : dto.originalPrice);
     try {
       const updated = await this.prisma.product.update({
         where: { id },
         data: {
           categoryId: dto.categoryId, name: dto.name, slug: dto.slug, sku: dto.sku, description: dto.description, unit: dto.unit,
           price: dto.price === undefined ? undefined : BigInt(dto.price),
-          originalPrice: dto.originalPrice === undefined ? undefined : BigInt(dto.originalPrice),
+          originalPrice: dto.originalPrice === undefined ? undefined : dto.originalPrice === null ? null : BigInt(dto.originalPrice),
           imageUrl: dto.imageUrl, isVisible: dto.isVisible,
         },
         include: this.config.include,

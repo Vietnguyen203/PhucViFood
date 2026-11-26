@@ -69,7 +69,7 @@ export class UpdateProductDto {
   price?: number;
 
   @IsOptional() @IsInt() @Min(0) @Max(MAX_PRICE)
-  originalPrice?: number;
+  originalPrice?: number | null;
 
   @IsOptional() @IsUrl({ require_protocol: true, protocols: ['http', 'https'] }) @MaxLength(500)
   imageUrl?: string;
