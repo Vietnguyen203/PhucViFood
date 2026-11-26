@@ -1,0 +1,923 @@
+{
+  "info": {
+    "name": "Phúc Vị Foods - Gateway",
+    "description": "Kiểm thử cổng vào: định tuyến, chặn /internal, CORS, mã yêu cầu, giới hạn kích thước. Cần chạy đủ 6 service phía sau. Biến gatewayUrl lấy từ environment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [],
+  "item": [
+    {
+      "name": "0. Sức khỏe",
+      "item": [
+        {
+          "name": "0.1 Gateway còn sống",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/health",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"service gateway, trạng thái ok\", function () { const d = pm.response.json().data; pm.expect(d.service).to.eql('gateway'); pm.expect(d.status).to.eql('ok'); });",
+                  "pm.test(\"có x-request-id hợp lệ\", function () { pm.expect(pm.response.headers.get('x-request-id')).to.match(/^[\\w.-]{8,64}$/); });",
+                  "pm.test(\"không lộ X-Powered-By\", function () { pm.expect(pm.response.headers.has('x-powered-by')).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.2 Tình trạng 6 service phía sau",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/health/services",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "health",
+                "services"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"đủ 6 service, tất cả up (cần chạy đủ 6 service)\", function () { const d = pm.response.json().data; pm.expect(Object.keys(d.services).sort()).to.eql(['affiliate','catalog','customer','ordering','tracking','user']); Object.values(d.services).forEach(function (s) { pm.expect(s.status).to.eql('up'); pm.expect(s.latencyMs).to.be.a('number'); }); pm.expect(d.status).to.eql('ok'); });",
+                  "pm.test(\"không lộ địa chỉ nội bộ\", function () { pm.expect(pm.response.text()).to.not.match(/localhost|127\\.0\\.0\\.1|http:\\/\\//); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Mã yêu cầu và CORS",
+      "item": [
+        {
+          "name": "1.1 Nhận lại x-request-id hợp lệ của client",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "postman-trace-abc12345"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/categories",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "categories"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"trả lại đúng mã\", function () { pm.expect(pm.response.headers.get('x-request-id')).to.eql('postman-trace-abc12345'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Mã yêu cầu sai định dạng bị thay bằng mã mới",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-request-id",
+                "value": "gia mao!"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/categories",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "categories"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"mã mới hợp lệ\", function () { const id = pm.response.headers.get('x-request-id'); pm.expect(id).to.not.eql('gia mao!'); pm.expect(id).to.match(/^[\\w.-]{8,64}$/); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Preflight CORS từ web (localhost:5173)",
+          "request": {
+            "method": "OPTIONS",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:5173"
+              },
+              {
+                "key": "Access-Control-Request-Method",
+                "value": "POST"
+              },
+              {
+                "key": "Access-Control-Request-Headers",
+                "value": "authorization,content-type"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", function () { pm.response.to.have.status(204); });",
+                  "pm.test(\"cho phép origin\", function () { pm.expect(pm.response.headers.get('access-control-allow-origin')).to.eql('http://localhost:5173'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.4 Origin lạ không được cho phép",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://evil.example"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/categories",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "categories"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"không có Access-Control-Allow-Origin\", function () { pm.expect(pm.response.headers.has('access-control-allow-origin')).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.5 Header tải file được lộ cho trình duyệt",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:5173"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/categories",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "categories"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"expose Content-Disposition và X-Row-Count\", function () { const h = pm.response.headers.get('access-control-expose-headers') || ''; pm.expect(h).to.include('Content-Disposition'); pm.expect(h).to.include('X-Row-Count'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Chặn API nội bộ và đường dẫn lạ",
+      "item": [
+        {
+          "name": "2.1 /internal/stock/reserve, kể cả kèm khóa nội bộ, vẫn 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-key",
+                "value": "khoa-gia-khoa-gia-khoa-gia-1"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/internal/stock/reserve",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "internal",
+                "stock",
+                "reserve"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"0191e2c0-aaaa-7bbb-8ccc-123456789abc\",\n  \"items\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "API nội bộ không có trong bảng định tuyến nên không bao giờ ra ngoài, dù biết khóa."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"lỗi NOT_FOUND theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"NOT_FOUND\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 /internal/customers/upsert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/internal/customers/upsert",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "internal",
+                "customers",
+                "upsert"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"0900000000\",\n  \"fullName\": \"X\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"lỗi NOT_FOUND theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"NOT_FOUND\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 /internal/attribution/resolve",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/internal/attribution/resolve",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "internal",
+                "attribution",
+                "resolve"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerPhone\": \"0900000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"lỗi NOT_FOUND theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"NOT_FOUND\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 /internal/referrals/context",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/internal/referrals/context",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "internal",
+                "referrals",
+                "context"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"abc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"lỗi NOT_FOUND theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"NOT_FOUND\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.5 Đường dẫn không có trong bảng định tuyến",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/khong-co-route",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "khong-co-route"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"lỗi NOT_FOUND theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"NOT_FOUND\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.6 Tiền tố gần giống không bị khớp nhầm (/orders-x)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders-x",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders-x"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"lỗi NOT_FOUND theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"NOT_FOUND\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Giới hạn kích thước",
+      "item": [
+        {
+          "name": "3.1 Nội dung quá 1 MB bị từ chối ngay ở gateway",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"note\": \"{{big}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "MAX_BODY_BYTES mặc định 1.048.576 byte; gateway trả 413 trước khi chuyển tiếp."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set('big', 'x'.repeat(1100000));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 413\", function () { pm.response.to.have.status(413); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Mỗi nhóm đường dẫn đến đúng service",
+      "item": [
+        {
+          "name": "4.1 user: /auth/me không token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/auth/me",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"lỗi UNAUTHORIZED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"UNAUTHORIZED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 affiliate: /me/affiliate không token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/affiliate",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "affiliate"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"lỗi UNAUTHORIZED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"UNAUTHORIZED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3 catalog: /public/products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/products",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "products"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"là danh sách\", function () { pm.expect(pm.response.json().data).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.4 ordering: /orders không token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"lỗi UNAUTHORIZED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"UNAUTHORIZED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.5 customer: /customers không token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/customers",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"lỗi UNAUTHORIZED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"UNAUTHORIZED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.6 tracking: /me/stats không token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/stats",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "stats"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"lỗi UNAUTHORIZED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"UNAUTHORIZED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.7 affiliate: GET /public/referrals/:code (kiểm tra mã)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/referrals/khongco123",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "referrals",
+                "khongco123"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Cùng tiền tố /public/referrals nhưng KHÁC chủ với POST click: gateway định tuyến theo cả phương thức."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"valid:false\", function () { pm.expect(pm.response.json().data).to.eql({ valid: false }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.8 tracking: POST /public/referrals/click (thiếu dữ liệu)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/referrals/click",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "referrals",
+                "click"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Đến service tracking (lỗi validate của DTO tracking), không phải affiliate."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.9 tracking: POST /public/tracking/events (thiếu dữ liệu)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/tracking/events",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "tracking",
+                "events"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1934 @@
+{
+  "info": {
+    "name": "Phúc Vị Foods - Service ordering",
+    "description": "Đặt hàng, luồng trạng thái, CSKH, kho theo đơn (qua gateway). Chạy theo thứ tự từ trên xuống; cần catalog, customer, affiliate, user phía sau và RabbitMQ.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "ctvToken",
+      "value": ""
+    },
+    {
+      "key": "ctvEmail",
+      "value": ""
+    },
+    {
+      "key": "ctvUserId",
+      "value": ""
+    },
+    {
+      "key": "rid",
+      "value": ""
+    },
+    {
+      "key": "categoryId",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "productSlug",
+      "value": ""
+    },
+    {
+      "key": "phone",
+      "value": ""
+    },
+    {
+      "key": "phone2",
+      "value": ""
+    },
+    {
+      "key": "orderCode",
+      "value": ""
+    },
+    {
+      "key": "orderCode2",
+      "value": ""
+    },
+    {
+      "key": "orderCode3",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    },
+    {
+      "key": "orderId3",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Chuẩn bị",
+      "item": [
+        {
+          "name": "0.1 Đăng nhập admin (tài khoản seed)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/auth/login",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Tài khoản admin của seed (xem environment). Lưu adminToken."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"có accessToken\", function () { pm.expect(pm.response.json().data.accessToken).to.be.a('string'); });",
+                  "pm.collectionVariables.set(\"adminToken\", pm.response.json().data.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.2 Đăng ký tài khoản CTV",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/auth/register",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ctvEmail}}\",\n  \"password\": \"Matkhau2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Tạo tài khoản test postman-*@example.com. Lưu ctvToken."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);",
+                  "pm.collectionVariables.set(\"ctvEmail\", `postman-${id}@example.com`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"vai trò AFFILIATE\", function () { pm.expect(pm.response.json().data.user.role).to.eql('AFFILIATE'); });",
+                  "pm.collectionVariables.set(\"ctvToken\", pm.response.json().data.accessToken);",
+                  "pm.collectionVariables.set(\"ctvUserId\", pm.response.json().data.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.3 Admin tạo danh mục",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/categories",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Ordering {{rid}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);",
+                  "pm.collectionVariables.set(\"rid\", id);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"categoryId\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.4 Admin tạo sản phẩm",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/products",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "products"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Postman Ordering {{rid}}\",\n  \"price\": 120000,\n  \"stockQuantity\": 10,\n  \"unit\": \"hộp 500g\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"giá và tồn đúng\", function () { const p = pm.response.json().data; pm.expect(p.price).to.eql(120000); pm.expect(p.stockQuantity).to.eql(10); });",
+                  "pm.collectionVariables.set(\"productId\", pm.response.json().data.id);",
+                  "pm.collectionVariables.set(\"productSlug\", pm.response.json().data.slug);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Khách đặt hàng (không cần tài khoản)",
+      "item": [
+        {
+          "name": "1.1 Đặt 2 sản phẩm, COD",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "postman-{{rid}}-1"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"paymentMethod\": \"COD\",\n  \"customer\": {\n    \"fullName\": \"Postman Khách {{rid}}\",\n    \"phone\": \"{{phone}}\",\n    \"province\": \"Thành phố Hà Nội\",\n    \"ward\": \"Phường Cầu Giấy\",\n    \"addressLine\": \"12 Trần Thái Tông\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);",
+                  "pm.collectionVariables.set(\"rid\", id);",
+                  "pm.collectionVariables.set(\"phone\", '09' + String(Math.floor(10000000 + Math.random() * 89999999)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"giá lấy từ catalog, tổng = tạm tính + ship\", function () { const o = pm.response.json().data; pm.expect(o.subtotalAmount).to.eql(240000); pm.expect(o.shippingFee).to.eql(30000); pm.expect(o.totalAmount).to.eql(270000); });",
+                  "pm.test(\"trạng thái PLACED, mã đơn PV-\", function () { const o = pm.response.json().data; pm.expect(o.status).to.eql('PLACED'); pm.expect(o.code).to.match(/^PV-/); pm.expect(o.paymentMethod).to.eql('COD'); });",
+                  "pm.collectionVariables.set(\"orderCode\", pm.response.json().data.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Gửi lại cùng Idempotency-Key: trả đúng đơn cũ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "postman-{{rid}}-1"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"paymentMethod\": \"COD\",\n  \"customer\": {\n    \"fullName\": \"Postman Khách {{rid}}\",\n    \"phone\": \"{{phone}}\",\n    \"province\": \"Thành phố Hà Nội\",\n    \"ward\": \"Phường Cầu Giấy\",\n    \"addressLine\": \"12 Trần Thái Tông\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"cùng mã đơn, replayed\", function () { const o = pm.response.json().data; pm.expect(o.code).to.eql(pm.collectionVariables.get('orderCode')); pm.expect(o.replayed).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Miễn phí ship từ 500.000đ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 5\n    }\n  ],\n  \"paymentMethod\": \"COD\",\n  \"customer\": {\n    \"fullName\": \"Postman Khách {{rid}}\",\n    \"phone\": \"{{phone2}}\",\n    \"province\": \"Thành phố Hà Nội\",\n    \"ward\": \"Phường Cầu Giấy\",\n    \"addressLine\": \"12 Trần Thái Tông\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"phone2\", '09' + String(Math.floor(10000000 + Math.random() * 89999999)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"ship 0\", function () { const o = pm.response.json().data; pm.expect(o.subtotalAmount).to.eql(600000); pm.expect(o.shippingFee).to.eql(0); });",
+                  "pm.collectionVariables.set(\"orderCode2\", pm.response.json().data.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.4 Không tin giá, tên, tổng tiền do client gửi",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"paymentMethod\": \"COD\",\n  \"customer\": {\n    \"fullName\": \"Postman Khách {{rid}}\",\n    \"phone\": \"{{phone}}\",\n    \"province\": \"Thành phố Hà Nội\",\n    \"ward\": \"Phường Cầu Giấy\",\n    \"addressLine\": \"12 Trần Thái Tông\"\n  },\n  \"totalAmount\": 1,\n  \"shippingFee\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.5 Hết hàng",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 999\n    }\n  ],\n  \"paymentMethod\": \"COD\",\n  \"customer\": {\n    \"fullName\": \"Postman Khách {{rid}}\",\n    \"phone\": \"{{phone}}\",\n    \"province\": \"Thành phố Hà Nội\",\n    \"ward\": \"Phường Cầu Giấy\",\n    \"addressLine\": \"12 Trần Thái Tông\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () { pm.response.to.have.status(409); });",
+                  "pm.test(\"lỗi CONFLICT theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"CONFLICT\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.6 SĐT sai",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"paymentMethod\": \"COD\",\n  \"customer\": {\n    \"fullName\": \"Postman Khách {{rid}}\",\n    \"phone\": \"123\",\n    \"province\": \"Thành phố Hà Nội\",\n    \"ward\": \"Phường Cầu Giấy\",\n    \"addressLine\": \"12 Trần Thái Tông\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.7 Không có sản phẩm",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [],\n  \"paymentMethod\": \"COD\",\n  \"customer\": {\n    \"fullName\": \"Postman Khách {{rid}}\",\n    \"phone\": \"{{phone}}\",\n    \"province\": \"Thành phố Hà Nội\",\n    \"ward\": \"Phường Cầu Giấy\",\n    \"addressLine\": \"12 Trần Thái Tông\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.8 Chuyển khoản QR: có hướng dẫn chuyển khoản",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"paymentMethod\": \"BANK_QR\",\n  \"customer\": {\n    \"fullName\": \"Postman Khách {{rid}}\",\n    \"phone\": \"{{phone}}\",\n    \"province\": \"Thành phố Hà Nội\",\n    \"ward\": \"Phường Cầu Giấy\",\n    \"addressLine\": \"12 Trần Thái Tông\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"chờ thanh toán, có thông tin chuyển khoản với nội dung là mã đơn\", function () { const o = pm.response.json().data; pm.expect(o.paymentMethod).to.eql('BANK_QR'); pm.expect(JSON.stringify(o)).to.include(o.code); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Khách tra cứu và tự thao tác",
+      "item": [
+        {
+          "name": "2.1 Tra cứu bằng mã đơn + SĐT",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders/{{orderCode}}?phone={{phone}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders",
+                "{{orderCode}}"
+              ],
+              "query": [
+                {
+                  "key": "phone",
+                  "value": "{{phone}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"đúng đơn, có dòng hàng\", function () { const o = pm.response.json().data; pm.expect(o.code).to.eql(pm.collectionVariables.get('orderCode')); pm.expect(o.items).to.have.lengthOf(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Sai SĐT thì không tra được (404, không lộ đơn tồn tại)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders/{{orderCode}}?phone=0900000001",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders",
+                "{{orderCode}}"
+              ],
+              "query": [
+                {
+                  "key": "phone",
+                  "value": "0900000001"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"lỗi NOT_FOUND theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"NOT_FOUND\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Khách tự hủy đơn thứ hai khi chưa giao",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders/{{orderCode2}}/cancel",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders",
+                "{{orderCode2}}",
+                "cancel"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{phone2}}\",\n  \"reason\": \"Đặt nhầm\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"CANCELLED\", function () { pm.expect(pm.response.json().data.status).to.eql('CANCELLED'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 Hủy lần hai bị từ chối",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders/{{orderCode2}}/cancel",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders",
+                "{{orderCode2}}",
+                "cancel"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{phone2}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"lỗi BUSINESS_RULE_VIOLATION theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"BUSINESS_RULE_VIOLATION\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Quản trị đơn (ADMIN)",
+      "item": [
+        {
+          "name": "3.1 CTV không xem được danh sách đơn quản trị",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", function () { pm.response.to.have.status(403); });",
+                  "pm.test(\"lỗi FORBIDDEN theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"FORBIDDEN\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 Tìm đơn theo mã",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders?q={{orderCode}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{orderCode}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"thấy đúng 1 đơn, lấy id\", function () { const d = pm.response.json().data; pm.expect(d).to.have.lengthOf(1); pm.expect(d[0].code).to.eql(pm.collectionVariables.get('orderCode')); });",
+                  "pm.collectionVariables.set(\"orderId\", pm.response.json().data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 Lọc theo trạng thái",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders?filter[status]=PLACED&pageSize=100",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "filter[status]",
+                  "value": "PLACED"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "100"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"toàn đơn PLACED\", function () { pm.response.json().data.forEach(function (o) { pm.expect(o.status).to.eql('PLACED'); }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.4 Xem chi tiết đơn",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"có lịch sử trạng thái và dòng hàng\", function () { const o = pm.response.json().data; pm.expect(o.items).to.have.lengthOf(1); pm.expect(o.history.length).to.be.at.least(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.5 Không được giao khi chưa xác nhận (sai luồng)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId}}/ship",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "ship"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"lỗi BUSINESS_RULE_VIOLATION theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"BUSINESS_RULE_VIOLATION\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.6 Xác nhận đơn",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId}}/confirm",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "confirm"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"CONFIRMED\", function () { pm.expect(pm.response.json().data.status).to.eql('CONFIRMED'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.7 Giao cho vận chuyển",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId}}/ship",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "ship"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"SHIPPING\", function () { pm.expect(pm.response.json().data.status).to.eql('SHIPPING'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.8 Khách không hủy được khi đã giao vận chuyển",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders/{{orderCode}}/cancel",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders",
+                "{{orderCode}}",
+                "cancel"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"lỗi BUSINESS_RULE_VIOLATION theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"BUSINESS_RULE_VIOLATION\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.9 Đã giao tới khách",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId}}/deliver",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "deliver"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"DELIVERED\", function () { pm.expect(pm.response.json().data.status).to.eql('DELIVERED'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.10 Đơn nằm trong hàng chờ CSKH",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/cskh-queue?pageSize=100",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "cskh-queue"
+              ],
+              "query": [
+                {
+                  "key": "pageSize",
+                  "value": "100"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"có đơn vừa giao\", function () { pm.expect(pm.response.json().data.some(function (o) { return o.code === pm.collectionVariables.get('orderCode'); })).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.11 CSKH ghi chú liên hệ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId}}/care-notes",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "care-notes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Đã gọi, khách báo nhận hàng tốt\",\n  \"contactChannel\": \"CALL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"kênh CALL\", function () { pm.expect(pm.response.json().data.contactChannel).to.eql('CALL'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.12 Ghi chú kênh liên hệ lạ bị từ chối",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId}}/care-notes",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "care-notes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"x\",\n  \"contactChannel\": \"FAX\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.13 Khách xác nhận đã nhận hàng",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders/{{orderCode}}/confirm-received",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders",
+                "{{orderCode}}",
+                "confirm-received"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"COMPLETED\", function () { pm.expect(pm.response.json().data.status).to.eql('COMPLETED'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.14 Admin ghi nhận đã thu tiền COD",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId}}/payment",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "payment"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PAID\",\n  \"note\": \"Thu tiền khi giao\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"PAID\", function () { pm.expect(pm.response.json().data.paymentStatus).to.eql('PAID'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.15 Trạng thái thanh toán lạ bị từ chối",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId}}/payment",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "payment"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"LOST\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.16 Khách đặt thêm một đơn để thử hủy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"paymentMethod\": \"COD\",\n  \"customer\": {\n    \"fullName\": \"Postman Khách {{rid}}\",\n    \"phone\": \"{{phone}}\",\n    \"province\": \"Thành phố Hà Nội\",\n    \"ward\": \"Phường Cầu Giấy\",\n    \"addressLine\": \"12 Trần Thái Tông\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"orderCode3\", pm.response.json().data.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.17 Lấy id đơn mới",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders?q={{orderCode3}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{orderCode3}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set(\"orderId3\", pm.response.json().data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.18 Admin hủy mà không nêu lý do",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId3}}/cancel",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId3}}",
+                "cancel"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.19 Admin hủy kèm lý do",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId3}}/cancel",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId3}}",
+                "cancel"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Khách gọi hủy\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"CANCELLED, ghi lý do\", function () { const o = pm.response.json().data; pm.expect(o.status).to.eql('CANCELLED'); pm.expect(JSON.stringify(o)).to.include('Khách gọi hủy'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.20 Không ghi nhận thanh toán cho đơn đã hủy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId3}}/payment",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId3}}",
+                "payment"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PAID\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"lỗi BUSINESS_RULE_VIOLATION theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"BUSINESS_RULE_VIOLATION\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.21 Đơn đã COMPLETED không còn trả hàng được (chỉ trả được đơn vừa giao)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId}}/return",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "return"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Khách trả vì sai quy cách\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"lỗi BUSINESS_RULE_VIOLATION theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"BUSINESS_RULE_VIOLATION\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Kho theo đơn (tự động qua sự kiện)",
+      "item": [
+        {
+          "name": "4.1 Tồn kho sau các đơn: 10 - 2 (đơn 1) - 1 (đơn QR) = 7",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/products/{{productId}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Hủy đơn phát sự kiện qua RabbitMQ, catalog trả hàng về kho (bất đồng bộ nên chờ vài giây)."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _end = Date.now() + 2500; while (Date.now() < _end) {}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"tồn = 7; đơn 3 (5 sản phẩm) đã bị hủy nên được trả hàng về kho\", function () { pm.expect(pm.response.json().data.stockQuantity).to.eql(7); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

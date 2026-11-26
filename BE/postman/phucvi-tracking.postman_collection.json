@@ -1,0 +1,1356 @@
+{
+  "info": {
+    "name": "Phúc Vị Foods - Service tracking",
+    "description": "Lượt bấm link, tương tác, thống kê của CTV (qua gateway). Tracking hỏi affiliate để xác nhận mã nên cần cả hai service. Chạy theo thứ tự từ trên xuống.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "ctvToken",
+      "value": ""
+    },
+    {
+      "key": "ctvEmail",
+      "value": ""
+    },
+    {
+      "key": "ctvUserId",
+      "value": ""
+    },
+    {
+      "key": "rid",
+      "value": ""
+    },
+    {
+      "key": "categoryId",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "productSlug",
+      "value": ""
+    },
+    {
+      "key": "ctvPhone",
+      "value": ""
+    },
+    {
+      "key": "refCode",
+      "value": ""
+    },
+    {
+      "key": "refCodeUpper",
+      "value": ""
+    },
+    {
+      "key": "contractStart",
+      "value": ""
+    },
+    {
+      "key": "contractEnd",
+      "value": ""
+    },
+    {
+      "key": "affiliateId",
+      "value": ""
+    },
+    {
+      "key": "linkId",
+      "value": ""
+    },
+    {
+      "key": "visitorId",
+      "value": ""
+    },
+    {
+      "key": "cookie",
+      "value": ""
+    },
+    {
+      "key": "cookieObj",
+      "value": ""
+    },
+    {
+      "key": "phone",
+      "value": ""
+    },
+    {
+      "key": "orderCode",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Chuẩn bị",
+      "item": [
+        {
+          "name": "0.1 Đăng nhập admin (tài khoản seed)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/auth/login",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Tài khoản admin của seed (xem environment). Lưu adminToken."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"có accessToken\", function () { pm.expect(pm.response.json().data.accessToken).to.be.a('string'); });",
+                  "pm.collectionVariables.set(\"adminToken\", pm.response.json().data.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.2 Đăng ký tài khoản CTV",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/auth/register",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ctvEmail}}\",\n  \"password\": \"Matkhau2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Tạo tài khoản test postman-*@example.com. Lưu ctvToken."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);",
+                  "pm.collectionVariables.set(\"ctvEmail\", `postman-${id}@example.com`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"vai trò AFFILIATE\", function () { pm.expect(pm.response.json().data.user.role).to.eql('AFFILIATE'); });",
+                  "pm.collectionVariables.set(\"ctvToken\", pm.response.json().data.accessToken);",
+                  "pm.collectionVariables.set(\"ctvUserId\", pm.response.json().data.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.3 Admin tạo danh mục",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/categories",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Tracking {{rid}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);",
+                  "pm.collectionVariables.set(\"rid\", id);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"categoryId\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.4 Admin tạo sản phẩm",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/products",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "products"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Postman Tracking {{rid}}\",\n  \"price\": 100000,\n  \"stockQuantity\": 20,\n  \"unit\": \"hộp 500g\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"giá và tồn đúng\", function () { const p = pm.response.json().data; pm.expect(p.price).to.eql(100000); pm.expect(p.stockQuantity).to.eql(20); });",
+                  "pm.collectionVariables.set(\"productId\", pm.response.json().data.id);",
+                  "pm.collectionVariables.set(\"productSlug\", pm.response.json().data.slug);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.5 CTV đăng ký hồ sơ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/affiliate",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "affiliate"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Postman CTV {{rid}}\",\n  \"phone\": \"{{ctvPhone}}\",\n  \"referralCode\": \"{{refCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"ctvPhone\", '09' + String(Math.floor(10000000 + Math.random() * 89999999)));",
+                  "pm.collectionVariables.set(\"refCode\", 'pm' + Math.random().toString(36).slice(2, 8));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"affiliateId\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.6 Admin duyệt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/affiliates/{{affiliateId}}/approve",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "affiliates",
+                "{{affiliateId}}",
+                "approve"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contractStart\": \"{{contractStart}}\",\n  \"contractEnd\": \"{{contractEnd}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d0 = new Date(); const iso = function (d) { return d.toISOString().slice(0, 10); }; pm.collectionVariables.set('contractStart', iso(new Date(d0.getTime() - 86400000))); pm.collectionVariables.set('contractEnd', iso(new Date(d0.getTime() + 365 * 86400000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.7 CTV tạo link kênh tiktok",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/links",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "links"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channelCode\": \"tiktok\",\n  \"label\": \"TikTok\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"linkId\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Bấm link giới thiệu (công khai)",
+      "item": [
+        {
+          "name": "1.1 Bấm link kênh tiktok: trả cookie, gắn link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/referrals/click",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "referrals",
+                "click"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{refCodeUpper}}\",\n  \"channel\": \"TikTok\",\n  \"landingPath\": \"/r/{{refCode}}?c=tiktok\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Tracking hỏi affiliate để xác nhận mã và lấy link theo kênh, rồi ghi lượt bấm."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set('refCodeUpper', pm.collectionVariables.get('refCode').toUpperCase());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"valid, cookie đúng mã, kênh chữ thường, 30 ngày\", function () { const d = pm.response.json().data; pm.expect(d.valid).to.eql(true); pm.expect(d.cookie.code).to.eql(pm.collectionVariables.get('refCode')); pm.expect(d.cookie.channelCode).to.eql('tiktok'); pm.expect(d.cookie.maxAgeDays).to.eql(30); });",
+                  "pm.test(\"cấp visitorId UUID\", function () { pm.expect(pm.response.json().data.visitorId).to.match(/^[0-9a-f-]{36}$/); });",
+                  "pm.collectionVariables.set(\"visitorId\", pm.response.json().data.visitorId);",
+                  "pm.collectionVariables.set(\"cookie\", JSON.stringify(pm.response.json().data.cookie));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Bấm lại với cùng visitorId, kênh chưa có link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/referrals/click",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "referrals",
+                "click"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{refCode}}\",\n  \"channel\": \"zalo\",\n  \"visitorId\": \"{{visitorId}}\",\n  \"landingPath\": \"/r/x\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"giữ visitorId\", function () { pm.expect(pm.response.json().data.visitorId).to.eql(pm.collectionVariables.get('visitorId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Mã không tồn tại: không cấp cookie",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/referrals/click",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "referrals",
+                "click"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"khongco123\",\n  \"landingPath\": \"/r/x\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"valid:false\", function () { pm.expect(pm.response.json().data).to.eql({ valid: false }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.4 Thiếu landingPath",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/referrals/click",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "referrals",
+                "click"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{refCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.5 visitorId không phải UUID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/referrals/click",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "referrals",
+                "click"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{refCode}}\",\n  \"visitorId\": \"abc\",\n  \"landingPath\": \"/r/x\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Tương tác của người xem",
+      "item": [
+        {
+          "name": "2.1 Xem sản phẩm",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/tracking/events",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "tracking",
+                "events"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{refCode}}\",\n  \"visitorId\": \"{{visitorId}}\",\n  \"type\": \"PRODUCT_VIEW\",\n  \"productId\": \"{{productId}}\",\n  \"channel\": \"tiktok\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"recorded\", function () { pm.expect(pm.response.json().data).to.eql({ recorded: true }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Thêm vào giỏ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/tracking/events",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "tracking",
+                "events"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{refCode}}\",\n  \"visitorId\": \"{{visitorId}}\",\n  \"type\": \"ADD_TO_CART\",\n  \"productId\": \"{{productId}}\",\n  \"channel\": \"tiktok\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"recorded\", function () { pm.expect(pm.response.json().data.recorded).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Bắt đầu thanh toán",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/tracking/events",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "tracking",
+                "events"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{refCode}}\",\n  \"visitorId\": \"{{visitorId}}\",\n  \"type\": \"CHECKOUT_START\",\n  \"channel\": \"tiktok\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"recorded\", function () { pm.expect(pm.response.json().data.recorded).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 Loại sự kiện lạ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/tracking/events",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "tracking",
+                "events"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{refCode}}\",\n  \"visitorId\": \"{{visitorId}}\",\n  \"type\": \"HACK\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.5 Mã sai: bỏ qua êm",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/tracking/events",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "tracking",
+                "events"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"khongco123\",\n  \"visitorId\": \"{{visitorId}}\",\n  \"type\": \"PRODUCT_VIEW\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"recorded:false\", function () { pm.expect(pm.response.json().data).to.eql({ recorded: false }); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Thống kê của CTV",
+      "item": [
+        {
+          "name": "3.1 Thống kê 30 ngày",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/stats",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "stats"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"2 lượt bấm, 1 người xem\", function () { const c = pm.response.json().data.clicks; pm.expect(c.total).to.eql(2); pm.expect(c.uniqueVisitors).to.eql(1); });",
+                  "pm.test(\"theo kênh: tiktok 1, zalo 1\", function () { const by = {}; pm.response.json().data.clicks.byChannel.forEach(function (x) { by[x.channelCode] = x.clicks; }); pm.expect(by).to.eql({ tiktok: 1, zalo: 1 }); });",
+                  "pm.test(\"sự kiện theo loại\", function () { const e = pm.response.json().data.events; const t = e.map(function (x) { return x.type; }).sort(); pm.expect(t).to.eql(['ADD_TO_CART', 'CHECKOUT_START', 'PRODUCT_VIEW']); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 Khoảng ngày trong tương lai thì trống",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/stats?from={{future1}}&to={{future2}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "stats"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{future1}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{future2}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set('future1', new Date(Date.now() + 86400000).toISOString()); pm.variables.set('future2', new Date(Date.now() + 2 * 86400000).toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"0 lượt bấm\", function () { pm.expect(pm.response.json().data.clicks.total).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 Ngày sai định dạng",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/stats?from=khongphaingay",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "stats"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "khongphaingay"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.4 from sau to",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/stats?from=2099-01-01",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "stats"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2099-01-01"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.5 Không đăng nhập",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/stats",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "stats"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"lỗi UNAUTHORIZED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"UNAUTHORIZED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.6 Admin không xem thống kê CTV",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/stats",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "stats"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", function () { pm.response.to.have.status(403); });",
+                  "pm.test(\"lỗi FORBIDDEN theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"FORBIDDEN\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Cookie từ tracking dùng được khi đặt hàng",
+      "item": [
+        {
+          "name": "4.1 Khách đặt hàng kèm cookie vừa nhận từ tracking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"paymentMethod\": \"COD\",\n  \"customer\": {\n    \"fullName\": \"Postman Khách {{rid}}\",\n    \"phone\": \"{{phone}}\",\n    \"province\": \"Thành phố Hà Nội\",\n    \"ward\": \"Phường Cầu Giấy\",\n    \"addressLine\": \"12 Trần Thái Tông\"\n  },\n  \"cookie\": {{cookie}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);",
+                  "pm.collectionVariables.set(\"rid\", id);",
+                  "pm.collectionVariables.set(\"phone\", '09' + String(Math.floor(10000000 + Math.random() * 89999999)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"orderCode\", pm.response.json().data.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 CTV thấy đơn được ghi nhận theo link (kênh tiktok, không phải tự mua)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"đơn thuộc CTV, kênh tiktok\", function () { const o = pm.response.json().data.find(function (x) { return x.code === pm.collectionVariables.get('orderCode'); }); pm.expect(o).to.be.an('object'); pm.expect(o.channelCode).to.eql('tiktok'); pm.expect(o.isSelfPurchase).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
