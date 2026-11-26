@@ -14,7 +14,14 @@ const env = {
 
 describe('loadConfig', () => {
   it('đọc cấu hình hợp lệ với giá trị mặc định', () => {
-    expect(loadConfig(env)).toMatchObject({ port: 3003, eventQueue: 'catalog.stock', relayEnabled: true });
+    expect(loadConfig(env)).toMatchObject({
+      port: 3003, eventQueue: 'catalog.stock', relayEnabled: true, orderingUrl: 'http://localhost:3004/api', downstreamTimeoutMs: 5000,
+      orphanSweepEnabled: true, orphanSweepIntervalMs: 300_000, orphanMinAgeMinutes: 10, orphanLookbackHours: 24,
+    });
+  });
+  it('cấu hình job dọn hàng giữ mồ côi: tắt được, giá trị sai bị báo', () => {
+    expect(loadConfig({ ...env, ORPHAN_SWEEP_ENABLED: 'false', ORPHAN_MIN_AGE_MINUTES: '30' })).toMatchObject({ orphanSweepEnabled: false, orphanMinAgeMinutes: 30 });
+    expect(() => loadConfig({ ...env, ORPHAN_MIN_AGE_MINUTES: '0', ORDERING_URL: 'khong-phai-url' })).toThrowError(/ORPHAN_MIN_AGE_MINUTES[\s\S]*ORDERING_URL/);
   });
   it('báo tất cả lỗi một lượt', () => {
     expect(() => loadConfig({ INTERNAL_API_KEY: 'x', PORT: 'abc' })).toThrowError(

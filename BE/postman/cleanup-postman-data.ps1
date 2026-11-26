@@ -1,4 +1,4 @@
-# Dọn dữ liệu do các collection Postman tạo ra (chỉ xóa dòng có tiền tố "Postman" hoặc email postman-*@example.com).
+﻿# Dọn dữ liệu do các collection Postman tạo ra (chỉ xóa dòng có tiền tố "Postman" hoặc email postman-*@example.com).
 # Dùng container Postgres của docker compose (mặc định: phucvi-postgres). Chạy: powershell -File BE/postman/cleanup-postman-data.ps1
 param([string]$Container = 'phucvi-postgres')
 

@@ -191,6 +191,7 @@ erDiagram
     bool is_self_purchase
     text ship_name "snapshot giao hàng"
     timestamptz placed_at
+    timestamptz payment_due_at "hạn thanh toán đơn chuyển khoản; NULL = không hết hạn"
     timestamptz delivered_at
     timestamptz completed_at
   }

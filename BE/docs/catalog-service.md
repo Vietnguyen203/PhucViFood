@@ -62,6 +62,25 @@ Giá trong snapshot là giá **tại lúc giữ hàng**. Nếu phát lại (`rep
 | `CATALOG_EVENT_QUEUE` | `catalog.stock` | |
 | `OUTBOX_RELAY_ENABLED` | `true` | |
 
+## 4b. Dọn hàng giữ cho đơn không tồn tại
+
+Ordering giữ hàng ở catalog **trước** khi tạo đơn. Nếu ordering sập (hoặc việc trả hàng bồi hoàn thất bại) đúng giữa hai bước đó thì hàng bị trừ mà không có đơn nào để hủy hay trả. Job `OrphanReservationsService` xử lý phần hàng bị sót này:
+
+1. Mỗi `ORPHAN_SWEEP_INTERVAL_MS` (mặc định 5 phút) lấy các lần giữ hàng **chưa được trả**, cũ hơn `ORPHAN_MIN_AGE_MINUTES` (mặc định 10 phút, đủ chắc chắn ordering đã tạo xong đơn nếu có) và trong `ORPHAN_LOOKBACK_HOURS` (mặc định 24 giờ) gần nhất.
+2. Hỏi ordering (`POST /internal/orders/existence`) mã nào có đơn thật.
+3. Trả hàng về kho cho các mã **không có đơn**; ghi cảnh báo kèm danh sách mã.
+
+**An toàn:** chỉ trả hàng khi ordering đã trả lời thành công. Ordering không trả lời (sập, treo, mạch ngắt) thì bỏ lượt và không đoán, vì trả nhầm hàng của đơn thật sẽ làm bán quá tồn kho. Duyệt phân trang theo thứ tự mới nhất trước, nên khối lượng lớn vẫn kiểm tra được lần giữ hàng mới.
+
+| Biến | Mặc định | Ý nghĩa |
+|---|---|---|
+| `ORDERING_URL` | `http://localhost:3004/api` | Địa chỉ ordering (dùng chung biến với customer) |
+| `ORPHAN_SWEEP_ENABLED` | `true` | Bật job |
+| `ORPHAN_SWEEP_INTERVAL_MS` | 300000 | Khoảng giữa hai lượt |
+| `ORPHAN_MIN_AGE_MINUTES` | 10 | Chỉ xét lần giữ hàng cũ hơn |
+| `ORPHAN_LOOKBACK_HOURS` | 24 | Chỉ xét trong khoảng gần đây |
+| `DOWNSTREAM_TIMEOUT_MS`, `DOWNSTREAM_RETRY_*`, `DOWNSTREAM_BREAKER_*` | xem `shared-library.md` | Retry và ngắt mạch khi gọi ordering |
+
 ## 5. Chạy và kiểm thử
 
 ```powershell
@@ -78,5 +97,5 @@ Test tích hợp tạo dữ liệu riêng (slug bắt đầu bằng `it-`) rồi
 - Một sản phẩm thuộc đúng một danh mục, danh mục phẳng (không có cấp cha con).
 - Chưa có biến thể (size, vị) hay nhiều ảnh cho một sản phẩm.
 - Chưa có cảnh báo sắp hết hàng; chưa phát sự kiện khi tồn kho hoặc giá thay đổi.
-- Chưa giữ hàng có thời hạn: hàng đã giữ cho đơn chỉ được trả khi đơn bị hủy hoặc ordering gọi `release`.
+- Giữ hàng có thời hạn chỉ ở mức dọn dẹp: đơn chuyển khoản quá hạn do ordering hủy (xem `ordering-service.md` mục 3b), hàng giữ cho đơn không tồn tại do job dưới đây trả lại. Chưa có hạn giữ hàng ở giỏ hàng (trước khi đặt).
 - API công khai được gateway giới hạn tốc độ theo IP; gọi thẳng vào service thì không có giới hạn (xem `gateway-service.md`).

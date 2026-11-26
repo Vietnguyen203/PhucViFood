@@ -295,6 +295,7 @@ export const ORDERING_SETTINGS = [
   { key: 'shipping.flat_fee', value: SHIPPING_FLAT, description: 'Phí ship đồng giá (VND)' },
   { key: 'shipping.free_threshold', value: FREE_SHIP_THRESHOLD, description: 'Miễn phí ship khi tổng giá sản phẩm từ mức này (VND)' },
   // Thông tin nhận chuyển khoản QR (giá trị mẫu cho demo, thay bằng tài khoản thật của công ty).
+  { key: 'payment.hold_minutes', value: 1440, description: 'Số phút giữ hàng cho đơn chuyển khoản chưa thanh toán; quá hạn đơn tự bị hủy' },
   { key: 'payment.bank_name', value: 'Vietcombank', description: 'Ngân hàng nhận tiền chuyển khoản' },
   { key: 'payment.bank_account_no', value: '0011000000000', description: 'Số tài khoản nhận tiền' },
   { key: 'payment.bank_account_holder', value: 'CONG TY PHUC VI FOODS', description: 'Tên chủ tài khoản' },

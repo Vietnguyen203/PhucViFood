@@ -35,7 +35,7 @@ export function toAdminView(o: OrderFull) {
     },
     shipping: { name: o.shipName, phone: o.shipPhone, province: o.shipProvince, ward: o.shipWard, addressLine: o.shipAddressLine },
     customerNote: o.customerNote,
-    placedAt: o.placedAt, deliveredAt: o.deliveredAt, completedAt: o.completedAt, cancelledAt: o.cancelledAt, returnedAt: o.returnedAt,
+    placedAt: o.placedAt, paymentDueAt: o.paymentDueAt, deliveredAt: o.deliveredAt, completedAt: o.completedAt, cancelledAt: o.cancelledAt, returnedAt: o.returnedAt,
     receivedBy: ReceivedByCodec.toNameOrNull(o.receivedBy), cancelReason: o.cancelReason,
     ...(o.items ? { items: o.items.map(itemView) } : {}),
     ...(o.history ? { history: [...o.history].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()).map(historyView) } : {}),
@@ -50,7 +50,8 @@ export function transferInstructions(o: Order, bank: BankAccount | null) {
   const isQr = PaymentMethodCodec.toName(o.paymentMethod) === 'BANK_QR';
   const unpaid = PaymentStatusCodec.toName(o.paymentStatus) === 'UNPAID';
   if (!isQr || !unpaid || !bank) return undefined;
-  return { ...bank, amount: o.totalAmount, content: o.code };
+  // dueAt: quá hạn này chưa thanh toán thì đơn tự bị hủy và hàng được trả về kho.
+  return { ...bank, amount: o.totalAmount, content: o.code, dueAt: o.paymentDueAt };
 }
 
 /** Dữ liệu cho khách tra cứu bằng mã đơn + SĐT: chỉ những gì khách đã biết, không có ghi nhận CTV hay ghi chú nội bộ. */

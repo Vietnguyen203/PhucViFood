@@ -1,5 +1,7 @@
 // Test tích hợp service catalog: Postgres (catalog_db) + RabbitMQ thật, gọi API qua HTTP thật.
 // Chạy: pnpm --filter @phucvi/catalog test:integration
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import * as amqp from 'amqplib';
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -12,6 +14,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
 import { loadConfig, type AppConfig } from '../../src/config/app-config';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { OrphanReservationsService } from '../../src/stock/orphan-reservations.service';
 
 const enabled = process.env.RUN_INTEGRATION === '1';
 const DB_URL = process.env.CATALOG_DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5433/catalog_db';
@@ -19,7 +22,39 @@ const RABBIT_URL = process.env.RABBITMQ_URL ?? 'amqp://phucvi:phucvi@localhost:5
 const INTERNAL_KEY = 'integration-internal-key-1234567890';
 const rand = (n = 6) => Math.random().toString(36).slice(2, 2 + n).padEnd(n, '0');
 
+
+// ───────── Ordering giả: chỉ trả lời "mã đơn nào có thật" ─────────
+class FakeOrdering {
+  private server!: Server;
+  url = '';
+  mode: 'ok' | 'down' = 'ok';
+  readonly orders = new Set<string>();
+  calls = 0;
+
+  async start() {
+    this.server = createServer((req, res) => {
+      let raw = '';
+      req.on('data', (c) => (raw += c));
+      req.on('end', () => {
+        const send = (status: number, body: unknown) => { res.writeHead(status, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
+        if (req.headers['x-internal-key'] !== INTERNAL_KEY) return send(401, { success: false, error: { code: 'UNAUTHORIZED', message: 'sai khóa' } });
+        this.calls++;
+        if (this.mode === 'down') return send(500, { success: false, error: { code: 'INTERNAL_ERROR', message: 'lỗi' } });
+        if (req.url?.endsWith('/internal/orders/existence')) {
+          const ids: string[] = JSON.parse(raw).orderIds;
+          return send(200, { success: true, data: { existing: ids.filter((i) => this.orders.has(i)) } });
+        }
+        return send(404, { success: false, error: { code: 'NOT_FOUND', message: 'không có route' } });
+      });
+    });
+    await new Promise<void>((r) => this.server.listen(0, '127.0.0.1', r));
+    this.url = `http://127.0.0.1:${(this.server.address() as AddressInfo).port}`;
+  }
+  async stop() { this.server.closeAllConnections(); await new Promise<void>((r) => this.server.close(() => r())); }
+}
+
 describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)', () => {
+  const ordering = new FakeOrdering();
   let app: INestApplication;
   let prisma: PrismaService;
   let config: AppConfig;
@@ -84,10 +119,13 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
   }, `sự kiện ${eventId} được xử lý`);
 
   beforeAll(async () => {
+    await ordering.start();
     process.env.CATALOG_DATABASE_URL = DB_URL;
     config = loadConfig({
       CATALOG_DATABASE_URL: DB_URL, RABBITMQ_URL: RABBIT_URL, JWT_ACCESS_SECRET: 'integration-test-secret-integration-test-secret',
       JWT_ISSUER: 'phucvi-it', INTERNAL_API_KEY: INTERNAL_KEY, CATALOG_EVENT_QUEUE: `catalog.it.${rand(8)}`, OUTBOX_RELAY_ENABLED: 'false',
+      ORDERING_URL: `${ordering.url}/api`, ORPHAN_SWEEP_ENABLED: 'false', // test gọi runOnce() trực tiếp
+      DOWNSTREAM_TIMEOUT_MS: '1500', DOWNSTREAM_BREAKER_THRESHOLD: '1000', DOWNSTREAM_RETRY_ATTEMPTS: '2', DOWNSTREAM_RETRY_BASE_MS: '10',
     });
     app = await NestFactory.create(AppModule.forRoot(config), { logger: false });
     setupApp(app, { globalPrefix: 'api' });
@@ -108,6 +146,7 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
     await ch.deleteQueue(config.eventQueue).catch(() => undefined);
     await ch.deleteQueue(`${config.eventQueue}.dlq`).catch(() => undefined);
     await rawConn.close();
+    await ordering.stop();
     await publisher.close();
     await app.close();
   });
@@ -425,6 +464,81 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
   });
 
   // ═════════════════════════ Trả hàng ═════════════════════════
+  // ═════════════════════════ Dọn hàng giữ cho đơn không tồn tại ═════════════════════════
+  describe('dọn hàng giữ cho đơn không bao giờ được tạo', () => {
+    const sweeper = () => app.get(OrphanReservationsService);
+    const ageMovements = (orderIds: string[], minutes: number) =>
+      prisma.$executeRawUnsafe(`UPDATE catalog.stock_movements SET created_at = now() - make_interval(mins => $1::int) WHERE order_id = ANY($2::uuid[])`, minutes, orderIds);
+    const reserved = async (qty = 3) => {
+      const p = await dbProduct({ stock: 10 });
+      const orderId = uuidv7();
+      expect((await reserve(orderId, [{ productId: p.id, quantity: qty }])).status).toBe(200);
+      return { p, orderId };
+    };
+
+    it('trả hàng cho đơn không có ở ordering; giữ nguyên đơn có thật và đơn còn quá mới', async () => {
+      const orphan = await reserved();
+      const legit = await reserved();
+      const young = await reserved(); // vừa giữ hàng: ordering có thể đang tạo đơn, chưa được đụng tới
+      ordering.orders.add(legit.orderId);
+      await ageMovements([orphan.orderId, legit.orderId], 20);
+
+      const r = await sweeper().runOnce();
+      expect(r.skipped).toBe(false);
+      expect(r.released).toContain(orphan.orderId);
+      expect(r.released).not.toContain(legit.orderId);
+      expect(r.released).not.toContain(young.orderId);
+
+      expect(await stockOf(orphan.p.id)).toBe(10); // đã trả đủ
+      expect(await stockOf(legit.p.id)).toBe(7); // vẫn đang giữ cho đơn thật
+      expect(await stockOf(young.p.id)).toBe(7);
+      const moves = await movementsOf(orphan.orderId);
+      expect(moves.map((m) => m.reason)).toEqual([StockMovementReasonCode.ORDER_PLACED, StockMovementReasonCode.ORDER_CANCELLED]);
+    });
+
+    it('lượt sau không trả lại lần hai và không xét lại đơn đã trả', async () => {
+      const orphan = await reserved();
+      await ageMovements([orphan.orderId], 20);
+      expect((await sweeper().runOnce()).released).toContain(orphan.orderId);
+      expect((await sweeper().runOnce()).released).not.toContain(orphan.orderId);
+      expect(await stockOf(orphan.p.id)).toBe(10);
+      expect((await movementsOf(orphan.orderId)).filter((m) => m.reason === StockMovementReasonCode.ORDER_CANCELLED)).toHaveLength(1);
+    });
+
+    it('ordering không trả lời: bỏ lượt, KHÔNG trả hàng (không đoán); ordering sống lại thì trả', async () => {
+      const orphan = await reserved();
+      await ageMovements([orphan.orderId], 20);
+
+      ordering.mode = 'down';
+      const down = await sweeper().runOnce();
+      expect(down.skipped).toBe(true);
+      expect(down.released).toEqual([]);
+      expect(await stockOf(orphan.p.id)).toBe(7);
+
+      ordering.mode = 'ok';
+      expect((await sweeper().runOnce()).released).toContain(orphan.orderId);
+      expect(await stockOf(orphan.p.id)).toBe(10);
+    });
+
+    it('chỉ xét trong khoảng thời gian gần đây: lần giữ hàng cũ hơn 24 giờ không bị đụng', async () => {
+      const old = await reserved();
+      await ageMovements([old.orderId], 25 * 60);
+      expect((await sweeper().runOnce()).released).not.toContain(old.orderId);
+      expect(await stockOf(old.p.id)).toBe(7);
+    });
+
+    it('đơn đã được trả hàng bằng đường thường (hủy đơn) thì không xét nữa', async () => {
+      const x = await reserved();
+      await ageMovements([x.orderId], 20);
+      expect((await release(x.orderId)).status).toBe(200);
+      const before = ordering.calls;
+      const r = await sweeper().runOnce();
+      expect(r.released).not.toContain(x.orderId);
+      expect(await stockOf(x.p.id)).toBe(10);
+      expect(ordering.calls).toBeGreaterThanOrEqual(before); // có thể hỏi ordering về đơn khác, nhưng không về đơn này
+    });
+  });
+
   describe('trả hàng (internal/stock/release và sự kiện đơn hủy)', () => {
     it('trả hàng về kho, idempotent; đơn chưa giữ hàng thì không làm gì', async () => {
       const p = await dbProduct({ stock: 10 });

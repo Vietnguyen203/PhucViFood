@@ -3,6 +3,7 @@ import { AppException, ParamTypes, ValidBody } from '@phucvi/shared-library/api'
 import { InternalKeyGuard, Public } from '@phucvi/shared-library/auth';
 import { isUuid } from '@phucvi/shared-library/utils';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsUUID } from 'class-validator';
+import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatsService } from './order-stats.service';
 
 export class OrderStatsRequestDto {
@@ -29,5 +30,28 @@ export class CustomerStatsController {
     const n = limit === undefined ? 10 : Number(limit);
     if (!Number.isInteger(n) || n < 1 || n > 50) throw AppException.validation([{ field: 'limit', messages: ['limit là số nguyên từ 1 đến 50'] }]);
     return this.stats.recentOrders(customerId, n);
+  }
+}
+
+export class OrderExistenceRequestDto {
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(500) @IsUUID('all', { each: true })
+  orderIds!: string[];
+}
+
+/** API nội bộ cho service catalog (cần header x-internal-key). */
+@Public()
+@UseGuards(InternalKeyGuard)
+@Controller('internal/orders')
+export class InternalOrdersController {
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+
+  /**
+   * Trong các mã đơn đã cho, mã nào có đơn thật. Catalog dùng để phát hiện hàng đã giữ cho đơn không bao giờ được tạo
+   * (ordering sập giữa lúc giữ hàng và lúc tạo đơn) rồi trả hàng về kho.
+   */
+  @Post('existence') @HttpCode(200)
+  async existence(@ValidBody(OrderExistenceRequestDto) dto: OrderExistenceRequestDto) {
+    const rows = await this.prisma.order.findMany({ where: { id: { in: [...new Set(dto.orderIds)] } }, select: { id: true } });
+    return { existing: rows.map((r) => r.id) };
   }
 }

@@ -141,6 +141,8 @@ export class OrderPlacementService {
     const method = a.dto.paymentMethod as PaymentMethod;
     const paymentStatus = method === 'COD' ? 'PENDING' : 'UNPAID'; // COD thu khi giao; chuyển khoản chờ admin đối soát
     const c = a.dto.customer;
+    // Đơn chuyển khoản chưa trả chỉ được giữ hàng đến hạn này; COD không hết hạn.
+    const paymentDueAt = method === 'BANK_QR' ? new Date(a.placedAt.getTime() + (await this.settings.paymentHoldMinutes()) * 60_000) : null;
 
     for (let attempt = 1; ; attempt++) {
       const code = generateOrderCode(a.placedAt);
@@ -157,7 +159,7 @@ export class OrderPlacementService {
               attributionSource: AttributionSourceCodec.toCodeOrNull(a.attribution.attributionSource),
               isSelfPurchase: a.attribution.isSelfPurchase,
               shipName: c.fullName, shipPhone: a.phone, shipProvince: c.province, shipWard: c.ward, shipAddressLine: c.addressLine,
-              customerNote: a.dto.note, placedAt: a.placedAt,
+              customerNote: a.dto.note, placedAt: a.placedAt, paymentDueAt,
               items: { create: items.map((i) => ({ productId: i.productId, productName: i.name, unitPrice: BigInt(i.unitPrice), quantity: i.quantity, lineTotal: i.lineTotal })) },
               history: { create: { fromStatus: null, toStatus: OrderStatusCodec.toCode('PLACED'), actorType: ActorTypeCodec.toCode('CUSTOMER') } },
             },

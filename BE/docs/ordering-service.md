@@ -72,6 +72,16 @@ Tiền được tính lại ở ordering từ snapshot (không tin `lineTotal` h
 - **Thanh toán:** COD `PENDING → PAID` (admin ghi nhận đã thu), chuyển khoản `UNPAID → PAID` (đối soát tay), `PAID → REFUNDED`. Mỗi lần đổi ghi vào lịch sử đơn (dòng có `fromStatus = toStatus` và ghi chú). Không ghi nhận thanh toán cho đơn đã hủy hoặc đã trả.
 - **Hủy đơn** phát sự kiện nên catalog tự trả hàng và affiliate tự hủy hoa hồng.
 
+## 3b. Hạn thanh toán và tự hủy đơn quá hạn
+
+Đơn chuyển khoản (`BANK_QR`) khi tạo được gắn `payment_due_at` = lúc đặt + `payment.hold_minutes` (mặc định 24 giờ); khách thấy hạn này ở `transferInstructions.dueAt`, admin thấy ở `paymentDueAt`. Đơn COD không có hạn.
+
+Job `OrderExpiryService` (mỗi `ORDER_EXPIRY_INTERVAL_MS`, mặc định 60 giây) hủy các đơn **chuyển khoản, chưa thanh toán (`UNPAID`), còn `PLACED` hoặc `CONFIRMED`, đã qua hạn**:
+- Chuyển trạng thái `CANCELLED` với người thực hiện là **SYSTEM**, lý do "Quá hạn thanh toán, hệ thống tự hủy đơn", phát `order.status_changed` như mọi lần hủy khác. Catalog trả hàng về kho và affiliate hủy hoa hồng dự kiến qua sự kiện.
+- Không đụng tới: đơn đã thanh toán (dù quá hạn), COD, đơn đã giao vận chuyển, đơn chưa tới hạn.
+- An toàn khi chạy nhiều bản sao hoặc khi admin vừa ghi nhận thanh toán: mỗi lần hủy là một lần chuyển trạng thái có điều kiện; đơn vừa đổi trạng thái thì bị bỏ qua, không hủy hai lần.
+- Đơn chuyển khoản tạo trước khi có tính năng này không có hạn (`NULL`) nên không bị hủy hàng loạt.
+
 ## 4. Hợp đồng với các service khác
 
 Ordering gọi API nội bộ (header `x-internal-key`):
@@ -84,7 +94,7 @@ Ordering gọi API nội bộ (header `x-internal-key`):
 
 `POST /internal/customers/upsert`: body `{phone (+84...), fullName, email?, province?, ward?, addressLine?, marketingConsent?, firstAffiliateId?, firstChannelCode?}`, trả `{id, phone, isNew}`. Tìm khách theo SĐT chuẩn hóa; chưa có thì tạo (lưu nguồn đầu tiên, và thời điểm đồng ý nếu `marketingConsent`); đã có thì cập nhật tên và địa chỉ gần nhất, không ghi đè nguồn đầu tiên.
 
-Ordering cũng **cung cấp** API nội bộ cho customer (`x-internal-key`): `POST /internal/customers/order-stats` (`{customerIds[≤500]}` → số đơn hợp lệ, tổng chi, ngày đặt gần nhất; đơn `CANCELLED`/`RETURNED` không tính; khách chưa có đơn bị bỏ qua) và `GET /internal/customers/:customerId/orders?limit=` (1..50, mặc định 10).
+Ordering cũng **cung cấp** API nội bộ (`x-internal-key`) cho catalog: `POST /internal/orders/existence` (`{orderIds[≤500]}` → `{existing: [...]}`, những mã có đơn thật), và cho customer: `POST /internal/customers/order-stats` (`{customerIds[≤500]}` → số đơn hợp lệ, tổng chi, ngày đặt gần nhất; đơn `CANCELLED`/`RETURNED` không tính; khách chưa có đơn bị bỏ qua) và `GET /internal/customers/:customerId/orders?limit=` (1..50, mặc định 10).
 
 Sự kiện ordering phát ra: `ordering.order.placed` (kèm `commissionRateBps` để affiliate tạo hoa hồng; `items` để các service khác dùng) và `ordering.order.status_changed`.
 
@@ -100,8 +110,10 @@ Sự kiện ordering phát ra: `ordering.order.placed` (kèm `commissionRateBps`
 | `DOWNSTREAM_RETRY_ATTEMPTS`, `DOWNSTREAM_RETRY_BASE_MS`, `DOWNSTREAM_BREAKER_THRESHOLD`, `DOWNSTREAM_BREAKER_OPEN_MS` | 3, 100, 5, 10000 | Retry và ngắt mạch khi gọi service khác (xem `shared-library.md` mục 3b) |
 | `PORT` | 3004 | |
 | `OUTBOX_RELAY_ENABLED` | `true` | |
+| `ORDER_EXPIRY_ENABLED` | `true` | Bật job tự hủy đơn chuyển khoản quá hạn thanh toán |
+| `ORDER_EXPIRY_INTERVAL_MS` | 60000 | Khoảng giữa hai lượt chạy của job |
 
-Cấu hình trong DB (`ordering.settings`): `shipping.flat_fee`, `shipping.free_threshold`, `payment.bank_name`, `payment.bank_account_no`, `payment.bank_account_holder` (giá trị mẫu, cần thay bằng tài khoản thật của công ty).
+Cấu hình trong DB (`ordering.settings`): `shipping.flat_fee`, `shipping.free_threshold`, `payment.hold_minutes` (số phút giữ hàng cho đơn chuyển khoản chưa trả, mặc định 1440 = 24 giờ), `payment.bank_name`, `payment.bank_account_no`, `payment.bank_account_holder` (giá trị mẫu, cần thay bằng tài khoản thật của công ty).
 
 ## 6. Chạy và kiểm thử
 
@@ -115,7 +127,7 @@ Test tích hợp dùng máy chủ HTTP giả (`test/integration/fake-downstream.
 
 ## 7. Giới hạn hiện tại
 
-- Bồi hoàn sau lỗi tạo đơn là cố gắng tối đa: nếu catalog cũng sập đúng lúc đó, hàng giữ không được trả và chỉ có log lỗi. Chưa có cơ chế hết hạn giữ hàng.
+- Bồi hoàn tức thì sau lỗi tạo đơn vẫn là cố gắng tối đa; phần hàng bị sót (catalog sập đúng lúc, hoặc ordering sập giữa lúc giữ hàng và tạo đơn) được catalog tự dọn bằng job (xem `catalog-service.md`, mục 4b).
 - Khách tra cứu và hủy bằng mã đơn + SĐT; gateway giới hạn tra cứu theo IP (mặc định 30 lần/phút) để chống dò mã (xem `gateway-service.md`).
 - Mã QR thanh toán chưa sinh ảnh (VietQR); mới trả thông tin chuyển khoản.
 - Chưa tách đơn nhiều kiện, chưa có mã giảm giá, chưa tích hợp đơn vị vận chuyển.

@@ -95,6 +95,7 @@ services:
     environment:
       <<: *app-env
       PORT: "3003"
+      ORDERING_URL: http://ordering:3004/api
       CATALOG_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/catalog_db
     depends_on: *depends-infra
     healthcheck: *healthcheck

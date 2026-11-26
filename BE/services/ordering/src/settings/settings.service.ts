@@ -27,6 +27,12 @@ export class SettingsService {
     return typeof v === 'string' && v ? v : null;
   }
 
+  /** Số phút giữ hàng cho đơn chuyển khoản chưa thanh toán (mặc định 24 giờ). Giá trị sai hoặc nhỏ hơn 1 thì dùng mặc định. */
+  async paymentHoldMinutes(): Promise<number> {
+    const v = await this.number('payment.hold_minutes', 1_440);
+    return v >= 1 ? Math.floor(v) : 1_440;
+  }
+
   async shippingRule(): Promise<ShippingRule> {
     return { flatFee: await this.number('shipping.flat_fee', 30_000), freeThreshold: await this.number('shipping.free_threshold', 500_000) };
   }

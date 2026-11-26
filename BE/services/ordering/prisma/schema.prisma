@@ -54,6 +54,8 @@ model Order {
   shipAddressLine   String               @map("ship_address_line")
   customerNote      String?              @map("customer_note")
   placedAt          DateTime             @default(now()) @map("placed_at") @db.Timestamptz(6)
+  /// Hạn thanh toán của đơn chuyển khoản chưa trả; quá hạn thì job tự hủy và trả hàng về kho. NULL = không hết hạn (COD, đơn cũ).
+  paymentDueAt      DateTime?            @map("payment_due_at") @db.Timestamptz(6)
   deliveredAt       DateTime?            @map("delivered_at") @db.Timestamptz(6)
   completedAt       DateTime?            @map("completed_at") @db.Timestamptz(6)
   cancelledAt       DateTime?            @map("cancelled_at") @db.Timestamptz(6)
@@ -70,6 +72,7 @@ model Order {
   @@index([affiliateId, placedAt])
   @@index([status, placedAt])
   @@index([placedAt])
+  @@index([paymentDueAt])
   @@map("orders")
   @@schema("ordering")
 }

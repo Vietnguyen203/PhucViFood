@@ -19,6 +19,9 @@ export interface AppConfig {
   downstreamResilience: ResilienceConfig;
   /** Tắt relay outbox (dùng khi test hoặc chạy relay ở tiến trình riêng). */
   relayEnabled: boolean;
+  /** Job tự hủy đơn chuyển khoản quá hạn thanh toán. */
+  orderExpiryEnabled: boolean;
+  orderExpiryIntervalMs: number;
 }
 
 type Env = Record<string, string | undefined>;
@@ -44,6 +47,8 @@ export function loadConfig(env: Env = process.env): AppConfig {
   if (!Number.isInteger(timeout) || timeout < 100 || timeout > 60_000) problems.push('DOWNSTREAM_TIMEOUT_MS phải là số nguyên từ 100 đến 60000');
 
   const downstreamResilience = readResilienceEnv(env, problems);
+  const expiryInterval = Number(env.ORDER_EXPIRY_INTERVAL_MS ?? 60_000);
+  if (!Number.isInteger(expiryInterval) || expiryInterval < 1_000 || expiryInterval > 3_600_000) problems.push('ORDER_EXPIRY_INTERVAL_MS phải là số nguyên từ 1000 đến 3600000');
 
   const url = (key: string, fallback: string): string => {
     const raw = (env[key] ?? fallback).replace(/\/+$/, '');
@@ -66,5 +71,7 @@ export function loadConfig(env: Env = process.env): AppConfig {
     downstreamTimeoutMs: timeout,
     downstreamResilience,
     relayEnabled: env.OUTBOX_RELAY_ENABLED !== 'false',
+    orderExpiryEnabled: env.ORDER_EXPIRY_ENABLED !== 'false',
+    orderExpiryIntervalMs: expiryInterval,
   };
 }

@@ -16,7 +16,12 @@ describe('loadConfig', () => {
     expect(loadConfig(env)).toMatchObject({
       port: 3004, catalogUrl: 'http://localhost:3003/api', affiliateUrl: 'http://localhost:3002/api',
       customerUrl: 'http://localhost:3005/api', downstreamTimeoutMs: 5000, relayEnabled: true,
+      orderExpiryEnabled: true, orderExpiryIntervalMs: 60_000,
     });
+  });
+  it('cấu hình job hủy đơn quá hạn: tắt được, khoảng chạy phải hợp lệ', () => {
+    expect(loadConfig({ ...env, ORDER_EXPIRY_ENABLED: 'false', ORDER_EXPIRY_INTERVAL_MS: '5000' })).toMatchObject({ orderExpiryEnabled: false, orderExpiryIntervalMs: 5000 });
+    expect(() => loadConfig({ ...env, ORDER_EXPIRY_INTERVAL_MS: '10' })).toThrowError(/ORDER_EXPIRY_INTERVAL_MS/);
   });
   it('bỏ dấu / cuối địa chỉ; báo tất cả lỗi một lượt', () => {
     expect(loadConfig({ ...env, CATALOG_URL: 'http://c:1/api///' }).catalogUrl).toBe('http://c:1/api');
@@ -88,7 +93,7 @@ const order = (over: Partial<OrderFull> = {}): OrderFull => ({
   subtotalAmount: 610_000n, shippingFee: 0n, totalAmount: 610_000n, affiliateId: 'a1', linkId: null, channelCode: 'facebook',
   referralCodeUsed: 'linh01', attributionSource: 1, isSelfPurchase: false, shipName: 'Nguyễn Văn An', shipPhone: '+84912345678',
   shipProvince: 'Hà Nội', shipWard: 'Cầu Giấy', shipAddressLine: '12 Trần Thái Tông', customerNote: null,
-  placedAt: new Date(), deliveredAt: null, completedAt: null, cancelledAt: null, returnedAt: null, receivedBy: null, cancelReason: null,
+  placedAt: new Date(), paymentDueAt: null, deliveredAt: null, completedAt: null, cancelledAt: null, returnedAt: null, receivedBy: null, cancelReason: null,
   createdAt: new Date(), updatedAt: new Date(),
   items: [{ id: 'i1', orderId: 'o1', productId: 'p1', productName: 'Khô cá', unitPrice: 305_000n, quantity: 2, lineTotal: 610_000n }],
   ...over,
@@ -106,7 +111,10 @@ describe('view dữ liệu theo người xem', () => {
     const v = toPublicView(order(), bank);
     expect(Object.keys(v)).not.toContain('attribution');
     expect(JSON.stringify(v, (_k, x) => (typeof x === 'bigint' ? Number(x) : x))).not.toMatch(/linh01|affiliateId/);
-    expect(v.transferInstructions).toEqual({ ...bank, amount: 610_000n, content: 'PV-261125-AAAA' });
+    expect(v.transferInstructions).toEqual({ ...bank, amount: 610_000n, content: 'PV-261125-AAAA', dueAt: null });
+    // Có hạn thanh toán thì khách thấy hạn để chuyển khoản kịp.
+    const due = new Date('2026-11-27T10:00:00Z');
+    expect(toPublicView(order({ paymentDueAt: due }), bank).transferInstructions?.dueAt).toEqual(due);
     expect(transferInstructions(order({ paymentStatus: 3 }), bank)).toBeUndefined(); // đã PAID
     expect(transferInstructions(order({ paymentMethod: 1, paymentStatus: 1 }), bank)).toBeUndefined(); // COD
     expect(transferInstructions(order(), null)).toBeUndefined(); // chưa cấu hình tài khoản

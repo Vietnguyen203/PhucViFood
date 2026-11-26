@@ -9,9 +9,11 @@ import { OrderStatusCodec, PaymentStatusCodec } from '@phucvi/shared-library/con
 import { uuidv7 } from '@phucvi/shared-library/utils';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
+import { EXPIRED_PAYMENT_REASON, OrderExpiryService } from '../../src/orders/order-expiry.service';
 import { ORDER_CODE_REGEX } from '../../src/common/validators';
 import { loadConfig, type AppConfig } from '../../src/config/app-config';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { SettingsService } from '../../src/settings/settings.service';
 import { FakeDownstream, type FakeProduct } from './fake-downstream';
 
 const enabled = process.env.RUN_INTEGRATION === '1';
@@ -77,6 +79,7 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
       ORDERING_DATABASE_URL: DB_URL, RABBITMQ_URL: RABBIT_URL, JWT_ACCESS_SECRET: 'integration-test-secret-integration-test-secret',
       JWT_ISSUER: 'phucvi-it', INTERNAL_API_KEY: INTERNAL_KEY, OUTBOX_RELAY_ENABLED: 'false', DOWNSTREAM_TIMEOUT_MS: '1500',
       // Nhiều test cố ý làm service lỗi liên tiếp: nâng ngưỡng để mạch không ngắt chéo giữa các test. Retry giữ 2 lần, chờ ngắn.
+      ORDER_EXPIRY_ENABLED: 'false', // test gọi runOnce() trực tiếp, không để job tự chạy xen vào
       DOWNSTREAM_BREAKER_THRESHOLD: '1000', DOWNSTREAM_RETRY_ATTEMPTS: '2', DOWNSTREAM_RETRY_BASE_MS: '10',
       CATALOG_URL: `${fake.url}/catalog/api`, AFFILIATE_URL: `${fake.url}/affiliate/api`, CUSTOMER_URL: `${fake.url}/customer/api`,
     });
@@ -155,6 +158,7 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
       expect(r.body.data).toMatchObject({ paymentMethod: 'BANK_QR', paymentStatus: 'UNPAID' });
       expect(r.body.data.transferInstructions).toEqual({
         bankName: 'Vietcombank', accountNo: '0011000000000', accountHolder: 'CONG TY PHUC VI FOODS', amount: 230_000, content: r.body.data.code,
+        dueAt: expect.any(String), // hạn thanh toán
       });
     });
 
@@ -323,6 +327,108 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
   });
 
   // ═════════════════════════ Khách tra cứu và tự thao tác ═════════════════════════
+  // ═════════════════════════ Hạn thanh toán và tự hủy đơn quá hạn ═════════════════════════
+  describe('hạn thanh toán đơn chuyển khoản', () => {
+    const expiry = () => app.get(OrderExpiryService);
+    const dueNow = (id: string, minutesAgo = 5) => prisma.order.update({ where: { id }, data: { paymentDueAt: new Date(Date.now() - minutesAgo * 60_000) } });
+    const statusOf = async (code: string) => OrderStatusCodec.toName((await dbOrder(code)).status);
+
+    it('đơn chuyển khoản có hạn = lúc đặt + 24 giờ (mặc định); COD không có hạn; khách thấy hạn trong hướng dẫn chuyển khoản', async () => {
+      const qr = await place({ payment: 'BANK_QR' });
+      const o = await dbOrder(qr.body.data.code);
+      expect(o.paymentDueAt!.getTime() - o.placedAt.getTime()).toBe(24 * 60 * 60_000);
+      expect(new Date(qr.body.data.transferInstructions.dueAt).getTime()).toBe(o.paymentDueAt!.getTime());
+      expect((await dbOrder((await place()).body.data.code)).paymentDueAt).toBeNull();
+      const detail = await api('GET', `/orders/${o.id}`, { token: admin() });
+      expect(new Date(detail.body.data.paymentDueAt).getTime()).toBe(o.paymentDueAt!.getTime());
+    });
+
+    it('quá hạn chưa thanh toán: tự hủy, ghi lịch sử do HỆ THỐNG, lý do rõ ràng, phát sự kiện để catalog trả hàng', async () => {
+      const r = await place({ payment: 'BANK_QR' });
+      const o = await dbOrder(r.body.data.code);
+      await dueNow(o.id);
+
+      expect(await expiry().runOnce()).toBeGreaterThanOrEqual(1);
+      const after = await dbOrder(r.body.data.code);
+      expect(OrderStatusCodec.toName(after.status)).toBe('CANCELLED');
+      expect(after.cancelReason).toBe(EXPIRED_PAYMENT_REASON);
+      expect(after.cancelledAt).not.toBeNull();
+      const last = [...after.history!].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()).at(-1)!;
+      expect(last).toMatchObject({ actorType: 1, actorId: null, note: EXPIRED_PAYMENT_REASON }); // ActorType SYSTEM = 1
+      const events = await outbox(o.id);
+      expect(events.at(-1)).toMatchObject({ event_type: 'ordering.order.status_changed', payload: { fromStatus: 'PLACED', toStatus: 'CANCELLED', actorType: 'SYSTEM', actorId: null } });
+
+      await expiry().runOnce(); // lần sau không hủy lại
+      expect(await prisma.orderStatusHistory.count({ where: { orderId: o.id, toStatus: OrderStatusCodec.toCode('CANCELLED') } })).toBe(1);
+    });
+
+    it('đơn đã CONFIRMED nhưng chưa thanh toán cũng bị hủy khi quá hạn', async () => {
+      const r = await place({ payment: 'BANK_QR' });
+      const o = await dbOrder(r.body.data.code);
+      await advance(o.id, ['confirm']);
+      await dueNow(o.id);
+      await expiry().runOnce();
+      expect(await statusOf(r.body.data.code)).toBe('CANCELLED');
+    });
+
+    it('KHÔNG hủy: chưa tới hạn, COD, đã thanh toán (dù quá hạn), đơn đã giao vận chuyển', async () => {
+      const future = await dbOrder((await place({ payment: 'BANK_QR' })).body.data.code);
+      const cod = await dbOrder((await place()).body.data.code);
+      await dueNow(cod.id); // COD có đặt hạn tay cũng không hủy
+
+      const paid = await dbOrder((await place({ payment: 'BANK_QR' })).body.data.code);
+      expect((await api('POST', `/orders/${paid.id}/payment`, { token: admin(), body: { status: 'PAID' } })).status).toBe(200);
+      await dueNow(paid.id);
+
+      const shipping = await dbOrder((await place({ payment: 'BANK_QR' })).body.data.code);
+      expect((await api('POST', `/orders/${shipping.id}/payment`, { token: admin(), body: { status: 'PAID' } })).status).toBe(200);
+      await advance(shipping.id, ['confirm', 'ship']);
+      await dueNow(shipping.id);
+
+      await expiry().runOnce();
+      expect(await statusOf(future.code)).toBe('PLACED');
+      expect(await statusOf(cod.code)).toBe('PLACED');
+      expect(await statusOf(paid.code)).toBe('PLACED');
+      expect(await statusOf(shipping.code)).toBe('SHIPPING');
+    });
+
+    it('thanh toán xong trước khi job chạy thì đơn được giữ lại (không hủy nhầm đơn đã trả tiền)', async () => {
+      const r = await place({ payment: 'BANK_QR' });
+      const o = await dbOrder(r.body.data.code);
+      await dueNow(o.id);
+      expect((await api('POST', `/orders/${o.id}/payment`, { token: admin(), body: { status: 'PAID' } })).status).toBe(200);
+      await expiry().runOnce();
+      expect(await statusOf(r.body.data.code)).toBe('PLACED');
+    });
+
+    it('hạn giữ hàng mặc định 24 giờ khi chưa cấu hình', async () => {
+      expect(await app.get(SettingsService).paymentHoldMinutes()).toBe(1_440);
+    });
+  });
+
+  // ═════════════════════════ API nội bộ: kiểm tra đơn tồn tại ═════════════════════════
+  describe('API nội bộ: đơn có tồn tại không', () => {
+    const existence = (body: object, key: string | null = INTERNAL_KEY) =>
+      api('POST', '/internal/orders/existence', { body, headers: key ? { 'x-internal-key': key } : {} });
+
+    it('cần khóa nội bộ; dữ liệu sai bị từ chối', async () => {
+      expect((await existence({ orderIds: [uuidv7()] }, null)).status).toBe(401);
+      expect((await existence({ orderIds: [uuidv7()] }, 'sai-khoa-sai-khoa-sai-khoa-1')).status).toBe(401);
+      expect((await existence({ orderIds: [] })).status).toBe(400);
+      expect((await existence({ orderIds: ['abc'] })).status).toBe(400);
+      expect((await existence({ orderIds: Array.from({ length: 501 }, () => uuidv7()) })).status).toBe(400);
+    });
+
+    it('chỉ trả về những mã có đơn thật', async () => {
+      const a = await dbOrder((await place()).body.data.code);
+      const b = await dbOrder((await place()).body.data.code);
+      const ghost = uuidv7();
+      const r = await existence({ orderIds: [a.id, ghost, b.id, a.id] });
+      expect(r.status).toBe(200);
+      expect(r.body.data.existing.sort()).toEqual([a.id, b.id].sort());
+    });
+  });
+
   describe('khách tra cứu và tự thao tác', () => {
     it('tra cứu bằng mã + SĐT (nhiều cách viết); sai SĐT hoặc sai mã đều 404; không lộ ghi nhận CTV', async () => {
       const aff = fake.addAffiliate({ code: `it${rand(6)}` });
