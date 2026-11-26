@@ -209,3 +209,15 @@ button.home-more-link:disabled { opacity: 0.6; cursor: wait; }
   .shop-detail { grid-template-columns: 1fr; gap: 18px; }
   .shop-header-search input { width: 110px; }
 }
+
+/* ───────── Phóng to theo cỡ màn hình ─────────
+   Giao diện cửa hàng (xuất từ Figma) dùng cỡ chữ cố định 7-14px, thiết kế cho màn ~1280px. Màn rộng hơn thì phóng cả trang theo bậc
+   bằng `zoom` để chữ, nút và khoảng cách lớn theo (nội dung vốn giới hạn ~1240px nên cũng giãn ra theo). Màn dưới 1360px giữ nguyên. */
+body.store-scale { --store-zoom: 1; zoom: var(--store-zoom); min-height: calc(100vh / var(--store-zoom)); }
+/* 100vh nằm trong vùng đã zoom bị nhân thêm hệ số; chia lại để trang không dài thừa. */
+body.store-scale .home-page { min-height: calc(100vh / var(--store-zoom)); }
+@media (min-width: 1360px) { body.store-scale { --store-zoom: 1.1; } }
+@media (min-width: 1600px) { body.store-scale { --store-zoom: 1.25; } }
+@media (min-width: 1900px) { body.store-scale { --store-zoom: 1.45; } }
+@media (min-width: 2300px) { body.store-scale { --store-zoom: 1.75; } }
+@media (min-width: 2800px) { body.store-scale { --store-zoom: 2.1; } }

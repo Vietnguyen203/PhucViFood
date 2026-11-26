@@ -19,6 +19,12 @@ function ScrollToTop() {
 
 /** Khung chung của mọi trang: giỏ hàng (dùng được ở mọi trang) và ngăn kéo giỏ hàng. */
 export default function RootLayout() {
+  // Giao diện cửa hàng thiết kế cho màn ~1280px (chữ 7-14px): màn lớn hơn thì phóng to theo bậc (xem cuối shop.css).
+  // Chỉ cửa hàng; khu quản trị và khu CTV không dùng RootLayout nên không bị phóng.
+  useEffect(() => {
+    document.body.classList.add("store-scale");
+    return () => document.body.classList.remove("store-scale");
+  }, []);
   return (
     <CartProvider>
       <ScrollToTop />
