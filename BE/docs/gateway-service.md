@@ -42,7 +42,7 @@ Theo IP, cửa sổ 1 phút, lưu trong bộ nhớ (một gateway). Mỗi yêu c
 | `public-write` | `POST /public/orders`, `POST /public/referrals/click`, `POST /public/tracking/*` | 30 | `RATE_LIMIT_PUBLIC_WRITE_PER_MIN` |
 | `lookup` | `/public/orders/:code...` (tra cứu, hủy, xác nhận bằng mã đơn) | 30 | `RATE_LIMIT_LOOKUP_PER_MIN` |
 
-**IP thật:** mặc định (`TRUST_PROXY_HOPS=0`) dùng địa chỉ kết nối trực tiếp và **bỏ qua** `X-Forwarded-For` (client tự khai được). Khi đặt gateway sau Caddy phải đặt `TRUST_PROXY_HOPS=1`, nếu không mọi người dùng cùng một IP (của Caddy) và bị chặn chung. Đặt cao hơn số proxy thật thì client giả được IP để né giới hạn.
+**IP thật:** mặc định (`TRUST_PROXY_HOPS=0`) dùng địa chỉ kết nối trực tiếp và **bỏ qua** `X-Forwarded-For` (client tự khai được). Khi đặt gateway sau Caddy phải đặt `TRUST_PROXY_HOPS=1` (compose của dự án đã đặt sẵn, xem `deploy.md`), nếu không mọi người dùng cùng một IP (của Caddy) và bị chặn chung. Đặt cao hơn số proxy thật thì client giả được IP để né giới hạn.
 
 ## 4. Cấu hình
 

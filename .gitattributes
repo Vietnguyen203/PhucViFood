@@ -1,0 +1,2 @@
+# Script shell phải dùng LF, kể cả khi checkout trên Windows (CRLF làm hỏng shebang trong container).
+*.sh text eol=lf

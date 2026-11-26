@@ -40,6 +40,16 @@ pnpm --filter @phucvi/gateway dev          # cổng riêng GATEWAY_PORT=3000
 
 Các request chạy **nối tiếp nhau**: token và id được lưu vào biến collection, nên không chạy lẻ khi chưa chạy các bước trước (nhóm `0. Chuẩn bị` tạo sẵn tài khoản, sản phẩm...). Mỗi collection tự chuẩn bị dữ liệu riêng nên chạy độc lập với nhau, theo thứ tự nào cũng được.
 
+## Chạy qua Caddy trong Docker
+
+Khi chạy cả hệ thống bằng `pnpm stack:up` (xem `BE/docs/deploy.md`), trỏ `gatewayUrl` vào Caddy và tắt giới hạn tốc độ của stack (`RATE_LIMIT_ENABLED=false` khi `stack:up`):
+
+```powershell
+postman collection run BE/postman/phucvi-catalog.postman_collection.json -e BE/postman/phucvi-local.postman_environment.json --env-var gatewayUrl=http://localhost/api
+```
+
+Đã chạy 6 bộ này qua Caddy với toàn bộ assertion đạt.
+
 ## Cách 2: Postman CLI
 
 ```powershell

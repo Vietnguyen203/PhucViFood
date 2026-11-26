@@ -1,5 +1,33 @@
-# Postgres dùng chung một container cho môi trường dev; mỗi service một database riêng.
-# Chạy: docker compose -f BE/infra/docker-compose.yml up -d
+# Hạ tầng dùng chung (Postgres, RabbitMQ) và, với profile "app", toàn bộ hệ thống chạy trong Docker.
+#   Chỉ hạ tầng (dev, service chạy trên máy):  pnpm db:up
+#   Cả hệ thống (7 service + Caddy):            pnpm stack:up   (cần JWT_ACCESS_SECRET và INTERNAL_API_KEY trong .env)
+# Mỗi service một database riêng; trong mạng Docker các service gọi nhau theo tên (catalog:3003...), không qua localhost.
+
+# Biến chung cho mọi service. Bí mật lấy từ .env ở gốc repo (truyền bằng --env-file), không ghi cứng vào file này.
+# Cố ý KHÔNG dùng ${VAR:?}: compose xử lý cả service thuộc profile chưa bật, nên sẽ làm hỏng `pnpm db:up` khi chưa có bí mật.
+# Thiếu hoặc quá ngắn thì service tự dừng lúc khởi động và báo lỗi cấu hình trong log.
+x-app-env: &app-env
+  NODE_ENV: production
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-}
+  INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+  JWT_ISSUER: ${JWT_ISSUER:-phucvi}
+  RABBITMQ_URL: amqp://${RABBITMQ_USER:-phucvi}:${RABBITMQ_PASSWORD:-phucvi}@rabbitmq:5672
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+
+x-depends-infra: &depends-infra
+  postgres:
+    condition: service_healthy
+  rabbitmq:
+    condition: service_healthy
+
+# Mỗi service có PORT riêng trong biến môi trường; healthcheck gọi /api/health của chính nó.
+x-healthcheck: &healthcheck
+  test: ["CMD", "node", "-e", "fetch('http://localhost:'+process.env.PORT+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+  interval: 10s
+  timeout: 5s
+  retries: 6
+  start_period: 60s # có bước áp migration trước khi lên
+
 services:
   postgres:
     image: postgres:17-alpine
@@ -39,6 +67,159 @@ services:
       timeout: 5s
       retries: 10
 
+  user:
+    profiles: ["app"]
+    build:
+      context: ../..
+      dockerfile: BE/infra/docker/Dockerfile
+      args:
+        SERVICE: user
+    image: phucvi/user
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      PORT: "3001"
+      USER_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/user_db
+    depends_on: *depends-infra
+    healthcheck: *healthcheck
+
+  catalog:
+    profiles: ["app"]
+    build:
+      context: ../..
+      dockerfile: BE/infra/docker/Dockerfile
+      args:
+        SERVICE: catalog
+    image: phucvi/catalog
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      PORT: "3003"
+      CATALOG_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/catalog_db
+    depends_on: *depends-infra
+    healthcheck: *healthcheck
+
+  affiliate:
+    profiles: ["app"]
+    build:
+      context: ../..
+      dockerfile: BE/infra/docker/Dockerfile
+      args:
+        SERVICE: affiliate
+    image: phucvi/affiliate
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      PORT: "3002"
+      AFFILIATE_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/affiliate_db
+    depends_on: *depends-infra
+    healthcheck: *healthcheck
+
+  customer:
+    profiles: ["app"]
+    build:
+      context: ../..
+      dockerfile: BE/infra/docker/Dockerfile
+      args:
+        SERVICE: customer
+    image: phucvi/customer
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      PORT: "3005"
+      CUSTOMER_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/customer_db
+      ORDERING_URL: http://ordering:3004/api
+    depends_on: *depends-infra
+    healthcheck: *healthcheck
+
+  ordering:
+    profiles: ["app"]
+    build:
+      context: ../..
+      dockerfile: BE/infra/docker/Dockerfile
+      args:
+        SERVICE: ordering
+    image: phucvi/ordering
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      PORT: "3004"
+      ORDERING_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/ordering_db
+      CATALOG_URL: http://catalog:3003/api
+      AFFILIATE_URL: http://affiliate:3002/api
+      CUSTOMER_URL: http://customer:3005/api
+    depends_on: *depends-infra
+    healthcheck: *healthcheck
+
+  tracking:
+    profiles: ["app"]
+    build:
+      context: ../..
+      dockerfile: BE/infra/docker/Dockerfile
+      args:
+        SERVICE: tracking
+    image: phucvi/tracking
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      PORT: "3006"
+      TRACKING_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/tracking_db
+      AFFILIATE_URL: http://affiliate:3002/api
+    depends_on: { postgres: { condition: service_healthy } }
+    healthcheck: *healthcheck
+
+  # Cổng vào của API. Không nhận bí mật JWT hay khóa nội bộ: gateway chỉ chuyển tiếp, từng service tự xác thực.
+  gateway:
+    profiles: ["app"]
+    build:
+      context: ../..
+      dockerfile: BE/infra/docker/Dockerfile
+      args:
+        SERVICE: gateway
+    image: phucvi/gateway
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      GATEWAY_PORT: "3000"
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      USER_URL: http://user:3001/api
+      AFFILIATE_URL: http://affiliate:3002/api
+      CATALOG_URL: http://catalog:3003/api
+      ORDERING_URL: http://ordering:3004/api
+      CUSTOMER_URL: http://customer:3005/api
+      TRACKING_URL: http://tracking:3006/api
+      # Phía trước gateway có đúng 1 proxy tin cậy (Caddy): lấy IP người dùng từ X-Forwarded-For của Caddy.
+      TRUST_PROXY_HOPS: "1"
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+    depends_on:
+      user: { condition: service_healthy }
+      catalog: { condition: service_healthy }
+      affiliate: { condition: service_healthy }
+      ordering: { condition: service_healthy }
+      customer: { condition: service_healthy }
+      tracking: { condition: service_healthy }
+    healthcheck: *healthcheck
+
+  # Cổng ngoài duy nhất. HTTP_PORT/HTTPS_PORT đổi cổng trên máy chủ khi 80/443 đã bận.
+  caddy:
+    profiles: ["app"]
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - phucvi-caddy-data:/data
+      - phucvi-caddy-config:/config
+    depends_on:
+      gateway: { condition: service_healthy }
+
 volumes:
   phucvi-pgdata:
   phucvi-rabbitmq:
+  phucvi-caddy-data:
+  phucvi-caddy-config:

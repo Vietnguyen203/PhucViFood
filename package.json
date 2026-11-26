@@ -11,6 +11,10 @@
     "test": "turbo run test",
     "db:up": "docker compose -f BE/infra/docker-compose.yml up -d",
     "db:down": "docker compose -f BE/infra/docker-compose.yml down",
+    "stack:up": "docker compose --env-file .env -f BE/infra/docker-compose.yml --profile app up -d --build",
+    "stack:down": "docker compose --env-file .env -f BE/infra/docker-compose.yml --profile app down",
+    "stack:logs": "docker compose --env-file .env -f BE/infra/docker-compose.yml --profile app logs -f --tail=50",
+    "stack:seed": "node BE/infra/docker/seed-stack.mjs",
     "db:generate": "pnpm -r --filter \"./BE/services/*\" run db:generate",
     "db:migrate": "pnpm -r --filter \"./BE/services/*\" run db:migrate",
     "db:seed": "pnpm -r --filter \"./BE/services/*\" run db:seed"

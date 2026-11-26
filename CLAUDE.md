@@ -22,6 +22,6 @@ NestJS + DDD + microservice (pnpm + Turborepo), Next.js, PostgreSQL (mỗi servi
 - `FE/`: giao diện (React + Vite, xuất từ Figma Make).
 - `BE/services/`: các service (gateway, user, catalog, ordering, customer, affiliate, tracking).
 - `BE/packages/`: thư viện dùng chung.
-- `BE/infra/`: Docker Compose (Postgres, RabbitMQ).
+- `BE/infra/`: Docker Compose (Postgres, RabbitMQ; profile `app` chạy cả 7 service + Caddy), Dockerfile dùng chung, Caddyfile.
 - `BE/docs/`: tài liệu database (`database.md`), shared-library (`shared-library.md`) và truy vấn mẫu.
 - Thư mục gốc giữ cấu hình chung của monorepo (pnpm, Turborepo, tsconfig, `.env.example`).

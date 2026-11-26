@@ -1,0 +1,43 @@
+# Caddy là cổng ngoài duy nhất của hệ thống: nhận yêu cầu từ internet, chuyển /api/* vào gateway.
+# Các service (kể cả gateway) không mở cổng ra máy chủ, chỉ nói chuyện trong mạng Docker.
+#
+# SITE_ADDRESS mặc định ":80" (HTTP, dùng cho dev/demo). Đặt tên miền thật (vd api.phucvifoods.vn) thì Caddy tự lấy và
+# gia hạn chứng chỉ HTTPS; khi đó cần mở cổng 80 và 443.
+{
+	admin off
+}
+
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+
+	# Phải bằng MAX_BODY_BYTES của gateway (mặc định 1 MiB). Nếu Caddy cho qua nhưng gateway từ chối và đóng kết nối khi
+	# Caddy đang gửi dở, Caddy báo 502 thay vì 413. Đổi một chỗ thì đổi cả chỗ kia.
+	request_body {
+		max_size 1MiB
+	}
+
+	# Dùng cho healthcheck bên ngoài, không đi vào gateway.
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# Caddy tự đặt X-Forwarded-For = IP của người gọi (bỏ giá trị client tự gửi). Gateway chạy với TRUST_PROXY_HOPS=1
+	# nên lấy đúng IP này để giới hạn tốc độ.
+	handle /api/* {
+		reverse_proxy gateway:3000 {
+			transport http {
+				response_header_timeout 60s
+			}
+		}
+	}
+
+	handle {
+		respond "Not found" 404
+	}
+}

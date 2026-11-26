@@ -1,0 +1,18 @@
+# Ngữ cảnh build Docker (gốc repo): chỉ giữ mã BE cần để chạy service.
+**/node_modules
+**/generated
+**/dist
+**/coverage
+**/*.log
+.git
+.idea
+.pnpm-store
+.env
+.env.*
+!.env.example
+_to_delete
+BE/postman
+BE/docs
+# FE không đóng gói trong image BE; chỉ cần package.json để khớp danh sách workspace khi cài với --frozen-lockfile.
+FE/*
+!FE/package.json

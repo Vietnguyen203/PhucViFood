@@ -569,7 +569,7 @@
                 }
               }
             },
-            "description": "MAX_BODY_BYTES mặc định 1.048.576 byte; gateway trả 413 trước khi chuyển tiếp."
+            "description": "MAX_BODY_BYTES mặc định 1.048.576 byte: gateway trả 413 theo phong bì chuẩn. Qua Caddy (cùng ngưỡng 1 MiB) thì chính Caddy trả 413 với nội dung ngắn gọn, nên chỉ kiểm tra phong bì khi phản hồi là JSON."
           },
           "event": [
             {
@@ -587,7 +587,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 413\", function () { pm.response.to.have.status(413); });",
-                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                  "pm.test(\"nếu là JSON thì theo phong bì chuẩn\", function () { if ((pm.response.headers.get('content-type') || '').includes('json')) { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql('VALIDATION_FAILED'); } });"
                 ]
               }
             }
