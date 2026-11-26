@@ -49,7 +49,7 @@ Mã đã được nhớ tạm vẫn bấm được trong lúc affiliate tắt (t
 | Biến | Mặc định | Ghi chú |
 |---|---|---|
 | `TRACKING_DATABASE_URL` | bắt buộc | |
-| `JWT_ACCESS_SECRET` | bắt buộc, từ 32 ký tự | Cùng giá trị với service user |
+| `JWT_PUBLIC_KEY` | bắt buộc | Khóa công khai RSA (PEM hoặc base64) của cặp khóa do `pnpm jwt:keygen` sinh; service này chỉ kiểm tra token |
 | `INTERNAL_API_KEY` | bắt buộc, từ 24 ký tự | Cùng giá trị với affiliate |
 | `AFFILIATE_URL` | `http://localhost:3002/api` | |
 | `DOWNSTREAM_TIMEOUT_MS`, `DOWNSTREAM_RETRY_*`, `DOWNSTREAM_BREAKER_*` | 5000 / xem `shared-library.md` | |

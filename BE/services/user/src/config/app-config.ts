@@ -1,4 +1,4 @@
-import type { JwtConfig } from '@phucvi/shared-library/auth';
+import { readJwtConfig, type JwtConfig } from '@phucvi/shared-library/auth';
 
 export const APP_CONFIG = Symbol('APP_CONFIG');
 
@@ -35,18 +35,13 @@ export function loadConfig(env: Env = process.env): AppConfig {
 
   if (!env.USER_DATABASE_URL) problems.push('Thiếu USER_DATABASE_URL');
   if (!env.RABBITMQ_URL) problems.push('Thiếu RABBITMQ_URL');
-  const secret = env.JWT_ACCESS_SECRET ?? '';
-  if (secret.length < 32) problems.push('JWT_ACCESS_SECRET phải có ít nhất 32 ký tự');
 
   const config: AppConfig = {
     port: int(env, 'PORT', 3001, problems, 1, 65535),
     rabbitUrl: env.RABBITMQ_URL ?? '',
     corsOrigins: (env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map((s) => s.trim()).filter(Boolean),
-    jwt: {
-      secret,
-      issuer: env.JWT_ISSUER ?? 'phucvi',
-      accessTtlSeconds: int(env, 'ACCESS_TOKEN_TTL_SECONDS', 900, problems, 60, 86_400),
-    },
+    // User service là nơi duy nhất ký token: cần khóa riêng (khóa công khai suy ra từ đó).
+    jwt: readJwtConfig(env, 'sign', int(env, 'ACCESS_TOKEN_TTL_SECONDS', 900, problems, 60, 86_400), problems),
     refreshTtlDays: int(env, 'REFRESH_TOKEN_TTL_DAYS', 30, problems, 1, 365),
     bcryptRounds: int(env, 'BCRYPT_ROUNDS', 12, problems, 4, 15),
     maxFailedLogins: int(env, 'MAX_FAILED_LOGINS', 5, problems, 1, 100),

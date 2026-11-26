@@ -52,7 +52,7 @@ Danh sách, chi tiết và xuất Excel vẫn chạy nhưng không có thống k
 | Biến | Mặc định | Ghi chú |
 |---|---|---|
 | `CUSTOMER_DATABASE_URL`, `RABBITMQ_URL` | bắt buộc | |
-| `JWT_ACCESS_SECRET` | bắt buộc, từ 32 ký tự | Cùng giá trị với service user |
+| `JWT_PUBLIC_KEY` | bắt buộc | Khóa công khai RSA (PEM hoặc base64) của cặp khóa do `pnpm jwt:keygen` sinh; service này chỉ kiểm tra token |
 | `INTERNAL_API_KEY` | bắt buộc, từ 24 ký tự | Cùng giá trị với ordering |
 | `ORDERING_URL` | `http://localhost:3004/api` | |
 | `DOWNSTREAM_TIMEOUT_MS` | 5000 | |

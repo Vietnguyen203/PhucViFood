@@ -3,10 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { AFFILIATE_TRANSITIONS } from '../../src/affiliates/affiliates.service';
 import { ApproveDto, CreateProfileDto } from '../../src/affiliates/dto';
 import { loadConfig } from '../../src/config/app-config';
+import { generateJwtKeyPair } from '@phucvi/shared-library/auth';
+
+/** Cặp khóa riêng của file test: service chỉ nhận khóa công khai, test giữ khóa riêng để ký token thay cho user service. */
+const KEYS = generateJwtKeyPair();
 
 const env = {
   AFFILIATE_DATABASE_URL: 'postgresql://x', RABBITMQ_URL: 'amqp://x',
-  JWT_ACCESS_SECRET: 'a'.repeat(32), INTERNAL_API_KEY: 'k'.repeat(24),
+  JWT_PUBLIC_KEY: KEYS.publicKey, INTERNAL_API_KEY: 'k'.repeat(24),
 };
 
 describe('loadConfig', () => {
@@ -18,7 +22,7 @@ describe('loadConfig', () => {
 
   it('báo tất cả lỗi một lượt', () => {
     expect(() => loadConfig({ JWT_ACCESS_SECRET: 'ngan', INTERNAL_API_KEY: 'x', PORT: '0' })).toThrowError(
-      /AFFILIATE_DATABASE_URL[\s\S]*RABBITMQ_URL[\s\S]*JWT_ACCESS_SECRET[\s\S]*INTERNAL_API_KEY[\s\S]*PORT/,
+      /AFFILIATE_DATABASE_URL[\s\S]*RABBITMQ_URL[\s\S]*INTERNAL_API_KEY[\s\S]*PORT[\s\S]*JWT_PUBLIC_KEY/,
     );
   });
 });

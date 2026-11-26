@@ -57,7 +57,7 @@ Theo IP, cửa sổ 1 phút, lưu trong bộ nhớ (một gateway). Mỗi yêu c
 | `TRUST_PROXY_HOPS` | 0 | Xem mục 3 |
 | `RATE_LIMIT_ENABLED` | `true` | `false` để tắt |
 
-Gateway không cần `JWT_ACCESS_SECRET`, `INTERNAL_API_KEY` hay database.
+Gateway không cần khóa JWT (`JWT_PUBLIC_KEY`), `INTERNAL_API_KEY` hay database.
 
 ## 5. Chạy và kiểm thử
 

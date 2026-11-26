@@ -4,7 +4,7 @@ import * as amqp from 'amqplib';
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { setupApp } from '@phucvi/shared-library/api';
-import { signAccessToken } from '@phucvi/shared-library/auth';
+import { generateJwtKeyPair, signAccessToken } from '@phucvi/shared-library/auth';
 import {
   AdjustmentStatusCodec, AffiliateStatusCodec, CommissionStatusCodec, EventTypes, createEnvelope, type AffiliateStatus, type EventEnvelope,
 } from '@phucvi/shared-library/contracts';
@@ -14,6 +14,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
 import { loadConfig, type AppConfig } from '../../src/config/app-config';
 import { PrismaService } from '../../src/prisma/prisma.service';
+
+/** Cặp khóa riêng của file test: service chỉ nhận khóa công khai, test giữ khóa riêng để ký token thay cho user service. */
+const KEYS = generateJwtKeyPair();
 
 const enabled = process.env.RUN_INTEGRATION === '1';
 const DB_URL = process.env.AFFILIATE_DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5433/affiliate_db';
@@ -39,7 +42,7 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
 
   // ───────── Hỗ trợ ─────────
   const tokenFor = (userId: string, role: 'ADMIN' | 'AFFILIATE', email = `${rand(6)}@example.com`) =>
-    signAccessToken({ id: userId, email, role }, config.jwt);
+    signAccessToken({ id: userId, email, role }, { ...config.jwt, privateKey: KEYS.privateKey });
   const adminToken = () => tokenFor(uuidv7(), 'ADMIN');
 
   async function api(method: string, path: string, opts: { token?: string; body?: unknown; headers?: Record<string, string> } = {}) {
@@ -122,7 +125,7 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
     process.env.AFFILIATE_DATABASE_URL = DB_URL;
     config = loadConfig({
       AFFILIATE_DATABASE_URL: DB_URL, RABBITMQ_URL: RABBIT_URL,
-      JWT_ACCESS_SECRET: 'integration-test-secret-integration-test-secret', JWT_ISSUER: 'phucvi-it',
+      JWT_PUBLIC_KEY: KEYS.publicKey, JWT_ISSUER: 'phucvi-it',
       INTERNAL_API_KEY: INTERNAL_KEY, AFFILIATE_EVENT_QUEUE: `affiliate.it.${rand(8)}`, OUTBOX_RELAY_ENABLED: 'false',
     });
     app = await NestFactory.create(AppModule.forRoot(config), { logger: false });

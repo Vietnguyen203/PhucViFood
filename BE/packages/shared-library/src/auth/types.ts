@@ -8,8 +8,10 @@ export interface AuthUser {
 }
 
 export interface JwtConfig {
-  /** Khóa ký HS256, tối thiểu 32 ký tự. Mọi service kiểm tra token dùng chung khóa này. */
-  secret: string;
+  /** Khóa công khai RSA (PEM) để kiểm tra chữ ký RS256. Mọi service đều có. */
+  publicKey: string;
+  /** Khóa riêng RSA (PEM) để ký. CHỈ user service có; service khác không bao giờ nhận khóa này. */
+  privateKey?: string;
   issuer: string;
   accessTtlSeconds: number;
 }

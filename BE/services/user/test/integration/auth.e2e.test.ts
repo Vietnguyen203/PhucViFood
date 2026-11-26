@@ -7,6 +7,7 @@ import { UserRoleCode, UserStatusCode } from '@phucvi/shared-library/contracts';
 import { hashSync } from 'bcryptjs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
+import { generateJwtKeyPair } from '@phucvi/shared-library/auth';
 import { loadConfig } from '../../src/config/app-config';
 import { PrismaService } from '../../src/prisma/prisma.service';
 
@@ -49,7 +50,7 @@ describe.skipIf(!enabled)('service user: đăng nhập JWT (HTTP thật)', () =>
     const config = loadConfig({
       USER_DATABASE_URL: process.env.USER_DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5433/user_db',
       RABBITMQ_URL: process.env.RABBITMQ_URL ?? 'amqp://phucvi:phucvi@localhost:5672',
-      JWT_ACCESS_SECRET: 'integration-test-secret-integration-test-secret',
+      JWT_PRIVATE_KEY: generateJwtKeyPair().privateKey,
       JWT_ISSUER: 'phucvi-it', BCRYPT_ROUNDS: '4', MAX_FAILED_LOGINS: '3', LOGIN_LOCK_MINUTES: '15',
       OUTBOX_RELAY_ENABLED: 'false',
     });

@@ -34,7 +34,7 @@ Gọi API: `Authorization: Bearer <accessToken>`. Định dạng lỗi và phân
 
 | | Access token | Refresh token |
 |---|---|---|
-| Dạng | JWT HS256 (`sub`, `email`, `role`, `iss`, `exp`) | Chuỗi ngẫu nhiên 48 byte, không phải JWT |
+| Dạng | JWT RS256 (`sub`, `email`, `role`, `iss`, `exp`) | Chuỗi ngẫu nhiên 48 byte, không phải JWT |
 | Hạn mặc định | 15 phút | 30 ngày |
 | Lưu ở server | Không (stateless) | Chỉ lưu **băm SHA-256** trong `user.refresh_tokens` |
 | Dùng để | Gọi API, các service tự kiểm tra bằng khóa chung | Chỉ để đổi lấy cặp mới |
@@ -50,7 +50,8 @@ Gọi API: `Authorization: Bearer <accessToken>`. Định dạng lỗi và phân
 - Sai email và sai mật khẩu cho **cùng một thông báo**; email không tồn tại vẫn tốn thời gian so khớp băm giả, để không lộ email nào có tài khoản.
 - Nhập sai 5 lần liên tiếp thì khóa 15 phút (HTTP 429). Bộ đếm tăng nguyên tử nên các lần thử song song không né được giới hạn.
 - Trạng thái `DISABLED` chỉ lộ (HTTP 403) sau khi nhập đúng mật khẩu.
-- Chỉ chấp nhận thuật toán HS256 và đúng `issuer`; chặn `alg: none`. Khóa ký tối thiểu 32 ký tự, thiếu thì service không khởi động.
+- Chỉ chấp nhận thuật toán RS256 và đúng `issuer`; chặn `alg: none` và tấn công đổi thuật toán. Khóa RSA từ 2048 bit; thiếu khóa, khóa không đọc được hoặc khóa riêng không khớp khóa công khai thì service không khởi động.
+- **Bất đối xứng**: chỉ user service giữ khóa riêng (`JWT_PRIVATE_KEY`) và ký token; mọi service khác chỉ có khóa công khai (`JWT_PUBLIC_KEY`). Khóa công khai của user service tự suy ra từ khóa riêng.
 - DTO từ chối trường lạ, nên không thể tự đăng ký làm ADMIN bằng cách gửi thêm `role`.
 - Không bao giờ trả băm mật khẩu hay trạng thái khóa nội bộ ra API.
 - Không thể vô hiệu hóa hoặc hạ quyền quản trị viên đang hoạt động cuối cùng.
@@ -62,7 +63,8 @@ Gọi API: `Authorization: Bearer <accessToken>`. Định dạng lỗi và phân
 |---|---|---|
 | `USER_DATABASE_URL` | bắt buộc | |
 | `RABBITMQ_URL` | bắt buộc | |
-| `JWT_ACCESS_SECRET` | bắt buộc, từ 32 ký tự | Mọi service dùng chung |
+| `JWT_PRIVATE_KEY` | bắt buộc | Khóa riêng RSA (PEM hoặc base64), chỉ service này dùng. Sinh cặp khóa: `pnpm jwt:keygen` |
+| `JWT_PUBLIC_KEY` | tùy chọn | Nếu đặt thì phải khớp khóa riêng (các service khác bắt buộc có biến này) |
 | `JWT_ISSUER` | `phucvi` | |
 | `ACCESS_TOKEN_TTL_SECONDS` | 900 | |
 | `REFRESH_TOKEN_TTL_DAYS` | 30 | |
@@ -79,7 +81,7 @@ Thiếu hoặc sai cấu hình: service báo **tất cả** lỗi một lượt 
 ```powershell
 pnpm db:up                       # Postgres + RabbitMQ
 pnpm db:migrate; pnpm db:seed    # tạo bảng và dữ liệu mẫu
-# Đặt JWT_ACCESS_SECRET trong .env (xem .env.example), sau đó:
+# Chạy pnpm jwt:keygen rồi dán JWT_PRIVATE_KEY và JWT_PUBLIC_KEY vào .env (xem .env.example), sau đó:
 pnpm --filter @phucvi/user dev   # http://localhost:3001/api
 ```
 
@@ -96,6 +98,6 @@ Tài khoản mẫu (admin và 2 CTV) tạo bởi seed; mật khẩu dev nằm tr
 
 - Giới hạn tốc độ theo IP do gateway đảm nhận (đăng nhập, đăng ký, làm mới token: mặc định 20 lần/phút/IP); gọi thẳng vào service thì không có.
 - Chưa có quên mật khẩu qua email, xác minh email, đăng nhập 2 bước.
-- Token ký HS256 bằng khóa chung: service nào có khóa đều ký được token. Khi tách nhiều service nên chuyển sang khóa bất đối xứng (RS256 hoặc EdDSA) để chỉ service user giữ khóa ký.
+- Chỉ có một cặp khóa đang dùng, chưa có `kid` và endpoint JWKS: đổi khóa nghĩa là mọi access token đang dùng (tối đa 15 phút) mất hiệu lực, người dùng đăng nhập lại hoặc làm mới bằng refresh token (refresh token không phụ thuộc khóa). Xoay khóa không gián đoạn cần thêm `kid` và nhận nhiều khóa công khai cùng lúc.
 - Khóa tài khoản theo email nên kẻ xấu có thể cố ý khóa tài khoản người khác 15 phút. Đây là đánh đổi thường gặp; giảm thiểu bằng giới hạn theo IP ở gateway (đã có).
 - Service chạy bằng `tsx` (chưa có bước build production). `tsconfig.json` của service phải có `../../packages/shared-library/src/**/*.ts` trong `include`, nếu không `tsx` không áp dụng `experimentalDecorators` cho mã của thư viện.

@@ -1,4 +1,4 @@
-import type { JwtConfig } from '@phucvi/shared-library/auth';
+import { readJwtConfig, type JwtConfig } from '@phucvi/shared-library/auth';
 import { readResilienceEnv, type ResilienceConfig } from '@phucvi/shared-library/http';
 
 export const APP_CONFIG = Symbol('APP_CONFIG');
@@ -23,8 +23,6 @@ export function loadConfig(env: Env = process.env): AppConfig {
   const problems: string[] = [];
 
   if (!env.TRACKING_DATABASE_URL) problems.push('Thiếu TRACKING_DATABASE_URL');
-  const secret = env.JWT_ACCESS_SECRET ?? '';
-  if (secret.length < 32) problems.push('JWT_ACCESS_SECRET phải có ít nhất 32 ký tự');
   const internalKey = env.INTERNAL_API_KEY ?? '';
   if (internalKey.length < 24) problems.push('INTERNAL_API_KEY phải có ít nhất 24 ký tự');
 
@@ -38,12 +36,15 @@ export function loadConfig(env: Env = process.env): AppConfig {
   const affiliateUrl = (env.AFFILIATE_URL ?? 'http://localhost:3002/api').replace(/\/+$/, '');
   if (!/^https?:\/\/[^\s]+$/.test(affiliateUrl)) problems.push('AFFILIATE_URL phải là địa chỉ http(s)');
 
+  // Chỉ kiểm tra token nên chỉ cần khóa công khai (khóa riêng nằm ở user service).
+  const jwt = readJwtConfig(env, 'verify', ttl, problems);
+
   if (problems.length) throw new Error(`Cấu hình không hợp lệ:\n - ${problems.join('\n - ')}`);
 
   return {
     port,
     corsOrigins: (env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map((s) => s.trim()).filter(Boolean),
-    jwt: { secret, issuer: env.JWT_ISSUER ?? 'phucvi', accessTtlSeconds: ttl },
+    jwt,
     internalApiKey: internalKey,
     affiliateUrl,
     downstreamTimeoutMs: timeout,

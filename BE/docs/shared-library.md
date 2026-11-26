@@ -70,7 +70,7 @@ Service nào cũng import `AuthGuardsModule.forRoot({ secret, issuer, accessTtlS
 ```
 `InternalKeyGuard` bảo vệ API nội bộ giữa các service (header `x-internal-key`, so sánh an toàn thời gian). Dùng cùng `@Public()` và `@UseGuards(InternalKeyGuard)`; service đăng ký khóa bằng provider `INTERNAL_API_KEY`.
 
-`verifyAccessToken` chỉ chấp nhận HS256 và đúng issuer, từ chối `alg: none`, token hết hạn, giả mạo, thiếu trường hoặc sai vai trò. Chỉ service `user` ký token (`signAccessToken`); các service khác chỉ kiểm tra. Xem `user-service.md`.
+`verifyAccessToken` chỉ chấp nhận RS256 và đúng issuer, từ chối `alg: none`, HS256 ký bằng khóa công khai (tấn công đổi thuật toán), token hết hạn, giả mạo, thiếu trường hoặc sai vai trò. Chỉ service `user` có khóa riêng để ký (`signAccessToken`); các service khác chỉ có khóa công khai. `readJwtConfig(env, 'verify' | 'sign', ttl, problems)` đọc `JWT_PUBLIC_KEY` / `JWT_PRIVATE_KEY` (PEM, PEM một dòng với `\n`, hoặc PEM mã hóa base64), kiểm tra khóa RSA từ 2048 bit và khóa riêng khớp khóa công khai; `generateJwtKeyPair()` sinh cặp khóa cho test. Xem `user-service.md`.
 
 ## 2. CRUD tự sinh (`/crud`)
 
@@ -250,7 +250,7 @@ pnpm --filter @phucvi/shared-library typecheck
 
 ## 6. Giới hạn hiện tại
 
-- Xác thực mới ở mức JWT HS256 dùng khóa chung (chi tiết giới hạn ở `user-service.md`). CRUD nhận `decorators` để gắn `@Roles`.
+- Xác thực mới ở mức JWT RS256 một cặp khóa, chưa có `kid` để xoay khóa không gián đoạn (chi tiết ở `user-service.md`). CRUD nhận `decorators` để gắn `@Roles`.
 - Service dùng thư viện qua `tsx` phải đưa `../../packages/shared-library/src/**/*.ts` vào `include` của `tsconfig.json`, nếu không decorator tham số trong thư viện bị từ chối lúc chạy.
 - Retry của consumer chờ trong bộ nhớ tiến trình: nếu tiến trình tắt giữa lúc chờ thì lần thử lại đó mất (message gốc đã ack). Phù hợp demo; production nên dùng delay queue hoặc để broker redeliver.
 - Đưa message DLQ về queue gốc là thao tác thủ công bằng `pnpm dlq` (chưa có tự động đưa lại hay cảnh báo khi DLQ có message; nên theo dõi số message ở `pnpm dlq` hoặc giao diện RabbitMQ).

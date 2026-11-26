@@ -12,11 +12,12 @@ Các service (kể cả gateway) không có `ports` trong compose: chỉ nói ch
 
 ## 1. Chạy
 
-Cần Docker và file `.env` ở gốc repo có đủ hai bí mật (xem `.env.example`; **cả hai phải có giá trị**, nếu thiếu service tự dừng và báo lỗi cấu hình trong log):
+Cần Docker và file `.env` ở gốc repo có đủ ba giá trị (xem `.env.example`; **đều phải có**, nếu thiếu service tự dừng và báo lỗi cấu hình trong log):
 
 | Biến | Yêu cầu | Sinh nhanh |
 |---|---|---|
-| `JWT_ACCESS_SECRET` | từ 32 ký tự | `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"` |
+| `JWT_PRIVATE_KEY` | khóa riêng RSA 2048; **chỉ user service nhận** | `pnpm jwt:keygen` (in cả hai khóa) |
+| `JWT_PUBLIC_KEY` | khóa công khai tương ứng; mọi service nhận để kiểm tra token | cùng lệnh trên |
 | `INTERNAL_API_KEY` | từ 24 ký tự | `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"` |
 
 ```powershell
@@ -62,7 +63,7 @@ Biến của từng service (cổng, địa chỉ database, địa chỉ service
 - **Healthcheck** mỗi service gọi `/api/health` của chính nó; gateway chỉ khởi động khi 6 service healthy, Caddy chỉ khởi động khi gateway healthy.
 - **Địa chỉ người dùng thật**: Caddy đặt `X-Forwarded-For` bằng IP người gọi (bỏ giá trị client tự gửi); gateway chạy `TRUST_PROXY_HOPS=1` nên giới hạn tốc độ tính theo IP thật. Đã kiểm tra giả 24 giá trị `X-Forwarded-For` khác nhau vẫn bị chặn 429 từ lần thứ 21.
 - **Giới hạn kích thước**: `request_body max_size` của Caddy phải bằng `MAX_BODY_BYTES` của gateway (cùng 1 MiB). Nếu Caddy cho qua mà gateway từ chối và đóng kết nối khi Caddy đang gửi dở, Caddy trả 502 thay vì 413. Đổi một chỗ thì đổi cả chỗ kia.
-- **Bí mật** truyền qua biến môi trường từ `.env`; gateway không nhận bí mật JWT hay khóa nội bộ.
+- **Bí mật** truyền qua biến môi trường từ `.env`; gateway không nhận khóa JWT hay khóa nội bộ. Khóa riêng JWT chỉ đưa vào user service (compose đặt riêng cho service đó), các service khác chỉ có khóa công khai nên một service bị chiếm quyền không ký giả token được.
 
 ## 4. Đã kiểm tra
 

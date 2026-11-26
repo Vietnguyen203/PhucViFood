@@ -1,4 +1,4 @@
-import type { JwtConfig } from '@phucvi/shared-library/auth';
+import { readJwtConfig, type JwtConfig } from '@phucvi/shared-library/auth';
 
 export const APP_CONFIG = Symbol('APP_CONFIG');
 
@@ -23,8 +23,6 @@ export function loadConfig(env: Env = process.env): AppConfig {
 
   if (!env.AFFILIATE_DATABASE_URL) problems.push('Thiếu AFFILIATE_DATABASE_URL');
   if (!env.RABBITMQ_URL) problems.push('Thiếu RABBITMQ_URL');
-  const secret = env.JWT_ACCESS_SECRET ?? '';
-  if (secret.length < 32) problems.push('JWT_ACCESS_SECRET phải có ít nhất 32 ký tự');
   const internalKey = env.INTERNAL_API_KEY ?? '';
   if (internalKey.length < 24) problems.push('INTERNAL_API_KEY phải có ít nhất 24 ký tự');
 
@@ -35,13 +33,16 @@ export function loadConfig(env: Env = process.env): AppConfig {
   const ttl = Number(env.ACCESS_TOKEN_TTL_SECONDS ?? 900);
   if (!Number.isInteger(ttl) || ttl < 60) problems.push('ACCESS_TOKEN_TTL_SECONDS phải là số nguyên từ 60');
 
+  // Chỉ kiểm tra token nên chỉ cần khóa công khai (khóa riêng nằm ở user service).
+  const jwt = readJwtConfig(env, 'verify', ttl, problems);
+
   if (problems.length) throw new Error(`Cấu hình không hợp lệ:\n - ${problems.join('\n - ')}`);
 
   return {
     port,
     rabbitUrl: env.RABBITMQ_URL ?? '',
     corsOrigins: (env.CORS_ORIGINS ?? 'http://localhost:5173').split(',').map((s) => s.trim()).filter(Boolean),
-    jwt: { secret, issuer: env.JWT_ISSUER ?? 'phucvi', accessTtlSeconds: ttl },
+    jwt,
     internalApiKey: internalKey,
     eventQueue: env.AFFILIATE_EVENT_QUEUE ?? 'affiliate.commission',
     relayEnabled: env.OUTBOX_RELAY_ENABLED !== 'false',

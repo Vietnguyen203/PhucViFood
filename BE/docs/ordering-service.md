@@ -6,7 +6,7 @@ Ordering là service điều phối: khi khách đặt hàng nó gọi **affilia
 
 ## 1. API
 
-Tiền tố `/api`. JWT lấy từ service `user` (cùng `JWT_ACCESS_SECRET`).
+Tiền tố `/api`. JWT do service `user` ký bằng khóa riêng; service này chỉ có khóa công khai (`JWT_PUBLIC_KEY`) để kiểm tra.
 
 **Khách (công khai, không cần tài khoản)**
 
@@ -103,7 +103,7 @@ Sự kiện ordering phát ra: `ordering.order.placed` (kèm `commissionRateBps`
 | Biến | Mặc định | Ghi chú |
 |---|---|---|
 | `ORDERING_DATABASE_URL`, `RABBITMQ_URL` | bắt buộc | |
-| `JWT_ACCESS_SECRET` | bắt buộc, từ 32 ký tự | Cùng giá trị với service user |
+| `JWT_PUBLIC_KEY` | bắt buộc | Khóa công khai RSA (PEM hoặc base64) của cặp khóa do `pnpm jwt:keygen` sinh; service này chỉ kiểm tra token |
 | `INTERNAL_API_KEY` | bắt buộc, từ 24 ký tự | Khóa gọi API nội bộ của catalog, affiliate, customer |
 | `CATALOG_URL`, `AFFILIATE_URL`, `CUSTOMER_URL` | `http://localhost:3003/api`, `3002`, `3005` | |
 | `DOWNSTREAM_TIMEOUT_MS` | 5000 | Thời gian chờ mỗi lần gọi service khác |
@@ -118,7 +118,7 @@ Cấu hình trong DB (`ordering.settings`): `shipping.flat_fee`, `shipping.free_
 ## 6. Chạy và kiểm thử
 
 ```powershell
-pnpm --filter @phucvi/ordering dev                 # cần .env có JWT_ACCESS_SECRET và INTERNAL_API_KEY; cần catalog, affiliate, customer đang chạy
+pnpm --filter @phucvi/ordering dev                 # cần .env có JWT_PUBLIC_KEY và INTERNAL_API_KEY; cần catalog, affiliate, customer đang chạy
 pnpm --filter @phucvi/ordering test                # unit
 pnpm --filter @phucvi/ordering test:integration    # cần Postgres + RabbitMQ; catalog, affiliate, customer được giả bằng máy chủ HTTP
 ```

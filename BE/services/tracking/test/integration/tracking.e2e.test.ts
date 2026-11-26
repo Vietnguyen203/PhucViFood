@@ -6,12 +6,15 @@ import type { AddressInfo } from 'node:net';
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { setupApp } from '@phucvi/shared-library/api';
-import { signAccessToken } from '@phucvi/shared-library/auth';
+import { generateJwtKeyPair, signAccessToken } from '@phucvi/shared-library/auth';
 import { uuidv7 } from '@phucvi/shared-library/utils';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
 import { loadConfig, type AppConfig } from '../../src/config/app-config';
 import { PrismaService } from '../../src/prisma/prisma.service';
+
+/** Cặp khóa riêng của file test: service chỉ nhận khóa công khai, test giữ khóa riêng để ký token thay cho user service. */
+const KEYS = generateJwtKeyPair();
 
 const enabled = process.env.RUN_INTEGRATION === '1';
 const DB_URL = process.env.TRACKING_DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5433/tracking_db';
@@ -86,7 +89,7 @@ describe.skipIf(!enabled)('service tracking (HTTP + Postgres thật, affiliate �
   const affiliateIds: string[] = [];
 
   const track = (over?: Omit<Partial<FakeAffiliate>, 'links'> & { links?: Record<string, string> }) => { const a = affiliate.add(over); affiliateIds.push(a.id); return a; };
-  const token = (role: 'ADMIN' | 'AFFILIATE', id = uuidv7()) => signAccessToken({ id, email: `${rand()}@example.com`, role }, config.jwt);
+  const token = (role: 'ADMIN' | 'AFFILIATE', id = uuidv7()) => signAccessToken({ id, email: `${rand()}@example.com`, role }, { ...config.jwt, privateKey: KEYS.privateKey });
 
   async function api(method: string, path: string, opts: { token?: string; body?: unknown; headers?: Record<string, string> } = {}) {
     const res = await fetch(`${base}${path}`, {
@@ -104,7 +107,7 @@ describe.skipIf(!enabled)('service tracking (HTTP + Postgres thật, affiliate �
     await affiliate.start();
     process.env.TRACKING_DATABASE_URL = DB_URL;
     config = loadConfig({
-      TRACKING_DATABASE_URL: DB_URL, JWT_ACCESS_SECRET: 'integration-test-secret-integration-test-secret', JWT_ISSUER: 'phucvi-it',
+      TRACKING_DATABASE_URL: DB_URL, JWT_PUBLIC_KEY: KEYS.publicKey, JWT_ISSUER: 'phucvi-it',
       INTERNAL_API_KEY: INTERNAL_KEY, DOWNSTREAM_TIMEOUT_MS: '1500', AFFILIATE_URL: `${affiliate.url}/api`,
       // Nhiều test cố ý làm affiliate lỗi liên tiếp: nâng ngưỡng để mạch không ngắt chéo giữa các test. Retry giữ 2 lần, chờ ngắn.
       DOWNSTREAM_BREAKER_THRESHOLD: '1000', DOWNSTREAM_RETRY_ATTEMPTS: '2', DOWNSTREAM_RETRY_BASE_MS: '10',

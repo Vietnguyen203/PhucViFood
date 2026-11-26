@@ -5,8 +5,12 @@ import { ContextCache, type ReferralContext } from '../../src/clients/affiliate.
 import { loadConfig } from '../../src/config/app-config';
 import { ClickDto, TrackEventDto } from '../../src/tracking/dto';
 import { parseRange } from '../../src/tracking/tracking.service';
+import { generateJwtKeyPair } from '@phucvi/shared-library/auth';
 
-const env = { TRACKING_DATABASE_URL: 'postgresql://x', JWT_ACCESS_SECRET: 'a'.repeat(32), INTERNAL_API_KEY: 'k'.repeat(24) };
+/** Cặp khóa riêng của file test: service chỉ nhận khóa công khai, test giữ khóa riêng để ký token thay cho user service. */
+const KEYS = generateJwtKeyPair();
+
+const env = { TRACKING_DATABASE_URL: 'postgresql://x', JWT_PUBLIC_KEY: KEYS.publicKey, INTERNAL_API_KEY: 'k'.repeat(24) };
 
 describe('loadConfig', () => {
   it('đọc cấu hình hợp lệ với giá trị mặc định (cổng 3006, affiliate ở 3002)', () => {
@@ -17,7 +21,7 @@ describe('loadConfig', () => {
   });
   it('báo tất cả lỗi một lượt', () => {
     expect(() => loadConfig({ INTERNAL_API_KEY: 'x', AFFILIATE_URL: 'khong-phai-url', PORT: '0' })).toThrowError(
-      /TRACKING_DATABASE_URL[\s\S]*JWT_ACCESS_SECRET[\s\S]*INTERNAL_API_KEY[\s\S]*PORT[\s\S]*AFFILIATE_URL/,
+      /TRACKING_DATABASE_URL[\s\S]*INTERNAL_API_KEY[\s\S]*PORT[\s\S]*AFFILIATE_URL[\s\S]*JWT_PUBLIC_KEY/,
     );
   });
 });

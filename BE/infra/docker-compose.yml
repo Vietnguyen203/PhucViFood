@@ -1,6 +1,6 @@
 # Hạ tầng dùng chung (Postgres, RabbitMQ) và, với profile "app", toàn bộ hệ thống chạy trong Docker.
 #   Chỉ hạ tầng (dev, service chạy trên máy):  pnpm db:up
-#   Cả hệ thống (7 service + Caddy):            pnpm stack:up   (cần JWT_ACCESS_SECRET và INTERNAL_API_KEY trong .env)
+#   Cả hệ thống (7 service + Caddy):            pnpm stack:up   (cần JWT_PRIVATE_KEY, JWT_PUBLIC_KEY và INTERNAL_API_KEY trong .env)
 # Mỗi service một database riêng; trong mạng Docker các service gọi nhau theo tên (catalog:3003...), không qua localhost.
 
 # Biến chung cho mọi service. Bí mật lấy từ .env ở gốc repo (truyền bằng --env-file), không ghi cứng vào file này.
@@ -10,7 +10,8 @@ x-app-env: &app-env
   NODE_ENV: production
   # false: không tự áp migration lúc khởi động (đã chạy `pnpm stack:migrate` trước). Xem BE/docs/deploy.md.
   RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
-  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-}
+  # JWT bất đối xứng: mọi service chỉ nhận khóa CÔNG KHAI để kiểm tra token. Khóa riêng chỉ đưa vào user service (xem bên dưới).
+  JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
   INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
   JWT_ISSUER: ${JWT_ISSUER:-phucvi}
   RABBITMQ_URL: amqp://${RABBITMQ_USER:-phucvi}:${RABBITMQ_PASSWORD:-phucvi}@rabbitmq:5672
@@ -81,6 +82,8 @@ services:
     environment:
       <<: *app-env
       PORT: "3001"
+      # Chỉ user service ký token nên chỉ nó nhận khóa riêng.
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
       USER_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/user_db
     depends_on: *depends-infra
     healthcheck: *healthcheck

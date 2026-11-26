@@ -6,9 +6,13 @@ import { loadConfig } from '../../src/config/app-config';
 import { PlaceOrderDto } from '../../src/orders/dto';
 import { toAffiliateView, toPublicView, transferInstructions, type OrderFull } from '../../src/orders/views';
 import { isUuid } from '@phucvi/shared-library/utils';
+import { generateJwtKeyPair } from '@phucvi/shared-library/auth';
+
+/** Cặp khóa riêng của file test: service chỉ nhận khóa công khai, test giữ khóa riêng để ký token thay cho user service. */
+const KEYS = generateJwtKeyPair();
 
 const env = {
-  ORDERING_DATABASE_URL: 'postgresql://x', RABBITMQ_URL: 'amqp://x', JWT_ACCESS_SECRET: 'a'.repeat(32), INTERNAL_API_KEY: 'k'.repeat(24),
+  ORDERING_DATABASE_URL: 'postgresql://x', RABBITMQ_URL: 'amqp://x', JWT_PUBLIC_KEY: KEYS.publicKey, INTERNAL_API_KEY: 'k'.repeat(24),
 };
 
 describe('loadConfig', () => {
@@ -26,7 +30,7 @@ describe('loadConfig', () => {
   it('bỏ dấu / cuối địa chỉ; báo tất cả lỗi một lượt', () => {
     expect(loadConfig({ ...env, CATALOG_URL: 'http://c:1/api///' }).catalogUrl).toBe('http://c:1/api');
     expect(() => loadConfig({ INTERNAL_API_KEY: 'x', CATALOG_URL: 'khong-phai-url', DOWNSTREAM_TIMEOUT_MS: '5' })).toThrowError(
-      /ORDERING_DATABASE_URL[\s\S]*RABBITMQ_URL[\s\S]*JWT_ACCESS_SECRET[\s\S]*INTERNAL_API_KEY[\s\S]*DOWNSTREAM_TIMEOUT_MS[\s\S]*CATALOG_URL/,
+      /ORDERING_DATABASE_URL[\s\S]*RABBITMQ_URL[\s\S]*INTERNAL_API_KEY[\s\S]*DOWNSTREAM_TIMEOUT_MS[\s\S]*CATALOG_URL[\s\S]*JWT_PUBLIC_KEY/,
     );
   });
 });

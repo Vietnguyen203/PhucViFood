@@ -4,7 +4,7 @@ Thư mục: `BE/services/affiliate` (gói `@phucvi/affiliate`). Database `affili
 
 ## 1. API
 
-Tiền tố `/api`. JWT lấy từ service `user` (cùng `JWT_ACCESS_SECRET`).
+Tiền tố `/api`. JWT do service `user` ký bằng khóa riêng; service này chỉ có khóa công khai (`JWT_PUBLIC_KEY`) để kiểm tra.
 
 **Công khai (web bán hàng, không cần đăng nhập)**
 
@@ -80,7 +80,7 @@ Xử lý **idempotent** (inbox + `order_id` UNIQUE) nên sự kiện gửi lặp
 | Biến | Mặc định | Ghi chú |
 |---|---|---|
 | `AFFILIATE_DATABASE_URL`, `RABBITMQ_URL` | bắt buộc | |
-| `JWT_ACCESS_SECRET` | bắt buộc, từ 32 ký tự | Cùng giá trị với service user |
+| `JWT_PUBLIC_KEY` | bắt buộc | Khóa công khai RSA (PEM hoặc base64) của cặp khóa do `pnpm jwt:keygen` sinh; service này chỉ kiểm tra token |
 | `INTERNAL_API_KEY` | bắt buộc, từ 24 ký tự | Khóa gọi API nội bộ |
 | `PORT` | 3002 | |
 | `AFFILIATE_EVENT_QUEUE` | `affiliate.commission` | |
@@ -91,7 +91,7 @@ Số ngày cookie và tỷ lệ mặc định đọc từ bảng `affiliate.sett
 ## 5. Chạy và kiểm thử
 
 ```powershell
-pnpm --filter @phucvi/affiliate dev                # cần .env có JWT_ACCESS_SECRET và INTERNAL_API_KEY
+pnpm --filter @phucvi/affiliate dev                # cần .env có JWT_PUBLIC_KEY và INTERNAL_API_KEY
 pnpm --filter @phucvi/affiliate test               # unit
 pnpm --filter @phucvi/affiliate test:integration   # cần Postgres + RabbitMQ (pnpm db:up, db:migrate)
 ```

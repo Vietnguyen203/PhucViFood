@@ -14,6 +14,7 @@
     "stack:up": "docker compose --env-file .env -f BE/infra/docker-compose.yml --profile app up -d --build",
     "stack:down": "docker compose --env-file .env -f BE/infra/docker-compose.yml --profile app down",
     "stack:logs": "docker compose --env-file .env -f BE/infra/docker-compose.yml --profile app logs -f --tail=50",
+    "jwt:keygen": "node BE/infra/docker/keygen-jwt.mjs",
     "stack:seed": "node BE/infra/docker/seed-stack.mjs",
     "stack:migrate": "node BE/infra/docker/migrate-stack.mjs",
     "dlq": "pnpm --filter @phucvi/shared-library run dlq",

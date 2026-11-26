@@ -6,13 +6,16 @@ import type { AddressInfo } from 'node:net';
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { setupApp } from '@phucvi/shared-library/api';
-import { signAccessToken } from '@phucvi/shared-library/auth';
+import { generateJwtKeyPair, signAccessToken } from '@phucvi/shared-library/auth';
 import { uuidv7 } from '@phucvi/shared-library/utils';
 import ExcelJS from 'exceljs';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
 import { loadConfig, type AppConfig } from '../../src/config/app-config';
 import { PrismaService } from '../../src/prisma/prisma.service';
+
+/** Cặp khóa riêng của file test: service chỉ nhận khóa công khai, test giữ khóa riêng để ký token thay cho user service. */
+const KEYS = generateJwtKeyPair();
 
 const enabled = process.env.RUN_INTEGRATION === '1';
 const DB_URL = process.env.CUSTOMER_DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5433/customer_db';
@@ -75,7 +78,7 @@ describe.skipIf(!enabled)('service customer (HTTP + Postgres thật, ordering đ
   let originalSettings: Array<{ key: string; value: unknown }> = [];
 
   // ───────── Hỗ trợ ─────────
-  const token = (role: 'ADMIN' | 'AFFILIATE', id = uuidv7()) => signAccessToken({ id, email: `${rand()}@example.com`, role }, config.jwt);
+  const token = (role: 'ADMIN' | 'AFFILIATE', id = uuidv7()) => signAccessToken({ id, email: `${rand()}@example.com`, role }, { ...config.jwt, privateKey: KEYS.privateKey });
   const admin = (id = uuidv7()) => { adminIds.push(id); return token('ADMIN', id); };
 
   async function api(method: string, path: string, opts: { token?: string; body?: unknown; headers?: Record<string, string> } = {}) {
@@ -104,7 +107,7 @@ describe.skipIf(!enabled)('service customer (HTTP + Postgres thật, ordering đ
     await ordering.start();
     process.env.CUSTOMER_DATABASE_URL = DB_URL;
     config = loadConfig({
-      CUSTOMER_DATABASE_URL: DB_URL, RABBITMQ_URL: RABBIT_URL, JWT_ACCESS_SECRET: 'integration-test-secret-integration-test-secret',
+      CUSTOMER_DATABASE_URL: DB_URL, RABBITMQ_URL: RABBIT_URL, JWT_PUBLIC_KEY: KEYS.publicKey,
       JWT_ISSUER: 'phucvi-it', INTERNAL_API_KEY: INTERNAL_KEY, OUTBOX_RELAY_ENABLED: 'false', DOWNSTREAM_TIMEOUT_MS: '1500',
       DOWNSTREAM_BREAKER_THRESHOLD: '1000', DOWNSTREAM_RETRY_ATTEMPTS: '2', DOWNSTREAM_RETRY_BASE_MS: '10', ORDERING_URL: `${ordering.url}/api`,
     });

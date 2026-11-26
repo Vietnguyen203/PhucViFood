@@ -4,7 +4,7 @@ Thư mục: `BE/services/catalog` (gói `@phucvi/catalog`). Database `catalog_db
 
 ## 1. API
 
-Tiền tố `/api`. JWT lấy từ service `user` (cùng `JWT_ACCESS_SECRET`).
+Tiền tố `/api`. JWT do service `user` ký bằng khóa riêng; service này chỉ có khóa công khai (`JWT_PUBLIC_KEY`) để kiểm tra.
 
 **Công khai (web bán hàng, không cần đăng nhập)**
 
@@ -56,7 +56,7 @@ Giá trong snapshot là giá **tại lúc giữ hàng**. Nếu phát lại (`rep
 | Biến | Mặc định | Ghi chú |
 |---|---|---|
 | `CATALOG_DATABASE_URL`, `RABBITMQ_URL` | bắt buộc | |
-| `JWT_ACCESS_SECRET` | bắt buộc, từ 32 ký tự | Cùng giá trị với service user |
+| `JWT_PUBLIC_KEY` | bắt buộc | Khóa công khai RSA (PEM hoặc base64) của cặp khóa do `pnpm jwt:keygen` sinh; service này chỉ kiểm tra token |
 | `INTERNAL_API_KEY` | bắt buộc, từ 24 ký tự | Khóa gọi API nội bộ |
 | `PORT` | 3003 | |
 | `CATALOG_EVENT_QUEUE` | `catalog.stock` | |
@@ -84,7 +84,7 @@ Ordering giữ hàng ở catalog **trước** khi tạo đơn. Nếu ordering s�
 ## 5. Chạy và kiểm thử
 
 ```powershell
-pnpm --filter @phucvi/catalog dev                 # cần .env có JWT_ACCESS_SECRET và INTERNAL_API_KEY
+pnpm --filter @phucvi/catalog dev                 # cần .env có JWT_PUBLIC_KEY và INTERNAL_API_KEY
 pnpm --filter @phucvi/catalog test                # unit
 pnpm --filter @phucvi/catalog test:integration    # cần Postgres + RabbitMQ (pnpm db:up, db:migrate)
 ```

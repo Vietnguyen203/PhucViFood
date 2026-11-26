@@ -6,7 +6,7 @@ import * as amqp from 'amqplib';
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { setupApp } from '@phucvi/shared-library/api';
-import { signAccessToken } from '@phucvi/shared-library/auth';
+import { generateJwtKeyPair, signAccessToken } from '@phucvi/shared-library/auth';
 import { createEnvelope, EventTypes, StockMovementReasonCode, type EventEnvelope } from '@phucvi/shared-library/contracts';
 import { RabbitMqClient } from '@phucvi/shared-library/messaging';
 import { uuidv7 } from '@phucvi/shared-library/utils';
@@ -15,6 +15,9 @@ import { AppModule } from '../../src/app.module';
 import { loadConfig, type AppConfig } from '../../src/config/app-config';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { OrphanReservationsService } from '../../src/stock/orphan-reservations.service';
+
+/** Cặp khóa riêng của file test: service chỉ nhận khóa công khai, test giữ khóa riêng để ký token thay cho user service. */
+const KEYS = generateJwtKeyPair();
 
 const enabled = process.env.RUN_INTEGRATION === '1';
 const DB_URL = process.env.CATALOG_DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5433/catalog_db';
@@ -64,7 +67,7 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
   const publishedEventIds: string[] = [];
 
   // ───────── Hỗ trợ ─────────
-  const token = (role: 'ADMIN' | 'AFFILIATE') => signAccessToken({ id: uuidv7(), email: `${rand()}@example.com`, role }, config.jwt);
+  const token = (role: 'ADMIN' | 'AFFILIATE') => signAccessToken({ id: uuidv7(), email: `${rand()}@example.com`, role }, { ...config.jwt, privateKey: KEYS.privateKey });
   const admin = () => token('ADMIN');
   const internal = { 'x-internal-key': INTERNAL_KEY };
 
@@ -122,7 +125,7 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
     await ordering.start();
     process.env.CATALOG_DATABASE_URL = DB_URL;
     config = loadConfig({
-      CATALOG_DATABASE_URL: DB_URL, RABBITMQ_URL: RABBIT_URL, JWT_ACCESS_SECRET: 'integration-test-secret-integration-test-secret',
+      CATALOG_DATABASE_URL: DB_URL, RABBITMQ_URL: RABBIT_URL, JWT_PUBLIC_KEY: KEYS.publicKey,
       JWT_ISSUER: 'phucvi-it', INTERNAL_API_KEY: INTERNAL_KEY, CATALOG_EVENT_QUEUE: `catalog.it.${rand(8)}`, OUTBOX_RELAY_ENABLED: 'false',
       ORDERING_URL: `${ordering.url}/api`, ORPHAN_SWEEP_ENABLED: 'false', // test gọi runOnce() trực tiếp
       DOWNSTREAM_TIMEOUT_MS: '1500', DOWNSTREAM_BREAKER_THRESHOLD: '1000', DOWNSTREAM_RETRY_ATTEMPTS: '2', DOWNSTREAM_RETRY_BASE_MS: '10',
@@ -341,7 +344,7 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
   describe('admin: điều chỉnh tồn kho và sổ cái', () => {
     it('nhập thêm, giảm, không cho âm; mọi thay đổi có dòng trong sổ cái kèm người thực hiện', async () => {
       const adminUserId = uuidv7();
-      const t = signAccessToken({ id: adminUserId, email: 'a@example.com', role: 'ADMIN' }, config.jwt);
+      const t = signAccessToken({ id: adminUserId, email: 'a@example.com', role: 'ADMIN' }, { ...config.jwt, privateKey: KEYS.privateKey });
       const p = await dbProduct({ stock: 10 });
       const other = await dbProduct({ stock: 10 });
 

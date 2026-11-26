@@ -21,7 +21,7 @@ pnpm db:up                       # Postgres + RabbitMQ
 pnpm db:migrate; pnpm db:seed    # có sẵn tài khoản admin của seed
 ```
 
-Chạy đủ **cả 7 service** (user 3001, affiliate 3002, catalog 3003, ordering 3004, customer 3005, tracking 3006, gateway 3000) với `.env` ở thư mục gốc (xem `.env.example`; `JWT_ACCESS_SECRET` và `INTERNAL_API_KEY` phải điền, và phải **giống nhau** ở mọi service). Mỗi service một cửa sổ:
+Chạy đủ **cả 7 service** (user 3001, affiliate 3002, catalog 3003, ordering 3004, customer 3005, tracking 3006, gateway 3000) với `.env` ở thư mục gốc (xem `.env.example`; `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY` (cặp khóa từ `pnpm jwt:keygen`) và `INTERNAL_API_KEY` phải điền; khóa công khai và `INTERNAL_API_KEY` phải **giống nhau** ở mọi service). Mỗi service một cửa sổ:
 
 ```powershell
 $env:PORT="3001"; pnpm --filter @phucvi/user dev

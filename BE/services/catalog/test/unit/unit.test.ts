@@ -6,10 +6,14 @@ import { CreateProductDto, UpdateProductDto } from '../../src/products/dto';
 import { discountPercent } from '../../src/products/products.service';
 import { AdjustStockDto, ReserveStockDto } from '../../src/stock/dto';
 import { plainToInstance } from 'class-transformer';
+import { generateJwtKeyPair } from '@phucvi/shared-library/auth';
+
+/** Cặp khóa riêng của file test: service chỉ nhận khóa công khai, test giữ khóa riêng để ký token thay cho user service. */
+const KEYS = generateJwtKeyPair();
 
 const env = {
   CATALOG_DATABASE_URL: 'postgresql://x', RABBITMQ_URL: 'amqp://x',
-  JWT_ACCESS_SECRET: 'a'.repeat(32), INTERNAL_API_KEY: 'k'.repeat(24),
+  JWT_PUBLIC_KEY: KEYS.publicKey, INTERNAL_API_KEY: 'k'.repeat(24),
 };
 
 describe('loadConfig', () => {
@@ -25,7 +29,7 @@ describe('loadConfig', () => {
   });
   it('báo tất cả lỗi một lượt', () => {
     expect(() => loadConfig({ INTERNAL_API_KEY: 'x', PORT: 'abc' })).toThrowError(
-      /CATALOG_DATABASE_URL[\s\S]*RABBITMQ_URL[\s\S]*JWT_ACCESS_SECRET[\s\S]*INTERNAL_API_KEY[\s\S]*PORT/,
+      /CATALOG_DATABASE_URL[\s\S]*RABBITMQ_URL[\s\S]*INTERNAL_API_KEY[\s\S]*PORT[\s\S]*JWT_PUBLIC_KEY/,
     );
   });
 });

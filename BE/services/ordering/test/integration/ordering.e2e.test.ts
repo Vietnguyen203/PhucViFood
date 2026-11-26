@@ -4,7 +4,7 @@
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { setupApp } from '@phucvi/shared-library/api';
-import { signAccessToken } from '@phucvi/shared-library/auth';
+import { generateJwtKeyPair, signAccessToken } from '@phucvi/shared-library/auth';
 import { OrderStatusCodec, PaymentStatusCodec } from '@phucvi/shared-library/contracts';
 import { uuidv7 } from '@phucvi/shared-library/utils';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -15,6 +15,9 @@ import { loadConfig, type AppConfig } from '../../src/config/app-config';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { SettingsService } from '../../src/settings/settings.service';
 import { FakeDownstream, type FakeProduct } from './fake-downstream';
+
+/** Cặp khóa riêng của file test: service chỉ nhận khóa công khai, test giữ khóa riêng để ký token thay cho user service. */
+const KEYS = generateJwtKeyPair();
 
 const enabled = process.env.RUN_INTEGRATION === '1';
 const DB_URL = process.env.ORDERING_DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5433/ordering_db';
@@ -31,7 +34,7 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
   const fake = new FakeDownstream(INTERNAL_KEY);
 
   // ───────── Hỗ trợ ─────────
-  const token = (role: 'ADMIN' | 'AFFILIATE', id = uuidv7()) => signAccessToken({ id, email: `${rand()}@example.com`, role }, config.jwt);
+  const token = (role: 'ADMIN' | 'AFFILIATE', id = uuidv7()) => signAccessToken({ id, email: `${rand()}@example.com`, role }, { ...config.jwt, privateKey: KEYS.privateKey });
   const admin = () => token('ADMIN');
 
   async function api(method: string, path: string, opts: { token?: string; body?: unknown; headers?: Record<string, string> } = {}) {
@@ -76,7 +79,7 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
     await fake.start();
     process.env.ORDERING_DATABASE_URL = DB_URL;
     config = loadConfig({
-      ORDERING_DATABASE_URL: DB_URL, RABBITMQ_URL: RABBIT_URL, JWT_ACCESS_SECRET: 'integration-test-secret-integration-test-secret',
+      ORDERING_DATABASE_URL: DB_URL, RABBITMQ_URL: RABBIT_URL, JWT_PUBLIC_KEY: KEYS.publicKey,
       JWT_ISSUER: 'phucvi-it', INTERNAL_API_KEY: INTERNAL_KEY, OUTBOX_RELAY_ENABLED: 'false', DOWNSTREAM_TIMEOUT_MS: '1500',
       // Nhiều test cố ý làm service lỗi liên tiếp: nâng ngưỡng để mạch không ngắt chéo giữa các test. Retry giữ 2 lần, chờ ngắn.
       ORDER_EXPIRY_ENABLED: 'false', // test gọi runOnce() trực tiếp, không để job tự chạy xen vào

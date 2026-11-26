@@ -1,24 +1,30 @@
+import { generateJwtKeyPair, verifyAccessToken, signAccessToken } from '@phucvi/shared-library/auth';
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../../src/config/app-config';
 import { passwordPolicyIssues } from '../../src/auth/password';
 import { UserRoleCode, UserStatusCode } from '@phucvi/shared-library/contracts';
 import { UsersService } from '../../src/users/users.service';
 
+const KEYS = generateJwtKeyPair();
+
 const validEnv = {
-  USER_DATABASE_URL: 'postgresql://x', RABBITMQ_URL: 'amqp://x', JWT_ACCESS_SECRET: 'a'.repeat(32),
+  USER_DATABASE_URL: 'postgresql://x', RABBITMQ_URL: 'amqp://x', JWT_PRIVATE_KEY: KEYS.privateKey,
 };
 
 describe('loadConfig', () => {
   it('đọc cấu hình hợp lệ, có giá trị mặc định', () => {
     const c = loadConfig(validEnv);
     expect(c).toMatchObject({ port: 3001, refreshTtlDays: 30, bcryptRounds: 12, maxFailedLogins: 5, relayEnabled: true });
-    expect(c.jwt).toEqual({ secret: 'a'.repeat(32), issuer: 'phucvi', accessTtlSeconds: 900 });
+    // User service là nơi ký: nhận khóa riêng, khóa công khai suy ra từ đó; token ký ra kiểm tra được bằng khóa công khai.
+    expect(c.jwt).toMatchObject({ issuer: 'phucvi', accessTtlSeconds: 900, privateKey: KEYS.privateKey.trim() });
+    const user = { id: '01930000-0000-7000-8000-000000001001', email: 'a@example.com', role: 'ADMIN' as const };
+    expect(verifyAccessToken(signAccessToken(user, c.jwt), { publicKey: c.jwt.publicKey, issuer: c.jwt.issuer })).toEqual(user);
     expect(c.corsOrigins).toEqual(['http://localhost:5173']);
   });
 
   it('báo TẤT CẢ lỗi một lượt khi thiếu hoặc sai', () => {
-    expect(() => loadConfig({ JWT_ACCESS_SECRET: 'ngan', PORT: 'abc', BCRYPT_ROUNDS: '2' })).toThrowError(
-      /USER_DATABASE_URL[\s\S]*RABBITMQ_URL[\s\S]*JWT_ACCESS_SECRET[\s\S]*PORT[\s\S]*BCRYPT_ROUNDS/,
+    expect(() => loadConfig({ JWT_ACCESS_SECRET: 'cu', PORT: 'abc', BCRYPT_ROUNDS: '2' })).toThrowError(
+      /USER_DATABASE_URL[\s\S]*RABBITMQ_URL[\s\S]*PORT[\s\S]*JWT_PRIVATE_KEY[\s\S]*BCRYPT_ROUNDS/,
     );
   });
 

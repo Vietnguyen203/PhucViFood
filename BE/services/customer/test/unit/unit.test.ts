@@ -9,8 +9,12 @@ import { buildWorkbook, fmtVn, safeCell } from '../../src/customers/export.servi
 import { buildCreate, buildUpdate } from '../../src/customers/upsert';
 import { withClassification } from '../../src/customers/view';
 import type { Customer } from '../../generated/client';
+import { generateJwtKeyPair } from '@phucvi/shared-library/auth';
 
-const env = { CUSTOMER_DATABASE_URL: 'postgresql://x', RABBITMQ_URL: 'amqp://x', JWT_ACCESS_SECRET: 'a'.repeat(32), INTERNAL_API_KEY: 'k'.repeat(24) };
+/** Cặp khóa riêng của file test: service chỉ nhận khóa công khai, test giữ khóa riêng để ký token thay cho user service. */
+const KEYS = generateJwtKeyPair();
+
+const env = { CUSTOMER_DATABASE_URL: 'postgresql://x', RABBITMQ_URL: 'amqp://x', JWT_PUBLIC_KEY: KEYS.publicKey, INTERNAL_API_KEY: 'k'.repeat(24) };
 
 describe('loadConfig', () => {
   it('đọc cấu hình hợp lệ với giá trị mặc định', () => {
@@ -18,7 +22,7 @@ describe('loadConfig', () => {
   });
   it('báo tất cả lỗi một lượt', () => {
     expect(() => loadConfig({ INTERNAL_API_KEY: 'x', ORDERING_URL: 'khong-phai-url', PORT: '0' })).toThrowError(
-      /CUSTOMER_DATABASE_URL[\s\S]*RABBITMQ_URL[\s\S]*JWT_ACCESS_SECRET[\s\S]*INTERNAL_API_KEY[\s\S]*PORT[\s\S]*ORDERING_URL/,
+      /CUSTOMER_DATABASE_URL[\s\S]*RABBITMQ_URL[\s\S]*INTERNAL_API_KEY[\s\S]*PORT[\s\S]*ORDERING_URL[\s\S]*JWT_PUBLIC_KEY/,
     );
   });
 });

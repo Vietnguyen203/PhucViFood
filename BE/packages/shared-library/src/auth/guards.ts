@@ -59,7 +59,8 @@ export class AuthGuardsModule {
     return {
       module: AuthGuardsModule,
       providers: [
-        { provide: AUTH_OPTIONS, useValue: config },
+        // Chỉ giữ phần kiểm tra: guard không cần (và không được cầm) khóa riêng dù service có nó.
+        { provide: AUTH_OPTIONS, useValue: { publicKey: config.publicKey, issuer: config.issuer, accessTtlSeconds: config.accessTtlSeconds } satisfies JwtConfig },
         { provide: APP_GUARD, useClass: JwtAuthGuard },
         { provide: APP_GUARD, useClass: RolesGuard },
       ],
