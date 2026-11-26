@@ -1,12 +1,10 @@
 import { Module } from '@nestjs/common';
-import { AffiliatesModule } from '../affiliates/affiliates.module';
-import { ReferralModule } from '../referral/referral.module';
+import { AffiliateClient } from '../clients/affiliate.client';
 import { PublicTrackingController, StatsController } from './tracking.controller';
 import { TrackingService } from './tracking.service';
 
 @Module({
-  imports: [AffiliatesModule, ReferralModule],
   controllers: [PublicTrackingController, StatsController],
-  providers: [TrackingService],
+  providers: [TrackingService, AffiliateClient],
 })
 export class TrackingModule {}

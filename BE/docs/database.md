@@ -4,7 +4,7 @@ Tài liệu mô tả database cho bản DEMO. Nguồn sự thật là các file 
 
 ## 1. Cấu trúc tổng quan
 
-5 service có database, mỗi service một database riêng. Tên schema Postgres trùng tên miền:
+6 service có database, mỗi service một database riêng. Tên schema Postgres trùng tên miền:
 
 | Service | Database | Schema | Nội dung |
 |---|---|---|---|
@@ -12,7 +12,8 @@ Tài liệu mô tả database cho bản DEMO. Nguồn sự thật là các file 
 | catalog | `catalog_db` | `catalog` | Danh mục, sản phẩm, tồn kho |
 | ordering | `ordering_db` | `ordering` | Đơn hàng, lịch sử trạng thái, ghi chú CSKH |
 | customer | `customer_db` | `customer` | Khách hàng, nhật ký xuất dữ liệu, ngưỡng phân loại |
-| affiliate | `affiliate_db` | `affiliate`, `tracking`, `commission` | CTV, link, tương tác, hoa hồng, chi trả |
+| affiliate | `affiliate_db` | `affiliate`, `commission` | CTV, link theo kênh, hoa hồng, chi trả |
+| tracking | `tracking_db` | `tracking` | Lượt bấm link giới thiệu, tương tác của người xem (chỉ để thống kê) |
 | gateway | không có database | | |
 
 **Quy ước chung**
@@ -275,7 +276,7 @@ Nguồn sự thật: `BE/packages/shared-library/src/contracts/codes.ts`. Có te
 | `user.users.role` | 1 ADMIN, 2 AFFILIATE |
 | `user.users.status` | 1 ACTIVE, 2 DISABLED |
 | `affiliate.affiliates.status` | 1 PENDING, 2 ACTIVE, 3 SUSPENDED, 4 REJECTED |
-| `tracking.tracking_events.type` | 1 PRODUCT_VIEW, 2 ADD_TO_CART, 3 CHECKOUT_START |
+| `tracking.tracking_events.type` (tracking_db) | 1 PRODUCT_VIEW, 2 ADD_TO_CART, 3 CHECKOUT_START |
 | `commission.commissions.status` | 1 ESTIMATED, 2 CONFIRMED, 3 PAID, 4 CANCELLED |
 | `commission.commissions.confirmed_by` | 1 CUSTOMER, 2 ADMIN |
 | `ordering.orders.status`, `order_status_history.from_status`, `to_status` | 1 PLACED, 2 CONFIRMED, 3 SHIPPING, 4 DELIVERED, 5 COMPLETED, 6 CANCELLED, 7 RETURNED |
@@ -304,7 +305,7 @@ Nguồn sự thật: `BE/packages/shared-library/src/contracts/codes.ts`. Có te
 5. **Ngưỡng phân loại khách** ở `customer.settings` là giá trị mẫu: VIP khi từ 5 đơn hợp lệ hoặc từ 5.000.000đ; khách quen từ 2 đơn; hoạt động trong 60 ngày; sắp rời trong 120 ngày; quá 120 ngày là đã rời.
 6. **Outbox/Inbox**: `outbox_events` ở mỗi schema có phát sự kiện (có partial index cho bản ghi chưa gửi). `inbox_events` (UNIQUE `message_id` + `consumer`) ở schema có consumer, để xử lý idempotent khi RabbitMQ gửi lặp.
 7. **Một số bảng bổ sung so với đề xuất ban đầu**: cột `returned_at`, `bank_*` của CTV, `ip_hash` của click; `inbox_events`.
-8. **Dữ liệu tương tác** (`referral_clicks`, `tracking_events`) tăng nhanh. Chưa partition trong demo; sau này cân nhắc partition theo tháng hoặc dọn dữ liệu cũ.
+8. **Dữ liệu tương tác** (`referral_clicks`, `tracking_events`) nằm ở `tracking_db` riêng (tách khỏi affiliate vì tăng nhanh). Chưa partition trong demo; sau này cân nhắc partition theo tháng hoặc dọn dữ liệu cũ.
 9. **Tồn kho** trừ khi đặt hàng thông qua một port của catalog; chưa có bảng `stock_movements`.
 
 ## 5. Chạy thử

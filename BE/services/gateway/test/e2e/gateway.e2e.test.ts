@@ -75,6 +75,10 @@ describe('định tuyến', () => {
   it.each([
     ['POST', '/auth/login', 'user', '/api/auth/login'],
     ['GET', '/me/commissions/summary', 'affiliate', '/api/me/commissions/summary'],
+    ['GET', '/me/stats', 'tracking', '/api/me/stats'],
+    ['POST', '/public/tracking/events', 'tracking', '/api/public/tracking/events'],
+    ['POST', '/public/referrals/click', 'tracking', '/api/public/referrals/click'],
+    ['GET', '/public/referrals/linh01', 'affiliate', '/api/public/referrals/linh01'],
     ['GET', '/public/products/kho-ca-loc', 'catalog', '/api/public/products/kho-ca-loc'],
     ['GET', '/orders/cskh-queue', 'ordering', '/api/orders/cskh-queue'],
     ['GET', '/customers', 'customer', '/api/customers'],

@@ -1,20 +1,15 @@
-import { Controller, Get, Headers, HttpCode, Inject, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, Inject, Param, Post, UseGuards } from '@nestjs/common';
 import { AppException, ParamTypes, ValidBody } from '@phucvi/shared-library/api';
 import { isUuid } from '@phucvi/shared-library/utils';
 import { InternalKeyGuard, Public } from '@phucvi/shared-library/auth';
-import { ClickDto, ResolveAttributionDto } from './dto';
+import { ReferralContextDto, ResolveAttributionDto } from './dto';
 import { ReferralService } from './referral.service';
 
-/** API công khai cho web bán hàng (không cần đăng nhập). */
+/** API công khai cho web bán hàng (không cần đăng nhập). Lượt bấm link giới thiệu do service tracking ghi (POST /public/referrals/click). */
 @Public()
 @Controller('public/referrals')
 export class PublicReferralController {
   constructor(@Inject(ReferralService) private readonly referral: ReferralService) {}
-
-  @Post('click') @HttpCode(200)
-  click(@ValidBody(ClickDto) dto: ClickDto, @Headers('user-agent') userAgent?: string) {
-    return this.referral.recordClick(dto, userAgent);
-  }
 
   /** Kiểm tra mã khách nhập ở thanh toán còn hiệu lực không. */
   @Get(':code') @ParamTypes(String)
@@ -49,5 +44,18 @@ export class InternalAttributionController {
   @Post('resolve') @HttpCode(200)
   resolve(@ValidBody(ResolveAttributionDto) dto: ResolveAttributionDto) {
     return this.referral.resolveAttribution(dto);
+  }
+}
+
+/** API nội bộ cho service tracking: kiểm tra mã giới thiệu (cần header x-internal-key). */
+@Public()
+@UseGuards(InternalKeyGuard)
+@Controller('internal/referrals')
+export class InternalReferralsController {
+  constructor(@Inject(ReferralService) private readonly referral: ReferralService) {}
+
+  @Post('context') @HttpCode(200)
+  context(@ValidBody(ReferralContextDto) dto: ReferralContextDto) {
+    return this.referral.referralContext(dto);
   }
 }

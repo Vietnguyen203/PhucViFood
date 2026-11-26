@@ -142,8 +142,6 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
     await prisma.$executeRawUnsafe(`DELETE FROM commission.outbox_events WHERE payload->'payload'->>'affiliateId' = ANY($1::text[])`, ids);
     await prisma.$executeRawUnsafe(`DELETE FROM affiliate.outbox_events WHERE aggregate_id = ANY($1::uuid[])`, ids);
     await prisma.$executeRawUnsafe(`DELETE FROM commission.inbox_events WHERE message_id = ANY($1::uuid[])`, publishedEventIds);
-    await prisma.$executeRawUnsafe(`DELETE FROM tracking.referral_clicks WHERE affiliate_id = ANY($1::uuid[])`, ids);
-    await prisma.$executeRawUnsafe(`DELETE FROM tracking.tracking_events WHERE affiliate_id = ANY($1::uuid[])`, ids);
     await prisma.$executeRawUnsafe(`DELETE FROM affiliate.affiliate_links WHERE affiliate_id = ANY($1::uuid[])`, ids);
     await prisma.$executeRawUnsafe(`DELETE FROM affiliate.affiliates WHERE id = ANY($1::uuid[])`, ids);
     const ch = await rawConn.createChannel();
@@ -301,69 +299,61 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
     });
   });
 
-  // ═════════════════════════ Bấm link và tương tác ═════════════════════════
-  describe('bấm link giới thiệu và tương tác', () => {
-    it('ghi nhận lượt bấm, trả cookie; mã không phân biệt hoa thường; gắn link theo kênh', async () => {
-      const a = await makeAffiliate();
-      const link = (await api('POST', '/me/links', { token: a.token, body: { channelCode: 'tiktok', label: 'TikTok' } })).body.data;
+  // ═════════════════════════ Kiểm tra mã giới thiệu ═════════════════════════
+  // Lượt bấm link, tương tác và thống kê đã tách sang service tracking (test ở BE/services/tracking).
+  describe('kiểm tra mã giới thiệu', () => {
+    const context = (body: object, key: string | null = INTERNAL_KEY) =>
+      api('POST', '/internal/referrals/context', { body, headers: key ? { 'x-internal-key': key } : {} });
 
-      const r = await api('POST', '/public/referrals/click', { body: { code: a.referralCode.toUpperCase(), channel: 'TikTok', landingPath: `/r/${a.referralCode}?c=tiktok` }, headers: { 'user-agent': 'IT-agent' } });
-      expect(r.status).toBe(200);
-      expect(r.body.data).toMatchObject({ valid: true, cookie: { code: a.referralCode, channelCode: 'tiktok', maxAgeDays: 30 } });
-      expect(r.body.data.visitorId).toMatch(/^[0-9a-f-]{36}$/);
-
-      const row = await prisma.referralClick.findFirstOrThrow({ where: { affiliateId: a.id }, orderBy: { createdAt: 'desc' } });
-      expect(row).toMatchObject({ linkId: link.id, channelCode: 'tiktok', visitorId: r.body.data.visitorId, landingPath: `/r/${a.referralCode}?c=tiktok`, userAgent: 'IT-agent' });
-
-      // Bấm lại với cùng visitorId, kênh chưa có link: vẫn ghi, linkId null.
-      const again = await api('POST', '/public/referrals/click', { body: { code: a.referralCode, channel: 'zalo', visitorId: r.body.data.visitorId, landingPath: '/r/x' } });
-      expect(again.body.data.visitorId).toBe(r.body.data.visitorId);
-      const row2 = await prisma.referralClick.findFirstOrThrow({ where: { affiliateId: a.id, channelCode: 'zalo' } });
-      expect(row2.linkId).toBeNull();
-    });
-
-    it('mã không hợp lệ, CTV chưa duyệt, bị khóa hoặc hết hợp đồng: không ghi, không cấp cookie', async () => {
-      const cases = [
-        await makeAffiliate({ status: 'PENDING' }),
-        await makeAffiliate({ status: 'SUSPENDED' }),
-        await makeAffiliate({ start: day(-120), end: day(-30) }), // hợp đồng đã hết hạn
-        await makeAffiliate({ start: day(10), end: day(100) }), // chưa tới hạn
-      ];
-      for (const a of cases) {
-        const r = await api('POST', '/public/referrals/click', { body: { code: a.referralCode, landingPath: '/r/x' } });
-        expect(r.body.data).toEqual({ valid: false });
-        expect(await prisma.referralClick.count({ where: { affiliateId: a.id } })).toBe(0);
-        expect((await api('GET', `/public/referrals/${a.referralCode}`)).body.data).toEqual({ valid: false });
-      }
-      expect((await api('POST', '/public/referrals/click', { body: { code: 'khongco123', landingPath: '/r/x' } })).body.data).toEqual({ valid: false });
-      expect((await api('POST', '/public/referrals/click', { body: { code: 'abcd' } })).status).toBe(400); // thiếu landingPath
-    });
-
-    it('GET /public/referrals/:code báo hợp lệ cho CTV còn hiệu lực', async () => {
+    it('GET /public/referrals/:code báo hợp lệ cho CTV còn hiệu lực; chữ hoa vẫn khớp', async () => {
       const a = await makeAffiliate();
       expect((await api('GET', `/public/referrals/${a.referralCode.toUpperCase()}`)).body.data).toEqual({ valid: true });
     });
 
-    it('ghi tương tác và thống kê cho CTV', async () => {
+    it('API bấm link không còn ở affiliate (đã chuyển sang tracking)', async () => {
       const a = await makeAffiliate();
-      const visitorId = uuidv7();
-      await api('POST', '/public/referrals/click', { body: { code: a.referralCode, channel: 'facebook', visitorId, landingPath: '/r/x' } });
-      await api('POST', '/public/referrals/click', { body: { code: a.referralCode, channel: 'facebook', visitorId: uuidv7(), landingPath: '/r/x' } });
-      await api('POST', '/public/referrals/click', { body: { code: a.referralCode, channel: 'facebook', visitorId, landingPath: '/r/x' } });
+      expect((await api('POST', '/public/referrals/click', { body: { code: a.referralCode, landingPath: '/r/x' } })).status).toBe(404);
+    });
 
-      const productId = uuidv7();
-      const ev = await api('POST', '/public/tracking/events', { body: { code: a.referralCode, visitorId, type: 'ADD_TO_CART', productId, channel: 'facebook' } });
-      expect(ev.body.data).toEqual({ recorded: true });
-      expect((await prisma.trackingEvent.findFirstOrThrow({ where: { affiliateId: a.id } })).type).toBe(2); // ADD_TO_CART lưu mã số
-      expect((await api('POST', '/public/tracking/events', { body: { code: 'khongco123', visitorId, type: 'PRODUCT_VIEW' } })).body.data).toEqual({ recorded: false });
-      expect((await api('POST', '/public/tracking/events', { body: { code: a.referralCode, visitorId, type: 'HACK' } })).status).toBe(400);
+    it('nội bộ: mã hợp lệ trả CTV, link theo kênh và số ngày cookie; mã không phân biệt hoa thường', async () => {
+      const a = await makeAffiliate();
+      const link = (await api('POST', '/me/links', { token: a.token, body: { channelCode: 'tiktok', label: 'TikTok' } })).body.data;
 
-      const stats = await api('GET', '/me/stats', { token: a.token });
-      expect(stats.status).toBe(200);
-      expect(stats.body.data.clicks).toMatchObject({ total: 3, uniqueVisitors: 2, byChannel: [{ channelCode: 'facebook', clicks: 3, visitors: 2 }] });
-      expect(stats.body.data.events).toEqual([{ channelCode: 'facebook', type: 'ADD_TO_CART', count: 1 }]);
-      expect((await api('GET', '/me/stats?from=khongphaingay', { token: a.token })).status).toBe(400);
-      expect((await api('GET', `/me/stats?from=${day(1)}`, { token: a.token })).status).toBe(400);
+      const withLink = await context({ code: a.referralCode.toUpperCase(), channel: 'TikTok' });
+      expect(withLink.status).toBe(200);
+      expect(withLink.body.data).toEqual({ valid: true, affiliateId: a.id, referralCode: a.referralCode, linkId: link.id, cookieDays: 30 });
+
+      // Kênh chưa có link, hoặc không có kênh: vẫn hợp lệ, linkId null.
+      expect((await context({ code: a.referralCode, channel: 'zalo' })).body.data).toMatchObject({ valid: true, linkId: null });
+      expect((await context({ code: a.referralCode })).body.data).toMatchObject({ valid: true, linkId: null });
+
+      // Link đã tắt thì không gắn.
+      await api('PATCH', `/me/links/${link.id}`, { token: a.token, body: { isActive: false } });
+      expect((await context({ code: a.referralCode, channel: 'tiktok' })).body.data).toMatchObject({ valid: true, linkId: null });
+    });
+
+    it('nội bộ: mã không tồn tại, CTV chưa duyệt, bị khóa, hợp đồng hết hạn hoặc chưa tới hạn đều là valid:false (vẫn 200)', async () => {
+      const cases = [
+        await makeAffiliate({ status: 'PENDING' }),
+        await makeAffiliate({ status: 'SUSPENDED' }),
+        await makeAffiliate({ start: day(-120), end: day(-30) }),
+        await makeAffiliate({ start: day(10), end: day(100) }),
+      ];
+      for (const a of cases) {
+        const r = await context({ code: a.referralCode });
+        expect(r.status).toBe(200);
+        expect(r.body.data).toEqual({ valid: false });
+        expect((await api('GET', `/public/referrals/${a.referralCode}`)).body.data).toEqual({ valid: false });
+      }
+      expect((await context({ code: 'khongco123' })).body.data).toEqual({ valid: false });
+    });
+
+    it('nội bộ: cần khóa; dữ liệu sai bị từ chối', async () => {
+      const a = await makeAffiliate();
+      expect((await context({ code: a.referralCode }, null)).status).toBe(401);
+      expect((await context({ code: a.referralCode }, 'sai-khoa-sai-khoa-sai-khoa-sai')).status).toBe(401);
+      expect((await context({})).status).toBe(400);
+      expect((await context({ code: a.referralCode, khac: 1 })).status).toBe(400);
     });
   });
 

@@ -10,7 +10,7 @@ describe('loadConfig', () => {
     const c = loadConfig({});
     expect(c.port).toBe(3000);
     expect(c.upstreams).toEqual({
-      user: 'http://localhost:3001/api', affiliate: 'http://localhost:3002/api', catalog: 'http://localhost:3003/api',
+      user: 'http://localhost:3001/api', affiliate: 'http://localhost:3002/api', tracking: 'http://localhost:3006/api', catalog: 'http://localhost:3003/api',
       ordering: 'http://localhost:3004/api', customer: 'http://localhost:3005/api',
     });
     expect(c.trustProxyHops).toBe(0);
@@ -36,12 +36,20 @@ describe('loadConfig', () => {
 describe('resolveService', () => {
   it.each([
     ['/auth/login', 'user'], ['/users', 'user'], ['/users/abc', 'user'],
-    ['/me/affiliate', 'affiliate'], ['/me/commissions/summary', 'affiliate'], ['/payouts', 'affiliate'], ['/public/referrals/abc', 'affiliate'], ['/public/tracking/events', 'affiliate'],
+    ['/me/affiliate', 'affiliate'], ['/me/commissions/summary', 'affiliate'], ['/payouts', 'affiliate'], ['/public/referrals/abc', 'affiliate'],
+    ['/public/tracking/events', 'tracking'], ['/me/stats', 'tracking'],
     ['/public/products/khô-cá', 'catalog'], ['/public/categories', 'catalog'], ['/products/1/stock-adjustments', 'catalog'], ['/categories', 'catalog'],
     ['/public/orders', 'ordering'], ['/public/orders/PV-1/cancel', 'ordering'], ['/orders/cskh-queue', 'ordering'], ['/me/orders', 'ordering'],
     ['/customers/export', 'customer'], ['/customer-settings/segment.vip_min_orders', 'customer'],
   ])('%s -> %s', (path, service) => {
     expect(resolveService(path)).toBe(service);
+  });
+
+  it('/public/referrals có hai chủ: POST click là tracking, các yêu cầu khác (kiểm tra mã) là affiliate', () => {
+    expect(resolveService('/public/referrals/click', 'POST')).toBe('tracking');
+    expect(resolveService('/public/referrals/click', 'GET')).toBe('affiliate'); // mã giới thiệu tình cờ là "click"
+    expect(resolveService('/public/referrals/abc', 'POST')).toBe('affiliate');
+    expect(resolveService('/public/referrals/click/x', 'POST')).toBe('affiliate');
   });
 
   it('khớp theo từng đoạn, không khớp phần đầu của từ', () => {

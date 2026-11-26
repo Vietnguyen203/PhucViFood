@@ -50,7 +50,7 @@ export function configureGateway(app: INestApplication, config: AppConfig): void
       }
     }
 
-    const service = resolveService(sub);
+    const service = resolveService(sub, req.method);
     if (!service) return next();
 
     const startedAt = Date.now();

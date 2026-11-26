@@ -9,7 +9,6 @@ import { LinksModule } from './links/links.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PrismaService } from './prisma/prisma.service';
 import { ReferralModule } from './referral/referral.module';
-import { TrackingModule } from './tracking/tracking.module';
 
 @Module({})
 export class AppModule {
@@ -31,7 +30,6 @@ export class AppModule {
         AffiliatesModule,
         LinksModule,
         ReferralModule,
-        TrackingModule,
         CommissionsModule,
       ],
       controllers: [createHealthController('affiliate') as never],

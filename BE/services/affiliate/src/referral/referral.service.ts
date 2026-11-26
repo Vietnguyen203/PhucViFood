@@ -1,12 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { AffiliateStatusCodec } from '@phucvi/shared-library/contracts';
 import {
-  chooseReferral, decideAttribution, isContractActiveOn, normalizeChannelCode, normalizeReferralCode, normalizeVnPhone, uuidv7,
+  chooseReferral, decideAttribution, isContractActiveOn, normalizeChannelCode, normalizeReferralCode, normalizeVnPhone,
   type AffiliateSnapshot,
 } from '@phucvi/shared-library/utils';
 import type { Affiliate } from '../../generated/client';
 import { PrismaService } from '../prisma/prisma.service';
-import type { ClickDto, ResolveAttributionDto } from './dto';
+import type { ReferralContextDto, ResolveAttributionDto } from './dto';
 import { SettingsService } from './settings.service';
 
 export const toSnapshot = (a: Affiliate): AffiliateSnapshot => ({
@@ -53,28 +53,14 @@ export class ReferralService {
   }
 
   /**
-   * Ghi nhận một lượt bấm link. Chỉ ghi khi mã thuộc CTV còn hiệu lực. Trả về nội dung cookie để web lưu
-   * (mỗi lần bấm ghi đè cookie cũ: link bấm sau cùng thắng).
+   * Cho service tracking: mã (và kênh) có thuộc CTV còn hiệu lực không; kèm link theo kênh và số ngày cookie.
+   * Chỉ đọc, không ghi gì. Luôn trả 200: mã không dùng được là `valid:false`, không phải lỗi.
    */
-  async recordClick(dto: ClickDto, userAgent: string | undefined) {
+  async referralContext(dto: ReferralContextDto) {
     const affiliate = await this.findActiveByCode(dto.code);
     if (!affiliate) return { valid: false as const };
-
-    const visitorId = dto.visitorId ?? uuidv7();
-    const channelCode = normalizeChannelCode(dto.channel);
-    const link = await this.linkFor(affiliate.id, channelCode);
-    const now = new Date();
-    await this.prisma.referralClick.create({
-      data: {
-        affiliateId: affiliate.id, linkId: link?.id ?? null, channelCode, visitorId,
-        landingPath: dto.landingPath, userAgent: userAgent?.slice(0, 255),
-      },
-    });
-    return {
-      valid: true as const,
-      visitorId,
-      cookie: { code: affiliate.referralCode, channelCode, clickedAt: now.toISOString(), maxAgeDays: await this.settings.cookieDays() },
-    };
+    const link = await this.linkFor(affiliate.id, normalizeChannelCode(dto.channel));
+    return { valid: true as const, affiliateId: affiliate.id, referralCode: affiliate.referralCode, linkId: link?.id ?? null, cookieDays: await this.settings.cookieDays() };
   }
 
   /**

@@ -30,6 +30,7 @@ export interface AppConfig {
 const DEFAULT_URLS: Record<ServiceName, string> = {
   user: 'http://localhost:3001/api',
   affiliate: 'http://localhost:3002/api',
+  tracking: 'http://localhost:3006/api',
   catalog: 'http://localhost:3003/api',
   ordering: 'http://localhost:3004/api',
   customer: 'http://localhost:3005/api',

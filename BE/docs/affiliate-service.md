@@ -1,6 +1,6 @@
 # Service affiliate (CTV, link giới thiệu, hoa hồng)
 
-Thư mục: `BE/services/affiliate` (gói `@phucvi/affiliate`). Database `affiliate_db`, gồm 3 miền: `affiliate` (hồ sơ, link), `tracking` (lượt bấm, tương tác), `commission` (hoa hồng, chi trả). Cổng mặc định 3002.
+Thư mục: `BE/services/affiliate` (gói `@phucvi/affiliate`). Database `affiliate_db`, gồm 2 miền: `affiliate` (hồ sơ, link), `commission` (hoa hồng, chi trả). Cổng mặc định 3002. Lượt bấm link, tương tác và thống kê của CTV đã tách sang service tracking (`tracking-service.md`); affiliate vẫn là chủ của mã giới thiệu, link, thời hạn cookie và việc quyết định ghi nhận CTV cho đơn.
 
 ## 1. API
 
@@ -10,15 +10,14 @@ Tiền tố `/api`. JWT lấy từ service `user` (cùng `JWT_ACCESS_SECRET`).
 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
-| POST | `/public/referrals/click` | Ghi lượt bấm link `/r/{mã}?c={kênh}`. Trả `{valid, visitorId, cookie}`; web lưu cookie theo kết quả (mỗi lần bấm ghi đè: link bấm sau cùng thắng) |
 | GET | `/public/referrals/:code` | Kiểm tra mã khách nhập ở thanh toán còn hiệu lực |
-| POST | `/public/tracking/events` | Ghi tương tác (PRODUCT_VIEW, ADD_TO_CART, CHECKOUT_START). Chỉ để thống kê, không trả tiền |
 
 **Nội bộ (header `x-internal-key`)**
 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
 | POST | `/internal/attribution/resolve` | Ordering hỏi lúc đặt hàng: đơn gắn CTV nào, có hoa hồng không, tỷ lệ bao nhiêu |
+| POST | `/internal/referrals/context` | Tracking hỏi: mã (và kênh) có dùng được không. Trả `{valid:false}` hoặc `{valid:true, affiliateId, referralCode, linkId, cookieDays}`. Chỉ đọc; luôn 200 |
 | GET | `/internal/affiliates/by-user/:userId` | Tra hồ sơ CTV theo tài khoản đăng nhập (ordering dùng cho màn hình đơn của CTV); 404 nếu chưa có hồ sơ |
 
 **CTV (vai trò AFFILIATE)**
@@ -27,7 +26,6 @@ Tiền tố `/api`. JWT lấy từ service `user` (cùng `JWT_ACCESS_SECRET`).
 |---|---|---|
 | POST, GET, PATCH | `/me/affiliate` | Đăng ký hồ sơ (PENDING), xem, sửa họ tên và thông tin nhận tiền |
 | GET, POST, PATCH | `/me/links`, `/me/links/:id` | Link theo kênh (facebook, tiktok...), tắt bật |
-| GET | `/me/stats?from=&to=` | Lượt bấm, người xem duy nhất, tương tác theo kênh (mặc định 30 ngày) |
 | GET | `/me/commissions`, `/me/commissions/:id`, `/me/commissions/summary` | Hoa hồng của mình; chỉ có mã đơn, không có thông tin khách |
 | GET | `/me/payouts`, `/me/payouts/:id` | Các đợt đã được chi trả |
 
@@ -96,7 +94,8 @@ Test tích hợp tạo dữ liệu riêng (CTV `IT-*`, đơn `IT-*`) rồi dọn
 
 ## 6. Giới hạn hiện tại
 
-- Chưa có giới hạn tốc độ cho API công khai (`click`, `events`): có thể bị spam làm đầy bảng `tracking`. Gateway đã giới hạn theo IP (xem `gateway-service.md`); bảng nên partition hoặc dọn định kỳ.
+- API công khai kiểm tra mã (`GET /public/referrals/:code`) được gateway giới hạn tốc độ theo IP (xem `gateway-service.md`).
+- Mỗi lượt bấm và sự kiện mới của một mã chưa được nhớ tạm sẽ gọi `POST /internal/referrals/context` từ tracking (tracking nhớ kết quả 60 giây, mã sai 10 giây).
 - Khóa nội bộ dùng chung một giá trị; chưa xoay vòng.
 - Nếu xử lý một sự kiện lỗi và phải thử lại, thứ tự giữa các sự kiện của cùng đơn không còn được bảo đảm (retry đưa tin về cuối queue).
 - Chưa có thông báo cho CTV khi được duyệt hoặc được chi trả.

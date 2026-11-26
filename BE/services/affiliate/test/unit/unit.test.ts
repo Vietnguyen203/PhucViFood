@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { AFFILIATE_TRANSITIONS } from '../../src/affiliates/affiliates.service';
 import { ApproveDto, CreateProfileDto } from '../../src/affiliates/dto';
 import { loadConfig } from '../../src/config/app-config';
-import { parseRange } from '../../src/tracking/tracking.service';
 
 const env = {
   AFFILIATE_DATABASE_URL: 'postgresql://x', RABBITMQ_URL: 'amqp://x',
@@ -64,19 +63,5 @@ describe('DTO duyệt CTV', () => {
     expect(await errorFields(make(ApproveDto, { contractStart: '01/01/2026' }))).toContain('contractStart');
     expect(await errorFields(make(ApproveDto, { contractStart: '2026-01-01', commissionRateBps: 10_001 }))).toContain('commissionRateBps');
     expect(await errorFields(make(ApproveDto, { contractStart: '2026-01-01', commissionRateBps: 10.5 }))).toContain('commissionRateBps');
-  });
-});
-
-describe('parseRange', () => {
-  const now = new Date('2026-11-25T00:00:00Z');
-  it('mặc định 30 ngày gần nhất', () => {
-    const r = parseRange({}, now);
-    expect(r.to).toEqual(now);
-    expect(r.from).toEqual(new Date('2026-10-26T00:00:00Z'));
-  });
-  it('từ chối khoảng sai', () => {
-    expect(() => parseRange({ from: 'hôm qua' }, now)).toThrow();
-    expect(() => parseRange({ from: '2026-11-25', to: '2026-11-01' }, now)).toThrow();
-    expect(() => parseRange({ from: '2024-01-01', to: '2026-11-01' }, now)).toThrow(); // quá 366 ngày
   });
 });
