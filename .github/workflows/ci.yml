@@ -1,0 +1,141 @@
+# CI: mỗi push vào main và mỗi pull request chạy kiểm tra tĩnh, test đơn vị, test tích hợp (Postgres + RabbitMQ thật)
+# và build image Docker của 7 service. Chỉ kiểm tra, không triển khai gì.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Đẩy commit mới lên cùng nhánh/PR thì hủy lượt chạy cũ đang dở.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CI: "true"
+
+jobs:
+  # ───────── Kiểm tra tĩnh + test đơn vị + build FE (không cần dịch vụ ngoài) ─────────
+  check:
+    name: Typecheck, test đơn vị, build FE
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # Phiên bản pnpm lấy từ "packageManager" trong package.json; Node theo engines (>=22).
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Prisma client nằm trong thư mục generated/ (không commit), phải sinh trước typecheck và test.
+      - name: Sinh Prisma client
+        run: pnpm db:generate
+        env:
+          # prisma generate không kết nối DB nhưng schema đọc biến này; giá trị giả là đủ.
+          USER_DATABASE_URL: postgresql://x:x@localhost:5432/x
+          CATALOG_DATABASE_URL: postgresql://x:x@localhost:5432/x
+          ORDERING_DATABASE_URL: postgresql://x:x@localhost:5432/x
+          CUSTOMER_DATABASE_URL: postgresql://x:x@localhost:5432/x
+          AFFILIATE_DATABASE_URL: postgresql://x:x@localhost:5432/x
+          TRACKING_DATABASE_URL: postgresql://x:x@localhost:5432/x
+
+      - name: Typecheck (BE và FE)
+        run: pnpm -r --if-present run typecheck
+
+      - name: Test đơn vị (BE và FE)
+        run: pnpm -r --if-present run test
+
+      - name: Build FE
+        run: pnpm --filter figma-make-app build
+
+      # Compose phải hợp lệ khi bật profile app (bắt lỗi cú pháp, biến thiếu, anchor sai).
+      - name: Kiểm tra docker-compose
+        run: docker compose -f BE/infra/docker-compose.yml --profile app config --quiet
+        env:
+          JWT_PRIVATE_KEY: x
+          JWT_PUBLIC_KEY: x
+          INTERNAL_API_KEY: xxxxxxxxxxxxxxxxxxxxxxxxx
+
+  # ───────── Test tích hợp với Postgres và RabbitMQ thật ─────────
+  integration:
+    name: Test tích hợp (Postgres + RabbitMQ)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      rabbitmq:
+        image: rabbitmq:4-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: phucvi
+          RABBITMQ_DEFAULT_PASS: phucvi
+        ports: ["5672:5672"]
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s --health-timeout 10s --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      RABBITMQ_URL: amqp://phucvi:phucvi@localhost:5672
+      USER_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/user_db
+      CATALOG_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/catalog_db
+      ORDERING_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ordering_db
+      CUSTOMER_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/customer_db
+      AFFILIATE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/affiliate_db
+      TRACKING_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tracking_db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Dùng đúng script tạo 6 database của môi trường dev (một nguồn sự thật).
+      - name: Tạo 6 database
+        run: psql -h localhost -U postgres -v ON_ERROR_STOP=1 -f BE/infra/postgres/init/01-create-databases.sql
+
+      - run: pnpm db:generate
+      - name: Áp migration
+        run: pnpm db:migrate
+
+      # Lần lượt từng gói: các test dùng chung một RabbitMQ nên chạy tuần tự cho ổn định.
+      - name: Test tích hợp
+        run: pnpm -r --workspace-concurrency=1 --if-present run test:integration
+
+  # ───────── Build image Docker (không đẩy lên registry) ─────────
+  docker:
+    name: Build image ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [gateway, user, catalog, ordering, customer, affiliate, tracking]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: BE/infra/docker/Dockerfile
+          build-args: SERVICE=${{ matrix.service }}
+          push: false
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}

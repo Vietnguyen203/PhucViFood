@@ -29,7 +29,7 @@ Tiền tố `/api`, JWT như các service khác.
   - `tier`: `VIP` nếu số đơn ≥ `segment.vip_min_orders` hoặc tổng chi ≥ `segment.vip_min_spend`; `RETURNING` nếu số đơn ≥ `segment.returning_min_orders`; còn lại `NEW`.
   - `activity` theo ngày từ đơn gần nhất: chưa có đơn là `NONE`, ≤ `activity.active_days` là `ACTIVE`, ≤ `activity.at_risk_days` là `AT_RISK`, quá đó là `CHURNED`.
   - Số liệu đơn lấy từ ordering (đơn `CANCELLED`/`RETURNED` không tính), vì không join chéo database.
-- Ngưỡng nằm ở `customer.settings` (cache 30 giây, xóa khi cập nhật; bộ ngưỡng mới được kiểm tra hợp lệ trước khi lưu).
+- Ngưỡng nằm ở `customer.settings` (cache 30 giây, xóa khi cập nhật; bộ ngưỡng mới được kiểm tra hợp lệ trước khi lưu). Giá trị mặc định (5 ngưỡng) được nạp bằng migration `20261126180000_default_settings` (không ghi đè nếu đã có), nên database mới chỉ áp migration vẫn dùng được; thiếu ngưỡng thì dịch vụ báo lỗi thay vì phân loại bằng số tự đoán.
 
 ## 3. Hiệu năng danh sách
 

@@ -91,6 +91,11 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
     await app.listen(0);
     base = `${(await app.getUrl()).replace('[::1]', 'localhost')}/api`;
     prisma = app.get(PrismaService);
+    // Tài khoản nhận chuyển khoản không có giá trị mặc định (phải cấu hình thật), nên test tự bảo đảm có: chạy được trên database mới
+    // chưa seed (CI). `update: {}` giữ nguyên giá trị nếu đã có.
+    for (const [key, value] of [['payment.bank_name', 'Vietcombank'], ['payment.bank_account_no', '0011000000000'], ['payment.bank_account_holder', 'CONG TY PHUC VI FOODS']] as const) {
+      await prisma.setting.upsert({ where: { key }, create: { key, value }, update: {} });
+    }
   });
 
   beforeEach(() => fake.reset());
