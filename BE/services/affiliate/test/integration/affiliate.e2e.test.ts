@@ -827,22 +827,41 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
       expect((await api('PATCH', '/affiliate-settings/cookie_days', { token: tokenFor(uuidv7(), 'AFFILIATE'), body: { value: 7 } })).status).toBe(403);
     });
 
-    it('chỉ liệt kê khóa có tác dụng (cookie_days); đổi có hiệu lực ngay và ghi người sửa', async () => {
+    it('chỉ liệt kê khóa có tác dụng (cookie_days, default_rate_bps); đổi có hiệu lực ngay và ghi người sửa', async () => {
       const admin = adminToken();
       const list = (await api('GET', '/affiliate-settings', { token: admin })).body.data;
-      expect(list.map((x: any) => x.key)).toEqual(['cookie_days']);
-      const original = list[0].value ?? 30;
+      expect(list.map((x: any) => x.key)).toEqual(['cookie_days', 'default_rate_bps']);
+      const original = list.find((x: any) => x.key === 'cookie_days').value ?? 30;
       const adminId = uuidv7();
       const r = await api('PATCH', '/affiliate-settings/cookie_days', { token: tokenFor(adminId, 'ADMIN'), body: { value: 45 } });
       expect(r.status).toBe(200);
       expect(r.body.data).toMatchObject({ key: 'cookie_days', value: 45, updatedBy: adminId });
-      expect((await api('GET', '/affiliate-settings', { token: admin })).body.data[0].value).toBe(45);
+      expect((await api('GET', '/affiliate-settings', { token: admin })).body.data.find((x: any) => x.key === 'cookie_days').value).toBe(45);
       await api('PATCH', '/affiliate-settings/cookie_days', { token: admin, body: { value: original } });
     });
 
-    it('từ chối khóa lạ (kể cả default_rate_bps chưa có tác dụng), giá trị sai kiểu hoặc ngoài giới hạn', async () => {
+    it('tỷ lệ mặc định áp cho CTV đăng ký mới và khi duyệt không chỉ định tỷ lệ', async () => {
       const admin = adminToken();
-      expect((await api('PATCH', '/affiliate-settings/default_rate_bps', { token: admin, body: { value: 500 } })).status).toBe(404);
+      const before = (await api('GET', '/affiliate-settings', { token: admin })).body.data.find((x: any) => x.key === 'default_rate_bps').value;
+      expect((await api('PATCH', '/affiliate-settings/default_rate_bps', { token: admin, body: { value: 700 } })).status).toBe(200);
+      try {
+        const created = await api('POST', '/me/affiliate', { token: tokenFor(uuidv7(), 'AFFILIATE'), body: { fullName: 'Test Mặc Định', phone: `09${digits(8)}`, referralCode: `it${rand(6)}` } });
+        expect(created.status).toBe(201);
+        expect(created.body.data.commissionRateBps).toBe(700);
+        await api('PATCH', '/affiliate-settings/default_rate_bps', { token: admin, body: { value: 800 } });
+        const approved = await api('POST', `/affiliates/${created.body.data.id}/approve`, { token: admin, body: { contractStart: '2026-01-01' } });
+        expect(approved.status).toBe(200);
+        expect(approved.body.data.commissionRateBps).toBe(800);
+      } finally {
+        await api('PATCH', '/affiliate-settings/default_rate_bps', { token: admin, body: { value: before ?? 1000 } });
+      }
+    });
+
+    it('từ chối khóa lạ, giá trị sai kiểu hoặc ngoài giới hạn', async () => {
+      const admin = adminToken();
+      for (const value of [-1, 5001, 1.5, '10']) {
+        expect((await api('PATCH', '/affiliate-settings/default_rate_bps', { token: admin, body: { value } })).status, String(value)).toBe(400);
+      }
       expect((await api('PATCH', '/affiliate-settings/khong.co', { token: admin, body: { value: 1 } })).status).toBe(404);
       for (const value of [0, 366, 1.5, '30', -1]) {
         expect((await api('PATCH', '/affiliate-settings/cookie_days', { token: admin, body: { value } })).status, String(value)).toBe(400);

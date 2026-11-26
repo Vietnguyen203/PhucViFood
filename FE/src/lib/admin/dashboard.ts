@@ -47,12 +47,13 @@ export function bankConfigured(settings: ShopSetting[]): boolean {
 }
 
 /** Nhãn tiếng Việt cho các khóa cấu hình; khóa lạ hiện nguyên khóa. */
-export const SETTING_LABEL: Record<string, { label: string; unit?: 'vnd' | 'phút' | 'ngày'; hint?: string }> = {
+export const SETTING_LABEL: Record<string, { label: string; unit?: 'vnd' | 'phút' | 'ngày' | '%'; hint?: string }> = {
   'shipping.flat_fee': { label: 'Phí giao hàng đồng giá', unit: 'vnd', hint: 'Áp dụng cho đơn chưa đủ mức miễn phí.' },
   'shipping.free_threshold': { label: 'Miễn phí giao hàng từ', unit: 'vnd', hint: 'Tổng tiền sản phẩm (chưa gồm phí ship) từ mức này thì miễn phí giao hàng.' },
   'payment.hold_minutes': { label: 'Giữ hàng cho đơn chuyển khoản', unit: 'phút', hint: 'Quá hạn chưa thanh toán thì đơn tự hủy và hàng về kho (1440 phút = 24 giờ).' },
   'payment.bank_name': { label: 'Ngân hàng nhận tiền' },
   'payment.bank_account_no': { label: 'Số tài khoản nhận tiền', hint: '6-30 chữ số.' },
   'payment.bank_account_holder': { label: 'Chủ tài khoản' },
+  default_rate_bps: { label: 'Tỷ lệ hoa hồng mặc định', unit: '%', hint: 'Áp cho CTV đăng ký mới và CTV được duyệt mà không nhập tỷ lệ riêng. CTV đã có tỷ lệ riêng giữ nguyên; chỉ áp cho đơn đặt sau đó.' },
   cookie_days: { label: 'Thời hạn ghi nhận link CTV', unit: 'ngày', hint: 'Khách bấm link CTV rồi đặt hàng trong số ngày này thì đơn tính hoa hồng cho CTV. Chỉ áp dụng cho lượt bấm mới.' },
 };

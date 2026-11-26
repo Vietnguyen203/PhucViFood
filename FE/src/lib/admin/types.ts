@@ -86,3 +86,7 @@ export const ORDER_TRANSITIONS: Record<OrderStatus, Array<{ action: "confirm" | 
 };
 
 export const STOCK_REASON_LABEL: Record<string, string> = { ORDER_PLACED: "Đặt hàng", ORDER_CANCELLED: "Hủy đơn (hoàn kho)", ADMIN_ADJUSTMENT: "Admin điều chỉnh" };
+
+export interface AdminUser { id: string; email: string; role: string; status: string; createdAt: string; lastLoginAt: string | null }
+export const USER_ROLE_LABEL: Record<string, string> = { ADMIN: "Quản trị viên", AFFILIATE: "Cộng tác viên" };
+export const USER_STATUS_LABEL: Record<string, string> = { ACTIVE: "Hoạt động", DISABLED: "Đã khóa" };

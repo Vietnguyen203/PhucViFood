@@ -3,7 +3,7 @@ import { formatVnd } from "../lib/money";
 import { useAsync } from "../lib/useAsync";
 import { bankConfigured, SETTING_LABEL, type ShopSetting } from "../lib/admin/dashboard";
 import { useAdmin } from "./AdminContext";
-import { ErrorBox, Field, FormModal, Loading, fmtDateTime } from "./ui";
+import { ErrorBox, Field, FormModal, Loading, fmtBps, fmtDateTime } from "./ui";
 
 type Source = "order" | "affiliate";
 type Row = ShopSetting & { source: Source };
@@ -11,6 +11,7 @@ type Row = ShopSetting & { source: Source };
 const show = (s: Row): string => {
   if (s.value === null) return s.kind === "text" ? "Chưa cấu hình" : "Mặc định";
   const unit = SETTING_LABEL[s.key]?.unit;
+  if (unit === "%" && typeof s.value === "number") return fmtBps(s.value);
   if (unit === "vnd" && typeof s.value === "number") return formatVnd(s.value);
   if (unit && typeof s.value === "number") return `${s.value} ${unit}`;
   return String(s.value);
@@ -20,11 +21,12 @@ function EditModal({ s, onClose, onSaved }: { s: Row; onClose: () => void; onSav
   const { adm, notify } = useAdmin();
   const meta = SETTING_LABEL[s.key];
   const isText = s.kind === "text";
-  const [value, setValue] = useState(s.value === null ? "" : String(s.value));
+  const isPercent = meta?.unit === "%";
+  const [value, setValue] = useState(s.value === null ? "" : String(isPercent ? Number(s.value) / 100 : s.value));
   return (
     <FormModal title={meta?.label ?? s.key} onClose={onClose}
       onSubmit={async () => {
-        const body = { value: isText ? value : Number(value.replace(/[.,\s]/g, "")) };
+        const body = { value: isText ? value : isPercent ? Math.round(Number(value.replace(",", ".")) * 100) : Number(value.replace(/[.,\s]/g, "")) };
         await adm(`/${s.source === "order" ? "order-settings" : "affiliate-settings"}/${encodeURIComponent(s.key)}`, { method: "PATCH", body });
         notify("Đã lưu cấu hình");
         onSaved();
@@ -33,7 +35,7 @@ function EditModal({ s, onClose, onSaved }: { s: Row; onClose: () => void; onSav
         <>
           {meta?.hint && <p className="ad-muted">{meta.hint}</p>}
           <Field label={`Giá trị${meta?.unit === "vnd" ? " (VND)" : meta?.unit ? ` (${meta.unit})` : ""}`} error={err.value}>
-            <input value={value} onChange={(e) => setValue(e.target.value)} inputMode={isText ? undefined : "numeric"} autoFocus />
+            <input value={value} onChange={(e) => setValue(e.target.value)} inputMode={isText ? undefined : isPercent ? "decimal" : "numeric"} autoFocus />
           </Field>
         </>
       )}

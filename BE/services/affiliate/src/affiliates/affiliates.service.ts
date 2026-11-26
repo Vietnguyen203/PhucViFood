@@ -7,6 +7,7 @@ import { OutboxService } from '@phucvi/shared-library/messaging';
 import { normalizeVnPhone } from '@phucvi/shared-library/utils';
 import type { Affiliate, Prisma } from '../../generated/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { SettingsService } from '../referral/settings.service';
 import type { ApproveDto, CreateProfileDto, NoteDto, UpdateAffiliateAdminDto, UpdateProfileDto } from './dto';
 
 export const AFFILIATES_SERVICE = Symbol('AFFILIATES_SERVICE');
@@ -51,6 +52,7 @@ export class AffiliatesService extends PrismaCrudService<Affiliate, never, Updat
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(OutboxService) private readonly outbox: OutboxService,
+    @Inject(SettingsService) private readonly settings: SettingsService,
   ) {
     super(prisma.affiliate, {
       label: 'Cộng tác viên',
@@ -83,7 +85,7 @@ export class AffiliatesService extends PrismaCrudService<Affiliate, never, Updat
         const a = await tx.affiliate.create({
           data: {
             userId: user.id, fullName: dto.fullName, phone, referralCode: dto.referralCode,
-            status: AffiliateStatusCodec.toCode('PENDING'),
+            status: AffiliateStatusCodec.toCode('PENDING'), commissionRateBps: await this.settings.defaultRateBps(),
             bankName: dto.bankName, bankAccountNo: dto.bankAccountNo, bankAccountHolder: dto.bankAccountHolder,
           },
         });
@@ -107,13 +109,15 @@ export class AffiliatesService extends PrismaCrudService<Affiliate, never, Updat
 
   // ───────── Admin ─────────
 
-  approve(id: string, dto: ApproveDto) {
+  async approve(id: string, dto: ApproveDto) {
     assertContractRange(dto.contractStart, dto.contractEnd);
+    // Không chỉ định tỷ lệ riêng: áp tỷ lệ mặc định hiện hành (không giữ tỷ lệ cũ lúc đăng ký).
+    const rate = dto.commissionRateBps ?? (await this.settings.defaultRateBps());
     return this.transition(id, 'ACTIVE', {
       approvedAt: new Date(),
       contractStart: toDate(dto.contractStart),
       contractEnd: dto.contractEnd ? toDate(dto.contractEnd) : null,
-      ...(dto.commissionRateBps !== undefined ? { commissionRateBps: dto.commissionRateBps } : {}),
+      commissionRateBps: rate,
       ...(dto.note !== undefined ? { note: dto.note } : {}),
     });
   }

@@ -2,9 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import { AppException } from '@phucvi/shared-library/api';
 import { PrismaService } from '../prisma/prisma.service';
 
-/** Cấu hình admin được sửa. `default_rate_bps` có trong bảng nhưng chưa được mã nào đọc (tỷ lệ mặc định lấy từ mặc định của cột), nên không cho sửa để khỏi gây hiểu nhầm. */
+/** Cấu hình admin được sửa. `default_rate_bps`: tỷ lệ hoa hồng mặc định (1 bps = 0,01%) cho CTV mới và CTV được duyệt mà không chỉ định tỷ lệ riêng. */
 export const EDITABLE_SETTINGS: Record<string, { min: number; max: number; description: string }> = {
   cookie_days: { min: 1, max: 365, description: 'Số ngày cookie ghi nhận link CTV' },
+  default_rate_bps: { min: 0, max: 5000, description: 'Tỷ lệ hoa hồng mặc định (bps, 1000 = 10%)' },
 };
 
 /** Đọc cấu hình số từ bảng affiliate.settings, có cache ngắn để không truy vấn mỗi request. */
@@ -27,6 +28,11 @@ export class SettingsService {
   /** Số ngày cookie ghi nhận link CTV (mặc định 30). */
   cookieDays(): Promise<number> {
     return this.getNumber('cookie_days', 30);
+  }
+
+  /** Tỷ lệ hoa hồng mặc định (bps), mặc định 1000 = 10%. */
+  defaultRateBps(): Promise<number> {
+    return this.getNumber('default_rate_bps', 1000);
   }
 
   async listEditable() {
