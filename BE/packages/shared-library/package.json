@@ -6,20 +6,48 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "exports": {
-    ".": { "types": "./src/index.ts", "default": "./src/index.ts" },
-    "./utils": { "types": "./src/utils/index.ts", "default": "./src/utils/index.ts" },
-    "./contracts": { "types": "./src/contracts/index.ts", "default": "./src/contracts/index.ts" },
-    "./api": { "types": "./src/api/index.ts", "default": "./src/api/index.ts" },
-    "./auth": { "types": "./src/auth/index.ts", "default": "./src/auth/index.ts" },
-    "./crud": { "types": "./src/crud/index.ts", "default": "./src/crud/index.ts" },
-    "./http": { "types": "./src/http/index.ts", "default": "./src/http/index.ts" },
-    "./messaging": { "types": "./src/messaging/index.ts", "default": "./src/messaging/index.ts" },
-    "./seed-data": { "types": "./src/seed-data.ts", "default": "./src/seed-data.ts" }
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./utils": {
+      "types": "./src/utils/index.ts",
+      "default": "./src/utils/index.ts"
+    },
+    "./contracts": {
+      "types": "./src/contracts/index.ts",
+      "default": "./src/contracts/index.ts"
+    },
+    "./api": {
+      "types": "./src/api/index.ts",
+      "default": "./src/api/index.ts"
+    },
+    "./auth": {
+      "types": "./src/auth/index.ts",
+      "default": "./src/auth/index.ts"
+    },
+    "./crud": {
+      "types": "./src/crud/index.ts",
+      "default": "./src/crud/index.ts"
+    },
+    "./http": {
+      "types": "./src/http/index.ts",
+      "default": "./src/http/index.ts"
+    },
+    "./messaging": {
+      "types": "./src/messaging/index.ts",
+      "default": "./src/messaging/index.ts"
+    },
+    "./seed-data": {
+      "types": "./src/seed-data.ts",
+      "default": "./src/seed-data.ts"
+    }
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:integration": "cross-env RUN_INTEGRATION=1 vitest run test/integration"
+    "test:integration": "cross-env RUN_INTEGRATION=1 vitest run test/integration",
+    "dlq": "tsx --env-file-if-exists=../../../.env src/messaging/dlq-cli.ts"
   },
   "dependencies": {
     "amqplib": "^0.10.9",
@@ -46,6 +74,7 @@
     "cross-env": "^7.0.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "tsx": "^4.20.0",
     "typescript": "^5.9.0",
     "vitest": "^3.2.7"
   }

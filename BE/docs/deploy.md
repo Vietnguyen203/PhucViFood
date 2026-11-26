@@ -30,6 +30,18 @@ Kiểm tra: `http://localhost/api/health/services` phải báo `ok` với đủ 
 
 `pnpm db:up` vẫn chỉ bật Postgres và RabbitMQ để dev chạy service trên máy (các service thuộc profile `app` không chạy theo).
 
+### Migration
+
+Mặc định mỗi service tự áp migration lúc khởi động (`RUN_MIGRATIONS=true`), tiện cho một bản sao. Khi chạy nhiều bản sao, hoặc muốn tách rủi ro migration khỏi việc khởi động, áp migration như một bước riêng trước:
+
+```powershell
+pnpm db:up                       # Postgres phải đang chạy
+pnpm stack:migrate               # mỗi service có database chạy một container "chỉ áp migration rồi thoát"
+$env:RUN_MIGRATIONS="false"; pnpm stack:up   # bật service, không tự áp migration nữa
+```
+
+Prisma tự khóa (advisory lock) khi áp migration, nên nhiều container cùng chạy migrate cũng không giẫm chân nhau. `MIGRATE_ONLY=true` là cơ chế của entrypoint (áp migration rồi thoát). Đã kiểm tra: áp migration thật trên database trống, và bật cả stack khi `RUN_MIGRATIONS=false`.
+
 ## 2. Biến môi trường của compose
 
 | Biến | Mặc định | Ý nghĩa |
@@ -38,6 +50,7 @@ Kiểm tra: `http://localhost/api/health/services` phải báo `ok` với đủ 
 | `SITE_ADDRESS` | `:80` | Địa chỉ Caddy phục vụ. Đặt tên miền (vd `api.phucvifoods.vn`) thì Caddy tự lấy và gia hạn HTTPS |
 | `CORS_ORIGINS` | `http://localhost:5173` | Nguồn web được phép gọi API (cách nhau bằng dấu phẩy) |
 | `RATE_LIMIT_ENABLED` | `true` | Đặt `false` khi chạy bộ Postman |
+| `RUN_MIGRATIONS` | `true` | `false`: service không tự áp migration (xem mục Migration) |
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD` | `postgres`/`postgres`, `phucvi`/`phucvi` | Tài khoản hạ tầng (đặt giá trị mạnh khi lên máy thật) |
 
 Biến của từng service (cổng, địa chỉ database, địa chỉ service khác) được compose đặt sẵn theo tên trong mạng Docker, không đọc từ `.env`. Vì vậy `.env` dùng cho dev (với `localhost`) không ảnh hưởng container.
@@ -58,7 +71,7 @@ Build đủ 7 image; cả stack lên healthy; 6 bộ Postman (gateway, catalog, 
 ## 5. Giới hạn hiện tại (bản demo)
 
 - Service chạy bằng `tsx` từ mã TypeScript, image gồm cả devDependencies. Production thật nên biên dịch ra JavaScript và chỉ cài dependency chạy để image nhỏ và khởi động nhanh.
-- Mỗi bản sao service tự chạy migration lúc khởi động: một bản sao thì ổn; nhiều bản sao cùng lúc nên tách bước migration thành job riêng.
+- Migration có thể tách riêng (`pnpm stack:migrate` + `RUN_MIGRATIONS=false`) nhưng chưa có quy trình rollback tự động: Prisma không có migration lùi, sửa lỗi bằng migration mới.
 - Postgres (5433), RabbitMQ (5672, 15672) vẫn mở cổng ra máy chủ để tiện dev. Lên máy thật nên bỏ `ports` của hai dịch vụ này (hoặc đặt sau tường lửa) và dùng mật khẩu mạnh.
 - Giao diện web (`FE/`) chưa đóng gói trong stack; Caddy mới chuyển `/api/*` vào gateway, đường dẫn khác trả 404.
 - Trạng thái giới hạn tốc độ và ngắt mạch nằm trong bộ nhớ từng tiến trình (xem `gateway-service.md`, `shared-library.md`).

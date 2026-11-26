@@ -15,6 +15,8 @@
     "stack:down": "docker compose --env-file .env -f BE/infra/docker-compose.yml --profile app down",
     "stack:logs": "docker compose --env-file .env -f BE/infra/docker-compose.yml --profile app logs -f --tail=50",
     "stack:seed": "node BE/infra/docker/seed-stack.mjs",
+    "stack:migrate": "node BE/infra/docker/migrate-stack.mjs",
+    "dlq": "pnpm --filter @phucvi/shared-library run dlq",
     "db:generate": "pnpm -r --filter \"./BE/services/*\" run db:generate",
     "db:migrate": "pnpm -r --filter \"./BE/services/*\" run db:migrate",
     "db:seed": "pnpm -r --filter \"./BE/services/*\" run db:seed"

@@ -165,6 +165,40 @@ Mã số không bao giờ đổi hay dùng lại (có test khóa cứng). Bảng
 
 **Sự kiện hiện có** (`contracts/events.ts`): `user.user.created`, `ordering.order.placed`, `ordering.order.status_changed`, `affiliate.affiliate.status_changed`, `commission.commission.status_changed`. Thêm sự kiện: khai báo ở `EventTypes` và `EventPayloads`, kiểu payload tự được kiểm tra khi gọi `outbox.add`. Đổi tên hoặc đổi nghĩa payload là thay đổi phá vỡ, phải tăng `version`.
 
+### Dọn outbox và inbox (tự động)
+
+`MessagingModule` tự dọn định kỳ để hai bảng không phình mãi (`MessagingMaintenance`): lần đầu **60 giây sau khi service khởi động** (để service khởi động lại thường xuyên vẫn được dọn), rồi mỗi giờ.
+
+| Việc dọn | Điều kiện xóa | Mặc định |
+|---|---|---|
+| `outbox_events` | **đã gửi** (`published_at`) quá hạn; sự kiện CHƯA gửi không bao giờ bị xóa, dù cũ | 7 ngày |
+| `inbox_events` | đã xử lý (`processed_at`) quá hạn | 30 ngày |
+
+Inbox giữ lâu hơn vì nó là hàng rào chống xử lý trùng: phải dài hơn thời gian một message có thể bị gửi lại, kể cả khi đưa lại từ DLQ. Mỗi schema được dọn độc lập (một schema lỗi không chặn schema khác); chạy nhiều bản sao service là an toàn.
+
+| Biến | Mặc định | Ý nghĩa |
+|---|---|---|
+| `OUTBOX_PURGE_ENABLED` | `true` | `false` để tắt dọn dẹp |
+| `OUTBOX_RETENTION_DAYS` | 7 | Giữ outbox đã gửi bao nhiêu ngày (1 đến 3650) |
+| `INBOX_RETENTION_DAYS` | 30 | Giữ inbox bao nhiêu ngày |
+| `MAINTENANCE_INTERVAL_MS` | 3600000 | Khoảng giữa hai lượt dọn |
+
+Giá trị sai thì dùng mặc định và ghi cảnh báo (không làm service dừng). Tùy chọn `purge` của `MessagingModule.forRoot` được ưu tiên hơn biến môi trường.
+
+### Dead-letter queue (DLQ): xem, đưa lại, bỏ
+
+Message vào `<queue>.dlq` khi consumer xử lý lỗi hết số lần thử. Sau khi sửa nguyên nhân, đưa lại về queue gốc bằng lệnh (đọc `RABBITMQ_URL` từ `.env` ở gốc repo; `<queue>` là tên queue gốc, vd `affiliate.commission`, không kèm `.dlq`):
+
+```powershell
+pnpm dlq                                              # liệt kê các DLQ và số message (qua API quản trị RabbitMQ, cổng 15672)
+pnpm dlq list affiliate.commission --limit 20         # xem message (type, số lần thử, lý do, nội dung); không lấy đi
+pnpm dlq requeue affiliate.commission                 # đưa tất cả về queue gốc, đặt lại số lần thử
+pnpm dlq requeue affiliate.commission --id <messageId> # chỉ đưa các message chỉ định
+pnpm dlq discard affiliate.commission --id <messageId> # bỏ hẳn message chỉ định (bắt buộc nêu mã, không bỏ hàng loạt)
+```
+
+Cùng các hàm `listDeadLetters`, `requeueDeadLetters`, `discardDeadLetters`, `listDeadLetterQueues` dùng được từ mã. Chỉ xóa khỏi DLQ sau khi broker đã xác nhận ghi bền ở queue gốc, nên lỗi giữa chừng không làm mất message (tệ nhất là xử lý lại hai lần, và consumer đều idempotent nhờ inbox). Nếu message lại lỗi, nó đi hết số lần thử rồi quay về DLQ.
+
 ## 3b. Gọi service khác: retry và ngắt mạch (`/http`)
 
 `callDownstream(target, method, path, body?, { idempotent? })` gọi API nội bộ (`x-internal-key`), trả `data` của phong bì chuẩn, mọi lỗi là `DownstreamError`. `createDownstreamTarget(...)` tạo đích **cho một service** kèm retry và circuit breaker; mỗi service một đích (một breaker), dùng chung cho mọi lời gọi tới service đó trong tiến trình.
@@ -212,14 +246,14 @@ pnpm --filter @phucvi/shared-library typecheck
 
 - Unit: utils, contracts, bộ phân tích query.
 - E2E API: dựng Nest app thật với CRUD tự sinh trên delegate trong bộ nhớ, gọi qua HTTP.
-- Tích hợp: outbox, relay, RabbitMQ, inbox, retry và dead-letter queue trên Postgres và RabbitMQ thật.
+- Tích hợp: outbox, relay, RabbitMQ, inbox, retry và dead-letter queue trên Postgres và RabbitMQ thật; dọn outbox/inbox (schema cô lập); công cụ DLQ (xem, bỏ, đưa lại, số lần thử đặt lại).
 
 ## 6. Giới hạn hiện tại
 
 - Xác thực mới ở mức JWT HS256 dùng khóa chung (chi tiết giới hạn ở `user-service.md`). CRUD nhận `decorators` để gắn `@Roles`.
 - Service dùng thư viện qua `tsx` phải đưa `../../packages/shared-library/src/**/*.ts` vào `include` của `tsconfig.json`, nếu không decorator tham số trong thư viện bị từ chối lúc chạy.
 - Retry của consumer chờ trong bộ nhớ tiến trình: nếu tiến trình tắt giữa lúc chờ thì lần thử lại đó mất (message gốc đã ack). Phù hợp demo; production nên dùng delay queue hoặc để broker redeliver.
-- Message trong dead-letter queue phải đưa lại bằng tay (qua giao diện quản trị RabbitMQ tại `http://localhost:15672`).
+- Đưa message DLQ về queue gốc là thao tác thủ công bằng `pnpm dlq` (chưa có tự động đưa lại hay cảnh báo khi DLQ có message; nên theo dõi số message ở `pnpm dlq` hoặc giao diện RabbitMQ).
 - Thư viện pin NestJS 11 và amqplib 0.10; chưa thử với NestJS 12.
 - Chưa build `dist`; khi dựng service NestJS cần cấu hình để biên dịch cả mã trong `shared-library`, hoặc thêm bước build cho gói.
-- Bảng outbox của mỗi schema cần được dọn định kỳ (`purgePublishedOutbox`), chưa có job tự chạy.
+- Dọn outbox/inbox chạy trong từng tiến trình service (xem mục 3); chưa có cơ chế chạy dọn riêng một nơi duy nhất.

@@ -8,6 +8,8 @@
 # Thiếu hoặc quá ngắn thì service tự dừng lúc khởi động và báo lỗi cấu hình trong log.
 x-app-env: &app-env
   NODE_ENV: production
+  # false: không tự áp migration lúc khởi động (đã chạy `pnpm stack:migrate` trước). Xem BE/docs/deploy.md.
+  RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
   JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-}
   INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
   JWT_ISSUER: ${JWT_ISSUER:-phucvi}

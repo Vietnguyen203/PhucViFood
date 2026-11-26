@@ -5,7 +5,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PrismaClient as UserClient } from '../../../../services/user/generated/client';
 import { PrismaClient as AffiliateClient } from '../../../../services/affiliate/generated/client';
 import { EventTypes, type EventEnvelope } from '../../src/contracts';
-import { Inbox, OutboxRelay, OutboxWriter, RabbitMqClient, type EventPublisher } from '../../src/messaging';
+import {
+  discardDeadLetters, Inbox, listDeadLetterQueues, listDeadLetters, MessagingMaintenance, OutboxRelay, OutboxWriter, RabbitMqClient,
+  requeueDeadLetters, type EventPublisher,
+} from '../../src/messaging';
 import { uuidv7 } from '../../src/utils';
 
 const enabled = process.env.RUN_INTEGRATION === '1';
@@ -208,5 +211,99 @@ describe.skipIf(!enabled)('messaging tích hợp (Postgres + RabbitMQ thật)', 
     expect(dead.id).toBe(env.id);
     expect(attempts).toBe(2);
     await ch.close();
+  });
+  // ═════════════════════════ Vận hành: dọn outbox/inbox ═════════════════════════
+  it('dọn định kỳ: xóa outbox đã gửi và inbox đã xử lý quá hạn; giữ nguyên phần còn lại (schema cô lập)', async () => {
+    const ago = (days: number) => new Date(Date.now() - days * 86_400_000);
+    await user.$executeRawUnsafe(`DROP SCHEMA IF EXISTS it_purge CASCADE`);
+    await user.$executeRawUnsafe(`CREATE SCHEMA it_purge`);
+    try {
+      await user.$executeRawUnsafe(`CREATE TABLE it_purge.outbox_events (id uuid PRIMARY KEY, published_at timestamptz, created_at timestamptz NOT NULL DEFAULT now())`);
+      await user.$executeRawUnsafe(`CREATE TABLE it_purge.inbox_events (id uuid PRIMARY KEY, processed_at timestamptz NOT NULL)`);
+      const [oldSent, recentSent, oldUnsent, oldSeen, recentSeen] = [newId(), newId(), newId(), newId(), newId()];
+      const out = (id: string, published: Date | null, created: Date) =>
+        user.$executeRawUnsafe(`INSERT INTO it_purge.outbox_events (id, published_at, created_at) VALUES ($1::uuid, $2, $3)`, id, published, created);
+      await out(oldSent, ago(10), ago(10));
+      await out(recentSent, ago(1), ago(1));
+      await out(oldUnsent, null, ago(30)); // chưa gửi: TUYỆT ĐỐI không được xóa dù đã cũ
+      await user.$executeRawUnsafe(`INSERT INTO it_purge.inbox_events (id, processed_at) VALUES ($1::uuid, $2), ($3::uuid, $4)`, oldSeen, ago(40), recentSeen, ago(10));
+
+      const r = await new MessagingMaintenance(user, ['it_purge'], ['it_purge']).runOnce(); // mặc định: outbox 7 ngày, inbox 30 ngày
+      expect(r).toEqual({ outbox: 1, inbox: 1 });
+      const left = async (t: string) => (await user.$queryRawUnsafe<Array<{ id: string }>>(`SELECT id::text FROM it_purge.${t}`)).map((x) => x.id).sort();
+      expect(await left('outbox_events')).toEqual([recentSent, oldUnsent].sort());
+      expect(await left('inbox_events')).toEqual([recentSeen]);
+      expect(await new MessagingMaintenance(user, ['it_purge'], ['it_purge']).runOnce()).toEqual({ outbox: 0, inbox: 0 }); // chạy lại không xóa thêm
+    } finally {
+      await user.$executeRawUnsafe(`DROP SCHEMA IF EXISTS it_purge CASCADE`);
+    }
+  });
+
+  // ═════════════════════════ Vận hành: dead-letter queue ═════════════════════════
+  it('DLQ: xem không lấy đi, bỏ message chỉ định, đưa lại về queue gốc để xử lý lại sau khi sửa lỗi', async () => {
+    const queue = `int.dlqtool.${newId()}`;
+    queues.push(queue);
+    let broken = true;
+    const handled: string[] = [];
+    await rabbit.subscribe({
+      queue, routingKeys: [EventTypes.USER_CREATED], retryDelayMs: 20, maxAttempts: 1,
+      handler: async (e) => { if (broken) throw new Error('lỗi do mã'); handled.push(e.id); },
+    });
+    const keep = await user.$transaction((tx) => writer.add(tx, userCreated(newId(), 'dlq-keep@example.com')));
+    const drop = await user.$transaction((tx) => writer.add(tx, userCreated(newId(), 'dlq-drop@example.com')));
+    await new OutboxRelay(user, TABLE, rabbit).runOnce();
+
+    const listed = await waitFor(async () => { const l = await listDeadLetters(RABBIT_URL, queue); return l.total === 2 ? l : undefined; });
+    expect(listed.messages.map((m) => m.messageId).sort()).toEqual([keep.id, drop.id].sort());
+    expect(listed.messages[0]).toMatchObject({ type: EventTypes.USER_CREATED, attempts: 1 });
+    expect((listed.messages.find((m) => m.messageId === keep.id)!.body as EventEnvelope<'user.user.created'>).payload.email).toBe('dlq-keep@example.com');
+    expect((await listDeadLetters(RABBIT_URL, queue)).total).toBe(2); // xem không làm mất message
+
+    // Danh sách các DLQ qua API quản trị RabbitMQ (số liệu cập nhật chậm vài giây).
+    const found = await waitFor(async () => {
+      const all = await listDeadLetterQueues('http://localhost:15672', 'phucvi', 'phucvi');
+      return all.find((d) => d.queue === queue);
+    }, 15_000);
+    expect(found).toBeTruthy();
+
+    expect(await discardDeadLetters(RABBIT_URL, queue, [drop.id])).toEqual({ discarded: 1 });
+    expect((await listDeadLetters(RABBIT_URL, queue)).total).toBe(1);
+
+    // Chưa sửa lỗi hoặc chỉ định sai mã: không đưa gì về queue gốc.
+    expect(await requeueDeadLetters(RABBIT_URL, queue, { messageIds: [newId()] })).toEqual({ requeued: 0, kept: 1 });
+    expect((await listDeadLetters(RABBIT_URL, queue)).total).toBe(1);
+
+    broken = false; // "sửa lỗi"
+    expect(await requeueDeadLetters(RABBIT_URL, queue, { messageIds: [keep.id] })).toEqual({ requeued: 1, kept: 0 });
+    await waitFor(() => (handled.includes(keep.id) ? true : undefined));
+    expect(handled).not.toContain(drop.id);
+    expect((await listDeadLetters(RABBIT_URL, queue)).total).toBe(0);
+  });
+
+  it('DLQ: số lần thử được đặt lại khi đưa về, và tên queue sai bị từ chối', async () => {
+    const queue = `int.dlqretry.${newId()}`;
+    queues.push(queue);
+    let attempts = 0;
+    let broken = true;
+    await rabbit.subscribe({
+      queue, routingKeys: [EventTypes.USER_CREATED], retryDelayMs: 20, maxAttempts: 2,
+      handler: async () => { attempts++; if (broken) throw new Error('lỗi'); },
+    });
+    const env = await user.$transaction((tx) => writer.add(tx, userCreated(newId(), 'dlq-retry@example.com')));
+    await new OutboxRelay(user, TABLE, rabbit).runOnce();
+    const l = await waitFor(async () => { const x = await listDeadLetters(RABBIT_URL, queue); return x.total === 1 ? x : undefined; });
+    expect(l.messages[0]).toMatchObject({ messageId: env.id, attempts: 2 });
+    const before = attempts;
+
+    // Đưa về mà vẫn lỗi: được thử đủ số lần mới (không bị coi là đã hết lượt ngay) rồi lại vào DLQ.
+    await requeueDeadLetters(RABBIT_URL, queue);
+    await waitFor(async () => { const x = await listDeadLetters(RABBIT_URL, queue); return x.total === 1 && attempts >= before + 2 ? x : undefined; });
+    expect(attempts).toBe(before + 2);
+    broken = false;
+    await requeueDeadLetters(RABBIT_URL, queue);
+    await waitFor(async () => ((await listDeadLetters(RABBIT_URL, queue)).total === 0 && attempts === before + 3 ? true : undefined));
+
+    for (const bad of ['', 'Hoa.Thuong', 'a b', 'x.dlq', '../x']) await expect(listDeadLetters(RABBIT_URL, bad)).rejects.toThrow(/không hợp lệ/);
+    await expect(discardDeadLetters(RABBIT_URL, queue, [])).rejects.toThrow(/mã message/);
   });
 });

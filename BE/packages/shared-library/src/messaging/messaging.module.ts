@@ -3,6 +3,7 @@ import {
 } from '@nestjs/common';
 import type { ServiceName } from '../contracts/events';
 import { Inbox } from './inbox';
+import { MessagingMaintenance, purgeOptionsFromEnv, type PurgeOptions } from './maintenance';
 import { OutboxEventInput, OutboxRelay, OutboxWriter, RelayOptions } from './outbox';
 import { RabbitMqClient } from './rabbitmq';
 import type { RawExecutor, TransactionalClient } from './sql';
@@ -23,6 +24,11 @@ export interface MessagingModuleOptions {
   inboxSchemas?: string[];
   /** Tắt relay (vd trong test hoặc khi chạy tiến trình riêng). Mặc định bật. */
   relay?: RelayOptions & { enabled?: boolean };
+  /**
+   * Dọn định kỳ outbox đã gửi và inbox đã xử lý (mặc định bật; giữ outbox 7 ngày, inbox 30 ngày). Có thể chỉnh bằng biến môi trường
+   * OUTBOX_PURGE_ENABLED, OUTBOX_RETENTION_DAYS, INBOX_RETENTION_DAYS, MAINTENANCE_INTERVAL_MS; giá trị truyền ở đây được ưu tiên.
+   */
+  purge?: PurgeOptions;
 }
 
 /** Ghi sự kiện vào outbox của một schema, trong transaction của nghiệp vụ. */
@@ -61,6 +67,7 @@ export class InboxService {
 class MessagingLifecycle implements OnApplicationBootstrap, OnApplicationShutdown {
   private readonly logger = new Logger('Messaging');
   private relays: OutboxRelay[] = [];
+  private maintenance: MessagingMaintenance | null = null;
 
   constructor(
     @Inject(MESSAGING_OPTIONS) private readonly options: MessagingModuleOptions,
@@ -70,6 +77,7 @@ class MessagingLifecycle implements OnApplicationBootstrap, OnApplicationShutdow
 
   async onApplicationBootstrap(): Promise<void> {
     await this.rabbit.connect();
+    this.startMaintenance();
     if (this.options.relay?.enabled === false) return;
     this.relays = this.options.outboxSchemas.map(
       (schema) => new OutboxRelay(this.prisma, { schema }, this.rabbit, this.options.relay, this.logger),
@@ -77,7 +85,19 @@ class MessagingLifecycle implements OnApplicationBootstrap, OnApplicationShutdow
     this.relays.forEach((r) => r.start());
   }
 
+  private startMaintenance(): void {
+    const fromEnv = purgeOptionsFromEnv(process.env);
+    fromEnv.warnings.forEach((w) => this.logger.warn(w));
+    // Giá trị truyền trực tiếp thắng biến môi trường; undefined thì rơi về biến môi trường rồi mặc định.
+    const defined = Object.fromEntries(Object.entries(this.options.purge ?? {}).filter(([, v]) => v !== undefined));
+    this.maintenance = new MessagingMaintenance(
+      this.prisma, this.options.outboxSchemas, this.options.inboxSchemas ?? [], { ...fromEnv.options, ...defined }, this.logger,
+    );
+    this.maintenance.start();
+  }
+
   async onApplicationShutdown(): Promise<void> {
+    await this.maintenance?.stop();
     await Promise.all(this.relays.map((r) => r.stop()));
     await this.rabbit.close();
   }
