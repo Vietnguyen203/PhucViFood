@@ -28,6 +28,10 @@ export type AffiliateStatus = (typeof AffiliateStatus)[keyof typeof AffiliateSta
 export const CommissionStatus = { ESTIMATED: 'ESTIMATED', CONFIRMED: 'CONFIRMED', PAID: 'PAID', CANCELLED: 'CANCELLED' } as const;
 export type CommissionStatus = (typeof CommissionStatus)[keyof typeof CommissionStatus];
 
+/** PENDING: chờ trừ vào đợt chi sau; APPLIED: đã trừ; WAIVED: admin miễn trừ (công ty chịu). */
+export const AdjustmentStatus = { PENDING: 'PENDING', APPLIED: 'APPLIED', WAIVED: 'WAIVED' } as const;
+export type AdjustmentStatus = (typeof AdjustmentStatus)[keyof typeof AdjustmentStatus];
+
 export const UserRole = { ADMIN: 'ADMIN', AFFILIATE: 'AFFILIATE' } as const;
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 

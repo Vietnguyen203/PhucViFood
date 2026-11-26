@@ -18,6 +18,7 @@ datasource db {
 //   affiliates.status:       1 PENDING, 2 ACTIVE, 3 SUSPENDED, 4 REJECTED
 //   commissions.status:      1 ESTIMATED, 2 CONFIRMED, 3 PAID, 4 CANCELLED
 //   commissions.confirmed_by: 1 CUSTOMER, 2 ADMIN
+//   adjustments.status:       1 PENDING, 2 APPLIED, 3 WAIVED
 
 // ───────────────────────── schema: affiliate ─────────────────────────
 
@@ -90,25 +91,26 @@ model AffiliateOutboxEvent {
 // ───────────────────────── schema: commission ─────────────────────────
 
 model Commission {
-  id          String           @id @default(uuid(7)) @db.Uuid
-  orderId     String           @unique @map("order_id") @db.Uuid // ordering.orders.id; UNIQUE chống tạo trùng
-  orderCode   String           @map("order_code") // lưu sẵn để hiển thị
-  affiliateId String           @map("affiliate_id") @db.Uuid
-  linkId      String?          @map("link_id") @db.Uuid
-  channelCode String?          @map("channel_code")
-  rateBps     Int              @map("rate_bps") // snapshot tại thời điểm đặt
-  baseAmount  BigInt           @map("base_amount") // tổng giá sản phẩm, không tính ship
-  amount      BigInt // floor(base_amount * rate_bps / 10000)
-  status      Int              @default(1) @db.SmallInt // CommissionStatusCode, mặc định 1 = ESTIMATED
-  confirmedAt DateTime?        @map("confirmed_at") @db.Timestamptz(6)
-  confirmedBy Int?             @map("confirmed_by") @db.SmallInt // ConfirmSourceCode
-  paidAt      DateTime?        @map("paid_at") @db.Timestamptz(6)
-  payoutId    String?          @map("payout_id") @db.Uuid
-  cancelledAt DateTime?        @map("cancelled_at") @db.Timestamptz(6)
-  cancelReason String?         @map("cancel_reason")
-  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
-  payout      Payout?          @relation(fields: [payoutId], references: [id])
+  id           String      @id @default(uuid(7)) @db.Uuid
+  orderId      String      @unique @map("order_id") @db.Uuid // ordering.orders.id; UNIQUE chống tạo trùng
+  orderCode    String      @map("order_code") // lưu sẵn để hiển thị
+  affiliateId  String      @map("affiliate_id") @db.Uuid
+  linkId       String?     @map("link_id") @db.Uuid
+  channelCode  String?     @map("channel_code")
+  rateBps      Int         @map("rate_bps") // snapshot tại thời điểm đặt
+  baseAmount   BigInt      @map("base_amount") // tổng giá sản phẩm, không tính ship
+  amount       BigInt // floor(base_amount * rate_bps / 10000)
+  status       Int         @default(1) @db.SmallInt // CommissionStatusCode, mặc định 1 = ESTIMATED
+  confirmedAt  DateTime?   @map("confirmed_at") @db.Timestamptz(6)
+  confirmedBy  Int?        @map("confirmed_by") @db.SmallInt // ConfirmSourceCode
+  paidAt       DateTime?   @map("paid_at") @db.Timestamptz(6)
+  payoutId     String?     @map("payout_id") @db.Uuid
+  cancelledAt  DateTime?   @map("cancelled_at") @db.Timestamptz(6)
+  cancelReason String?     @map("cancel_reason")
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  payout       Payout?     @relation(fields: [payoutId], references: [id])
+  adjustment   Adjustment?
 
   @@index([affiliateId, status])
   @@index([payoutId])
@@ -119,16 +121,48 @@ model Commission {
 model Payout {
   id               String       @id @default(uuid(7)) @db.Uuid
   affiliateId      String       @map("affiliate_id") @db.Uuid
+  /// Số tiền thực chuyển cho CTV = tổng hoa hồng trong đợt - adjustmentAmount.
   totalAmount      BigInt       @map("total_amount")
+  /// Tổng các khoản trừ (đơn hoàn sau khi đã chi) được trừ vào đợt này.
+  adjustmentAmount BigInt       @default(0) @map("adjustment_amount")
   paidAt           DateTime     @map("paid_at") @db.Timestamptz(6)
   paymentReference String?      @map("payment_reference")
   note             String?
   createdBy        String       @map("created_by") @db.Uuid // user.users.id của admin
   createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   commissions      Commission[]
+  adjustments      Adjustment[] @relation("AppliedAdjustments")
 
   @@index([affiliateId, paidAt])
   @@map("payouts")
+  @@schema("commission")
+}
+
+/// Khoản trừ vào hoa hồng của CTV khi đơn bị hoàn SAU KHI hoa hồng đã chi trả (tiền đã chuyển, không thu lại được ngay).
+/// Không đổi trạng thái hoa hồng (vẫn PAID, giữ lịch sử đúng); tạo một khoản trừ chờ (PENDING) để trừ vào đợt chi sau.
+/// Mỗi hoa hồng có tối đa một khoản trừ (UNIQUE commission_id), nên sự kiện gửi lặp không trừ hai lần.
+model Adjustment {
+  id              String     @id @default(uuid(7)) @db.Uuid
+  commissionId    String     @unique @map("commission_id") @db.Uuid
+  orderId         String     @map("order_id") @db.Uuid // ordering.orders.id (không FK)
+  orderCode       String     @map("order_code")
+  affiliateId     String     @map("affiliate_id") @db.Uuid
+  amount          BigInt // luôn > 0: số hoa hồng đã chi cho đơn bị hoàn
+  reason          String
+  status          Int        @default(1) @db.SmallInt // AdjustmentStatusCode, mặc định 1 = PENDING
+  appliedPayoutId String?    @map("applied_payout_id") @db.Uuid
+  appliedAt       DateTime?  @map("applied_at") @db.Timestamptz(6)
+  waivedAt        DateTime?  @map("waived_at") @db.Timestamptz(6)
+  waivedBy        String?    @map("waived_by") @db.Uuid // user.users.id của admin
+  waiveReason     String?    @map("waive_reason")
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  commission      Commission @relation(fields: [commissionId], references: [id])
+  appliedPayout   Payout?    @relation("AppliedAdjustments", fields: [appliedPayoutId], references: [id])
+
+  @@index([affiliateId, status, createdAt])
+  @@index([appliedPayoutId])
+  @@map("adjustments")
   @@schema("commission")
 }
 

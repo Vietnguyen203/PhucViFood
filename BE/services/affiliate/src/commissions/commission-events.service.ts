@@ -14,7 +14,7 @@ const CONSUMER = 'commission-order-events';
  * Tạo và cập nhật hoa hồng theo sự kiện đơn hàng:
  * - ordering.order.placed        -> ESTIMATED (chỉ khi đơn gắn CTV hợp lệ, không phải tự mua)
  * - status_changed COMPLETED     -> CONFIRMED (khách xác nhận nhận hàng, hoặc admin chuyển sau khi CSKH xử lý)
- * - status_changed CANCELLED/RETURNED -> CANCELLED
+ * - status_changed CANCELLED/RETURNED -> CANCELLED (nếu hoa hồng đã PAID thì giữ PAID và tạo khoản trừ chờ, xem AdjustmentsService)
  * Xử lý idempotent: sự kiện gửi lặp không tạo trùng hay đổi trạng thái hai lần (inbox + order_id UNIQUE).
  */
 @Injectable()
@@ -80,8 +80,17 @@ export class CommissionEventsService {
           cancelledAt: at, cancelReason: p.toStatus === 'CANCELLED' ? 'Đơn bị hủy' : 'Đơn bị hoàn',
         });
       } else if (from === 'PAID') {
-        // Đã chi trả rồi mới hoàn: không tự đổi trạng thái, admin xử lý tay (quy tắc demo).
-        this.logger.warn(`Đơn ${p.code} bị ${p.toStatus} nhưng hoa hồng ${commission.id} đã PAID: cần xử lý tay`);
+        // Đã chi trả rồi mới hoàn: giữ nguyên PAID (tiền đã chuyển, lịch sử phải đúng) và ghi một khoản trừ chờ,
+        // tự trừ vào đợt chi kế tiếp. UNIQUE commission_id nên sự kiện gửi lặp không tạo hai khoản trừ.
+        const created = await tx.adjustment.createMany({
+          data: [{
+            id: uuidv7(), commissionId: commission.id, orderId: commission.orderId, orderCode: commission.orderCode,
+            affiliateId: commission.affiliateId, amount: commission.amount,
+            reason: p.toStatus === 'RETURNED' ? 'Đơn bị hoàn sau khi đã chi trả hoa hồng' : 'Đơn bị hủy sau khi đã chi trả hoa hồng',
+          }],
+          skipDuplicates: true,
+        });
+        if (created.count === 1) this.logger.warn(`Đơn ${p.code} bị ${p.toStatus} sau khi hoa hồng ${commission.id} đã PAID: tạo khoản trừ ${commission.amount} chờ trừ vào đợt chi sau`);
       }
     }
   }

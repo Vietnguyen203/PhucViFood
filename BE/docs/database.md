@@ -104,10 +104,19 @@ erDiagram
     smallint status "CommissionStatusCode"
     uuid payout_id FK
   }
+  adjustments {
+    uuid id PK
+    uuid commission_id UK,FK "hoa hồng đã PAID bị hoàn đơn"
+    uuid affiliate_id "không FK"
+    bigint amount
+    smallint status "AdjustmentStatusCode"
+    uuid applied_payout_id FK
+  }
   payouts {
     uuid id PK
     uuid affiliate_id "không FK"
-    bigint total_amount
+    bigint total_amount "thực chuyển, đã trừ adjustment_amount"
+    bigint adjustment_amount
     timestamptz paid_at
     uuid created_by "user.users"
   }
@@ -279,6 +288,7 @@ Nguồn sự thật: `BE/packages/shared-library/src/contracts/codes.ts`. Có te
 | `affiliate.affiliates.status` | 1 PENDING, 2 ACTIVE, 3 SUSPENDED, 4 REJECTED |
 | `tracking.tracking_events.type` (tracking_db) | 1 PRODUCT_VIEW, 2 ADD_TO_CART, 3 CHECKOUT_START |
 | `commission.commissions.status` | 1 ESTIMATED, 2 CONFIRMED, 3 PAID, 4 CANCELLED |
+| `commission.adjustments.status` | 1 PENDING (chờ trừ vào đợt chi sau), 2 APPLIED (đã trừ), 3 WAIVED (admin miễn trừ) |
 | `commission.commissions.confirmed_by` | 1 CUSTOMER, 2 ADMIN |
 | `ordering.orders.status`, `order_status_history.from_status`, `to_status` | 1 PLACED, 2 CONFIRMED, 3 SHIPPING, 4 DELIVERED, 5 COMPLETED, 6 CANCELLED, 7 RETURNED |
 | `ordering.orders.payment_method` | 1 COD, 2 BANK_QR |
@@ -301,7 +311,7 @@ Nguồn sự thật: `BE/packages/shared-library/src/contracts/codes.ts`. Có te
 0. **Enum dạng số thay vì enum Postgres** (quyết định của chủ dự án). Được: đổi tên giá trị không cần migration, không phụ thuộc kiểu enum riêng của Postgres/Prisma. Mất: đọc SQL và dữ liệu thô khó hơn (`status = 5` thay vì `'COMPLETED'`), phải có codec ở code, và `CHECK` phải tự cập nhật khi thêm giá trị. Migration `20261125120000_int_enums` của cả 3 service chuyển dữ liệu cũ bằng `USING CASE`, đã kiểm chứng giữ nguyên số liệu.
 1. **Địa chỉ dùng tỉnh/thành + phường/xã** (`province`, `ward`) thay cho tỉnh/quận, vì cấp quận/huyện đã bỏ từ 1/7/2025.
 2. **Phân loại khách không join chéo database.** Thống kê đơn nằm ở `ordering_db`, ngưỡng nằm ở `customer_db`. Service customer lấy thống kê qua API nội bộ của ordering (số đơn hợp lệ, tổng chi, đơn gần nhất; xem `BE/docs/queries/03-customer-order-stats.sql`), rồi phân loại bằng hàm `classifyCustomer()` của shared-library với ngưỡng đọc từ `customer.settings`. Hàm này đã có test với số liệu mẫu; API thống kê của ordering chưa viết.
-3. **Đơn hoàn sau khi hoa hồng đã PAID** chưa có nhánh xử lý. Quy tắc cho demo: chặn ở tầng ứng dụng, admin xử lý tay và ghi chú. `CHECK` hiện chỉ cho phép `CANCELLED` kèm `cancelled_at`, không có bút toán điều chỉnh.
+3. **Đơn hoàn sau khi hoa hồng đã PAID**: hoa hồng giữ PAID (tiền đã chuyển), phát sinh một dòng `commission.adjustments` (UNIQUE `commission_id`) trừ vào đợt chi kế tiếp; `payouts.total_amount` là số thực chuyển (cho phép bằng 0), `payouts.adjustment_amount` là phần đã trừ. `CHECK` của `adjustments` bảo đảm `status` khớp dữ liệu đi kèm (APPLIED có đợt chi, WAIVED có người miễn).
 4. **Phí ship** nằm ở `ordering.settings` (`shipping.flat_fee` = 30.000, `shipping.free_threshold` = 500.000). Đây là giá trị mẫu, cần công ty xác nhận.
 5. **Ngưỡng phân loại khách** ở `customer.settings` là giá trị mẫu: VIP khi từ 5 đơn hợp lệ hoặc từ 5.000.000đ; khách quen từ 2 đơn; hoạt động trong 60 ngày; sắp rời trong 120 ngày; quá 120 ngày là đã rời.
 6. **Outbox/Inbox**: `outbox_events` ở mỗi schema có phát sự kiện (có partial index cho bản ghi chưa gửi). `inbox_events` (UNIQUE `message_id` + `consumer`) ở schema có consumer, để xử lý idempotent khi RabbitMQ gửi lặp.

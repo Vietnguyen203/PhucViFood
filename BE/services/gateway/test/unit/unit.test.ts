@@ -36,7 +36,7 @@ describe('loadConfig', () => {
 describe('resolveService', () => {
   it.each([
     ['/auth/login', 'user'], ['/users', 'user'], ['/users/abc', 'user'],
-    ['/me/affiliate', 'affiliate'], ['/me/commissions/summary', 'affiliate'], ['/payouts', 'affiliate'], ['/public/referrals/abc', 'affiliate'],
+    ['/me/affiliate', 'affiliate'], ['/me/commissions/summary', 'affiliate'], ['/payouts', 'affiliate'], ['/adjustments/abc/waive', 'affiliate'], ['/me/adjustments', 'affiliate'], ['/public/referrals/abc', 'affiliate'],
     ['/public/tracking/events', 'tracking'], ['/me/stats', 'tracking'],
     ['/public/products/khô-cá', 'catalog'], ['/public/categories', 'catalog'], ['/products/1/stock-adjustments', 'catalog'], ['/categories', 'catalog'],
     ['/public/orders', 'ordering'], ['/public/orders/PV-1/cancel', 'ordering'], ['/orders/cskh-queue', 'ordering'], ['/me/orders', 'ordering'],

@@ -17,6 +17,8 @@ export enum TrackingEventTypeCode { PRODUCT_VIEW = 1, ADD_TO_CART = 2, CHECKOUT_
 export enum CommissionStatusCode { ESTIMATED = 1, CONFIRMED = 2, PAID = 3, CANCELLED = 4 }
 /** Ai xác nhận hoa hồng (commission.confirmed_by). */
 export enum ConfirmSourceCode { CUSTOMER = 1, ADMIN = 2 }
+/** Khoản trừ vào hoa hồng của CTV khi đơn bị hoàn sau lúc đã chi trả (commission.adjustments.status). */
+export enum AdjustmentStatusCode { PENDING = 1, APPLIED = 2, WAIVED = 3 }
 
 export enum OrderStatusCode { PLACED = 1, CONFIRMED = 2, SHIPPING = 3, DELIVERED = 4, COMPLETED = 5, CANCELLED = 6, RETURNED = 7 }
 export enum PaymentMethodCode { COD = 1, BANK_QR = 2 }
@@ -83,6 +85,7 @@ export const AffiliateStatusCodec = createCodec(AffiliateStatusCode);
 export const TrackingEventTypeCodec = createCodec(TrackingEventTypeCode);
 export const CommissionStatusCodec = createCodec(CommissionStatusCode);
 export const ConfirmSourceCodec = createCodec(ConfirmSourceCode);
+export const AdjustmentStatusCodec = createCodec(AdjustmentStatusCode);
 export const OrderStatusCodec = createCodec(OrderStatusCode);
 export const PaymentMethodCodec = createCodec(PaymentMethodCode);
 export const PaymentStatusCodec = createCodec(PaymentStatusCode);

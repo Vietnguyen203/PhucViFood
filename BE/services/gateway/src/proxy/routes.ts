@@ -7,8 +7,8 @@ export type ServiceName = (typeof SERVICE_NAMES)[number];
 export const ROUTE_PREFIXES: Record<ServiceName, readonly string[]> = {
   user: ['/auth', '/users'],
   affiliate: [
-    '/me/affiliate', '/me/links', '/me/commissions', '/me/payouts',
-    '/affiliates', '/commissions', '/payouts',
+    '/me/affiliate', '/me/links', '/me/commissions', '/me/payouts', '/me/adjustments',
+    '/affiliates', '/commissions', '/payouts', '/adjustments',
     '/public/referrals',
   ],
   tracking: ['/public/tracking', '/me/stats'],

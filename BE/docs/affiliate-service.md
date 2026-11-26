@@ -27,7 +27,8 @@ Tiền tố `/api`. JWT lấy từ service `user` (cùng `JWT_ACCESS_SECRET`).
 | POST, GET, PATCH | `/me/affiliate` | Đăng ký hồ sơ (PENDING), xem, sửa họ tên và thông tin nhận tiền |
 | GET, POST, PATCH | `/me/links`, `/me/links/:id` | Link theo kênh (facebook, tiktok...), tắt bật |
 | GET | `/me/commissions`, `/me/commissions/:id`, `/me/commissions/summary` | Hoa hồng của mình; chỉ có mã đơn, không có thông tin khách |
-| GET | `/me/payouts`, `/me/payouts/:id` | Các đợt đã được chi trả |
+| GET | `/me/payouts`, `/me/payouts/:id` | Các đợt đã được chi trả (kèm số tiền đã bị trừ nếu có) |
+| GET | `/me/adjustments`, `/me/adjustments/:id` | Các khoản bị trừ vào hoa hồng do đơn hoàn sau khi đã chi (xem mục 2) |
 
 **ADMIN**
 
@@ -40,6 +41,8 @@ Tiền tố `/api`. JWT lấy từ service `user` (cùng `JWT_ACCESS_SECRET`).
 | PATCH | `/commissions/:id/confirm` | Chuyển ESTIMATED sang CONFIRMED sau khi CSKH xử lý |
 | POST | `/payouts` | Chi trả: gom hoa hồng CONFIRMED của một CTV |
 | GET | `/payouts`, `/payouts/:id` | Các đợt chi trả |
+| GET | `/adjustments`, `/adjustments/:id` | Danh sách và chi tiết khoản trừ (lọc `filter[status]`, `filter[affiliateId]`, tìm theo mã đơn) |
+| POST | `/adjustments/:id/waive` | Miễn trừ một khoản đang chờ, bắt buộc `reason` |
 
 ## 2. Quy tắc nghiệp vụ
 
@@ -48,7 +51,10 @@ Tiền tố `/api`. JWT lấy từ service `user` (cùng `JWT_ACCESS_SECRET`).
 - **Ghi nhận đơn:** mã khách nhập ở thanh toán ưu tiên hơn cookie; cookie quá 30 ngày bị bỏ. Hợp đồng kiểm tra theo **ngày đặt hàng** (giờ Việt Nam): hết hạn hoặc không hợp lệ thì đơn tính khách vãng lai (`referralCodeUsed` vẫn giữ để tra cứu). CTV tự mua (SĐT khách trùng SĐT CTV) giữ `affiliateId` + `isSelfPurchase`, không có hoa hồng.
 - **Hoa hồng:** `floor(giá sản phẩm × tỷ lệ / 10000)`, không tính ship, tỷ lệ chốt lúc đặt. Vòng đời: ESTIMATED (đặt hàng) → CONFIRMED (khách xác nhận nhận hàng, hoặc admin chuyển) → PAID (admin chi trả); CANCELLED khi đơn hủy hoặc hoàn. Không tự xác nhận theo ngày.
 - **Chi trả:** `POST /payouts` không truyền `commissionIds` thì lấy tất cả hoa hồng CONFIRMED chưa chi của CTV. Cả đợt nằm trong một transaction; hai admin chi cùng lúc thì chỉ một đợt được tạo.
-- **Đơn hoàn sau khi đã PAID:** hoa hồng giữ nguyên PAID, chỉ ghi cảnh báo vào log, admin xử lý tay (quy tắc demo).
+- **Đơn hoàn sau khi đã PAID (khoản trừ):** hoa hồng giữ nguyên PAID (tiền đã chuyển, lịch sử phải đúng) và hệ thống ghi một **khoản trừ** (`commission.adjustments`, bằng số hoa hồng đã chi) ở trạng thái `PENDING`. Mỗi hoa hồng có tối đa một khoản trừ (UNIQUE), nên sự kiện gửi lặp không trừ hai lần.
+  - Đợt chi kế tiếp của CTV **tự trừ** các khoản chờ, cũ nhất trước, trọn từng khoản khi còn đủ tiền: thực chuyển = hoa hồng trong đợt - khoản trừ (`totalAmount`), khoản đã trừ ghi ở `adjustmentAmount`. Khoản không vừa thì giữ lại cho đợt sau; số tiền thực chuyển không bao giờ âm. Bù đúng hết thì đợt chi thực chuyển 0 đồng nhưng vẫn tất toán hoa hồng.
+  - Khoản trừ thành `APPLIED` (gắn đợt chi, giờ trừ) hoặc `WAIVED`: admin **miễn trừ** bằng `POST /adjustments/:id/waive {reason}` (bắt buộc lý do, ghi người miễn; công ty chịu khoản này). Chỉ miễn được khoản đang `PENDING`.
+  - CTV thấy khoản chờ trừ ở `GET /me/adjustments`, `pendingAdjustments` trong `GET /me/commissions/summary`, và `adjustment` trong chi tiết hoa hồng. Đơn hoàn **trước** khi chi thì hoa hồng bị hủy như cũ và không có khoản trừ.
 
 ## 3. Tích hợp với ordering
 
@@ -99,4 +105,5 @@ Test tích hợp tạo dữ liệu riêng (CTV `IT-*`, đơn `IT-*`) rồi dọn
 - Khóa nội bộ dùng chung một giá trị; chưa xoay vòng.
 - Nếu xử lý một sự kiện lỗi và phải thử lại, thứ tự giữa các sự kiện của cùng đơn không còn được bảo đảm (retry đưa tin về cuối queue).
 - Chưa có thông báo cho CTV khi được duyệt hoặc được chi trả.
-- Đơn hoàn sau khi hoa hồng đã PAID chưa có bút toán điều chỉnh.
+- Khoản trừ chỉ trừ vào đợt chi kế tiếp, không thu hồi tiền mặt; CTV ngừng hoạt động sau khi bị hoàn đơn thì khoản trừ nằm chờ (admin có thể miễn trừ).
+- Chưa thông báo cho CTV khi phát sinh khoản trừ.

@@ -1,6 +1,12 @@
 import { Transform } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsOptional, IsString, IsUUID, Length, MaxLength } from 'class-validator';
 import { trim } from '../common/validators';
+
+/** Admin miễn trừ một khoản trừ: bắt buộc ghi lý do để đối soát. */
+export class WaiveAdjustmentDto {
+  @Transform(trim) @IsString() @Length(3, 255)
+  reason!: string;
+}
 
 export class CreatePayoutDto {
   @IsUUID()

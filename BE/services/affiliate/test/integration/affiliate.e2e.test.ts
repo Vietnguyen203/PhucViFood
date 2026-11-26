@@ -6,7 +6,7 @@ import { NestFactory } from '@nestjs/core';
 import { setupApp } from '@phucvi/shared-library/api';
 import { signAccessToken } from '@phucvi/shared-library/auth';
 import {
-  AffiliateStatusCodec, CommissionStatusCodec, EventTypes, createEnvelope, type AffiliateStatus, type EventEnvelope,
+  AdjustmentStatusCodec, AffiliateStatusCodec, CommissionStatusCodec, EventTypes, createEnvelope, type AffiliateStatus, type EventEnvelope,
 } from '@phucvi/shared-library/contracts';
 import { RabbitMqClient } from '@phucvi/shared-library/messaging';
 import { uuidv7 } from '@phucvi/shared-library/utils';
@@ -137,6 +137,7 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
 
   afterAll(async () => {
     const ids = affiliateIds;
+    await prisma.$executeRawUnsafe(`DELETE FROM commission.adjustments WHERE order_code LIKE 'IT-%' OR affiliate_id = ANY($1::uuid[])`, ids);
     await prisma.$executeRawUnsafe(`DELETE FROM commission.commissions WHERE order_code LIKE 'IT-%' OR affiliate_id = ANY($1::uuid[])`, ids);
     await prisma.$executeRawUnsafe(`DELETE FROM commission.payouts WHERE affiliate_id = ANY($1::uuid[])`, ids);
     await prisma.$executeRawUnsafe(`DELETE FROM commission.outbox_events WHERE payload->'payload'->>'affiliateId' = ANY($1::text[])`, ids);
@@ -513,6 +514,9 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
       await publish(back);
       await waitProcessed(back.id);
       expect((await commissionOf(paid.payload.orderId))?.status).toBe(CommissionStatusCodec.toCode('PAID'));
+      // ...và ghi một khoản trừ chờ (chi tiết ở nhóm "đơn hoàn sau khi hoa hồng đã chi trả" bên dưới); đơn hủy/hoàn trước khi chi thì không có.
+      expect(await prisma.adjustment.count({ where: { orderId: paid.payload.orderId } })).toBe(1);
+      expect(await prisma.adjustment.count({ where: { orderId: { in: [cancelled.payload.orderId, returned.payload.orderId] } } })).toBe(0);
     });
 
     it('admin xác nhận thủ công hoa hồng ESTIMATED (sau khi CSKH xử lý); chỉ xác nhận được từ ESTIMATED', async () => {
@@ -537,6 +541,191 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
   });
 
   // ═════════════════════════ Chi trả và xem của CTV ═════════════════════════
+  // ═════════════════════════ Đơn hoàn sau khi hoa hồng đã chi trả ═════════════════════════
+  describe('đơn hoàn sau khi hoa hồng đã chi trả (khoản trừ vào đợt chi sau)', () => {
+    const admin = () => adminToken();
+    /** Đơn đã hoàn tất và đã được chi trả (một đợt chi riêng). Trả về sự kiện đặt đơn. */
+    async function paidOrder(a: { id: string }, subtotal: number) {
+      const o = placedEvent({ affiliateId: a.id, rate: 1000, subtotal });
+      await publish(o, statusEvent(o, 'COMPLETED', 'CUSTOMER'));
+      await waitCommission(o.payload.orderId, 'CONFIRMED');
+      expect((await api('POST', '/payouts', { token: admin(), body: { affiliateId: a.id } })).status).toBe(201);
+      return o;
+    }
+    /** Đơn đã hoàn tất, hoa hồng CONFIRMED, chưa chi. */
+    async function confirmedOrder(a: { id: string }, subtotal: number) {
+      const o = placedEvent({ affiliateId: a.id, rate: 1000, subtotal });
+      await publish(o, statusEvent(o, 'COMPLETED', 'CUSTOMER'));
+      await waitCommission(o.payload.orderId, 'CONFIRMED');
+      return o;
+    }
+    async function returnOrder(o: EventEnvelope<'ordering.order.placed'>) {
+      const ev = statusEvent(o, 'RETURNED');
+      await publish(ev);
+      await waitProcessed(ev.id);
+    }
+    const adjustmentOf = (o: EventEnvelope<'ordering.order.placed'>) => prisma.adjustment.findFirstOrThrow({ where: { orderId: o.payload.orderId } });
+    const payoutNow = (a: { id: string }) => api('POST', '/payouts', { token: admin(), body: { affiliateId: a.id } });
+
+    it('hoàn sau khi đã chi: hoa hồng giữ PAID, tạo đúng một khoản trừ chờ; sự kiện gửi lặp không tạo thêm', async () => {
+      const a = await makeAffiliate();
+      const o = await paidOrder(a, 100_000);
+      await returnOrder(o);
+
+      expect((await commissionOf(o.payload.orderId))?.status).toBe(CommissionStatusCodec.toCode('PAID'));
+      const adj = await adjustmentOf(o);
+      expect(adj).toMatchObject({ amount: 10_000n, orderCode: o.payload.code, affiliateId: a.id, status: AdjustmentStatusCodec.toCode('PENDING'), appliedPayoutId: null });
+      expect(adj.reason).toContain('hoàn');
+
+      await returnOrder(o); // sự kiện hoàn khác (id khác) cho cùng đơn
+      expect(await prisma.adjustment.count({ where: { orderId: o.payload.orderId } })).toBe(1);
+    });
+
+    it('CTV thấy khoản trừ, tổng hợp và hoa hồng liên quan; admin lọc theo CTV và trạng thái', async () => {
+      const a = await makeAffiliate();
+      const o = await paidOrder(a, 100_000);
+      await returnOrder(o);
+
+      const mine = await api('GET', '/me/adjustments', { token: a.token });
+      expect(mine.status).toBe(200);
+      expect(mine.body.data).toHaveLength(1);
+      expect(mine.body.data[0]).toMatchObject({ orderCode: o.payload.code, amount: 10_000, status: 'PENDING', appliedPayoutId: null });
+
+      const summary = await api('GET', '/me/commissions/summary', { token: a.token });
+      expect(summary.body.data.pendingAdjustments).toEqual({ count: 1, amount: 10_000 });
+      expect(summary.body.data.byStatus.PAID.amount).toBe(10_000); // hoa hồng đã chi vẫn ghi đúng lịch sử
+
+      const comm = await api('GET', '/me/commissions', { token: a.token });
+      expect(comm.body.data[0].adjustment).toMatchObject({ status: 'PENDING', amount: 10_000 });
+
+      const list = await api('GET', `/adjustments?filter[affiliateId]=${a.id}&filter[status]=PENDING`, { token: admin() });
+      expect(list.status).toBe(200);
+      expect(list.body.data).toHaveLength(1);
+      expect(list.body.data[0].id).toBe(mine.body.data[0].id);
+      expect((await api('GET', `/adjustments?filter[affiliateId]=${a.id}&filter[status]=APPLIED`, { token: admin() })).body.data).toHaveLength(0);
+    });
+
+    it('đợt chi kế tiếp tự trừ khoản trừ: thực chuyển = hoa hồng - khoản trừ; khoản trừ thành APPLIED gắn đợt chi; đối soát khớp', async () => {
+      const a = await makeAffiliate();
+      const o1 = await paidOrder(a, 100_000);
+      await returnOrder(o1);
+      const o2 = await confirmedOrder(a, 300_000); // hoa hồng 30.000
+
+      const p = await payoutNow(a);
+      expect(p.status).toBe(201);
+      expect(p.body.data).toMatchObject({ totalAmount: 20_000, adjustmentAmount: 10_000 });
+      expect(p.body.data.commissions).toEqual([expect.objectContaining({ orderCode: o2.payload.code, amount: 30_000 })]);
+      expect(p.body.data.adjustments).toEqual([expect.objectContaining({ orderCode: o1.payload.code, amount: 10_000 })]);
+
+      const adj = await adjustmentOf(o1);
+      expect(adj).toMatchObject({ status: AdjustmentStatusCodec.toCode('APPLIED'), appliedPayoutId: p.body.data.id });
+      expect(adj.appliedAt).not.toBeNull();
+
+      const recon = await prisma.$queryRawUnsafe<Array<{ diff: bigint }>>(
+        `SELECT (coalesce((SELECT sum(amount) FROM commission.commissions WHERE payout_id = p.id), 0) - coalesce((SELECT sum(amount) FROM commission.adjustments WHERE applied_payout_id = p.id), 0)) - p.total_amount AS diff
+           FROM commission.payouts p WHERE p.id = $1::uuid`, p.body.data.id,
+      );
+      expect(Number(recon[0].diff)).toBe(0);
+
+      expect((await api('GET', '/me/commissions/summary', { token: a.token })).body.data.pendingAdjustments).toEqual({ count: 0, amount: 0 });
+      // Đã trừ rồi thì không miễn trừ được nữa và không trừ lần hai.
+      expect((await api('POST', `/adjustments/${adj.id}/waive`, { token: admin(), body: { reason: 'Muộn rồi' } })).status).toBe(422);
+      const o3 = await confirmedOrder(a, 100_000);
+      expect((await payoutNow(a)).body.data).toMatchObject({ totalAmount: 10_000, adjustmentAmount: 0 });
+      expect(o3.payload.orderId).toBeTruthy();
+    });
+
+    it('khoản trừ lớn hơn hoa hồng của đợt thì giữ lại cho đợt sau (không chuyển tiền âm)', async () => {
+      const a = await makeAffiliate();
+      const o1 = await paidOrder(a, 500_000);
+      await returnOrder(o1); // khoản trừ 50.000
+      await confirmedOrder(a, 200_000); // hoa hồng 20.000 < 50.000
+
+      const first = await payoutNow(a);
+      expect(first.body.data).toMatchObject({ totalAmount: 20_000, adjustmentAmount: 0 });
+      expect((await adjustmentOf(o1)).status).toBe(AdjustmentStatusCodec.toCode('PENDING'));
+      expect((await api('GET', '/me/commissions/summary', { token: a.token })).body.data.pendingAdjustments).toEqual({ count: 1, amount: 50_000 });
+
+      await confirmedOrder(a, 600_000); // hoa hồng 60.000 >= 50.000
+      const second = await payoutNow(a);
+      expect(second.body.data).toMatchObject({ totalAmount: 10_000, adjustmentAmount: 50_000 });
+      expect((await adjustmentOf(o1)).status).toBe(AdjustmentStatusCodec.toCode('APPLIED'));
+    });
+
+    it('trừ theo thứ tự cũ nhất trước, trọn từng khoản khi còn đủ tiền', async () => {
+      const a = await makeAffiliate();
+      const oA = await paidOrder(a, 300_000);
+      await returnOrder(oA); // khoản trừ A = 30.000 (cũ hơn)
+      const oB = await paidOrder(a, 100_000);
+      await returnOrder(oB); // khoản trừ B = 10.000
+      await confirmedOrder(a, 350_000); // hoa hồng 35.000
+
+      const p = await payoutNow(a);
+      // A (30.000) trừ được; B (10.000) lớn hơn phần còn lại (5.000) nên để đợt sau.
+      expect(p.body.data).toMatchObject({ totalAmount: 5_000, adjustmentAmount: 30_000 });
+      expect((await adjustmentOf(oA)).status).toBe(AdjustmentStatusCodec.toCode('APPLIED'));
+      expect((await adjustmentOf(oB)).status).toBe(AdjustmentStatusCodec.toCode('PENDING'));
+    });
+
+    it('khoản trừ bù đúng hết hoa hồng: đợt chi thực chuyển 0 đồng vẫn tất toán hoa hồng', async () => {
+      const a = await makeAffiliate();
+      const o1 = await paidOrder(a, 100_000);
+      await returnOrder(o1); // khoản trừ 10.000
+      const o2 = await confirmedOrder(a, 100_000); // hoa hồng 10.000
+
+      const p = await payoutNow(a);
+      expect(p.status).toBe(201);
+      expect(p.body.data).toMatchObject({ totalAmount: 0, adjustmentAmount: 10_000 });
+      expect((await commissionOf(o2.payload.orderId))?.status).toBe(CommissionStatusCodec.toCode('PAID'));
+      expect((await adjustmentOf(o1)).status).toBe(AdjustmentStatusCodec.toCode('APPLIED'));
+    });
+
+    it('admin miễn trừ: cần lý do, chỉ miễn được khoản đang chờ, ghi người miễn; đợt chi sau không trừ nữa', async () => {
+      const a = await makeAffiliate();
+      const o1 = await paidOrder(a, 100_000);
+      await returnOrder(o1);
+      const adj = await adjustmentOf(o1);
+      const adminId = uuidv7();
+      const t = tokenFor(adminId, 'ADMIN', 'admin-waive@example.com');
+
+      expect((await api('POST', `/adjustments/${adj.id}/waive`, { token: t, body: {} })).status).toBe(400); // thiếu lý do
+      expect((await api('POST', `/adjustments/${adj.id}/waive`, { token: a.token, body: { reason: 'Tự miễn cho mình' } })).status).toBe(403);
+      const ok = await api('POST', `/adjustments/${adj.id}/waive`, { token: t, body: { reason: 'Công ty chịu khoản này' } });
+      expect(ok.status).toBe(200);
+      expect(ok.body.data).toMatchObject({ status: 'WAIVED', waivedBy: adminId, waiveReason: 'Công ty chịu khoản này' });
+      expect((await api('POST', `/adjustments/${adj.id}/waive`, { token: t, body: { reason: 'Miễn lần hai' } })).status).toBe(422);
+      expect((await api('POST', `/adjustments/${uuidv7()}/waive`, { token: t, body: { reason: 'Không có' } })).status).toBe(404);
+
+      await confirmedOrder(a, 100_000);
+      expect((await payoutNow(a)).body.data).toMatchObject({ totalAmount: 10_000, adjustmentAmount: 0 });
+      expect((await api('GET', '/me/commissions/summary', { token: a.token })).body.data.pendingAdjustments).toEqual({ count: 0, amount: 0 });
+    });
+
+    it('đơn hoàn TRƯỚC khi chi: hoa hồng bị hủy như cũ, không phát sinh khoản trừ', async () => {
+      const a = await makeAffiliate();
+      const o = await confirmedOrder(a, 100_000); // CONFIRMED, chưa chi
+      await returnOrder(o);
+      expect((await commissionOf(o.payload.orderId))?.status).toBe(CommissionStatusCodec.toCode('CANCELLED'));
+      expect(await prisma.adjustment.count({ where: { orderId: o.payload.orderId } })).toBe(0);
+    });
+
+    it('phân quyền: admin xem và miễn trừ, CTV chỉ xem khoản của mình', async () => {
+      const a = await makeAffiliate();
+      const b = await makeAffiliate();
+      const o = await paidOrder(a, 100_000);
+      await returnOrder(o);
+      const adj = await adjustmentOf(o);
+
+      expect((await api('GET', '/adjustments')).status).toBe(401);
+      expect((await api('GET', '/adjustments', { token: a.token })).status).toBe(403);
+      expect((await api('GET', '/me/adjustments', { token: admin() })).status).toBe(403);
+      expect((await api('GET', `/adjustments/${adj.id}`, { token: admin() })).body.data).toMatchObject({ orderCode: o.payload.code, status: 'PENDING' });
+      expect((await api('GET', `/me/adjustments/${adj.id}`, { token: a.token })).status).toBe(200);
+      expect((await api('GET', `/me/adjustments/${adj.id}`, { token: b.token })).status).toBe(404); // của CTV khác
+      expect((await api('GET', '/me/adjustments', { token: b.token })).body.data).toHaveLength(0);
+    });
+  });
+
   describe('chi trả hoa hồng', () => {
     it('gom hoa hồng đã xác nhận thành một đợt: PAID, tổng đúng, phát sự kiện; chi lần hai bị từ chối', async () => {
       const a = await makeAffiliate();
@@ -610,7 +799,7 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
       const summary = await api('GET', '/me/commissions/summary', { token: a.token });
       expect(summary.body.data).toEqual({
         byStatus: { ESTIMATED: { count: 1, amount: 30_000 }, CONFIRMED: { count: 1, amount: 20_000 }, PAID: { count: 0, amount: 0 }, CANCELLED: { count: 0, amount: 0 } },
-        payable: 20_000,
+        payable: 20_000, pendingAdjustments: { count: 0, amount: 0 },
       });
 
       const payout = (await api('POST', '/payouts', { token: adminToken(), body: { affiliateId: a.id } })).body.data;

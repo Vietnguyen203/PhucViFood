@@ -78,11 +78,31 @@
       "value": ""
     },
     {
+      "key": "orderCode2",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    },
+    {
       "key": "commissionId",
       "value": ""
     },
     {
+      "key": "commissionId2",
+      "value": ""
+    },
+    {
       "key": "payoutId",
+      "value": ""
+    },
+    {
+      "key": "payoutId2",
+      "value": ""
+    },
+    {
+      "key": "adjustmentId",
       "value": ""
     }
   ],
@@ -1757,7 +1777,860 @@
       ]
     },
     {
-      "name": "5. Phân quyền",
+      "name": "5. Đơn hoàn sau khi hoa hồng đã chi trả (khoản trừ vào đợt chi sau)",
+      "item": [
+        {
+          "name": "5.1 Admin tìm đơn đã được chi hoa hồng",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders?q={{orderCode}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{orderCode}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set(\"orderId\", pm.response.json().data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.2 Admin xác nhận đơn",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId}}/confirm",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "confirm"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.3 Giao cho vận chuyển",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId}}/ship",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "ship"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.4 Đã giao tới khách",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId}}/deliver",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "deliver"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.5 Khách trả hàng: admin ghi nhận đơn bị hoàn",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/orders/{{orderId}}/return",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "return"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Khách trả hàng sau khi đã chi hoa hồng\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"RETURNED\", function () { pm.expect(pm.response.json().data.status).to.eql('RETURNED'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.6 CTV thấy khoản trừ chờ (bằng hoa hồng đã chi)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/adjustments",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "adjustments"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _end = Date.now() + 2500; while (Date.now() < _end) {}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"1 khoản PENDING 20.000 của đơn đã hoàn\", function () { const d = pm.response.json().data; pm.expect(d).to.have.lengthOf(1); pm.expect(d[0].status).to.eql('PENDING'); pm.expect(d[0].amount).to.eql(20000); pm.expect(d[0].orderCode).to.eql(pm.collectionVariables.get('orderCode')); pm.expect(d[0].appliedPayoutId).to.eql(null); });",
+                  "pm.collectionVariables.set(\"adjustmentId\", pm.response.json().data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.7 Hoa hồng đã chi vẫn PAID (lịch sử đúng), kèm khoản trừ",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/commissions/{{commissionId}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "commissions",
+                "{{commissionId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"PAID và có khoản trừ PENDING\", function () { const c = pm.response.json().data; pm.expect(c.status).to.eql('PAID'); pm.expect(c.adjustment).to.include({ status: 'PENDING', amount: 20000 }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.8 Tổng hợp hiển thị khoản đang chờ trừ",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/commissions/summary",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "commissions",
+                "summary"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"pendingAdjustments 20.000\", function () { pm.expect(pm.response.json().data.pendingAdjustments).to.eql({ count: 1, amount: 20000 }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.9 Khách đặt đơn mới bằng mã CTV (3 x 100.000 -> hoa hồng 30.000)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/public/orders",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "public",
+                "orders"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 3\n    }\n  ],\n  \"paymentMethod\": \"COD\",\n  \"customer\": {\n    \"fullName\": \"Postman Khách {{rid}}\",\n    \"phone\": \"{{phone}}\",\n    \"province\": \"Thành phố Hà Nội\",\n    \"ward\": \"Phường Cầu Giấy\",\n    \"addressLine\": \"12 Trần Thái Tông\"\n  },\n  \"referralCode\": \"{{refCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);",
+                  "pm.collectionVariables.set(\"phone\", '09' + String(Math.floor(10000000 + Math.random() * 89999999)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"orderCode2\", pm.response.json().data.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.10 Hoa hồng của đơn mới",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/commissions?q={{orderCode2}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "commissions"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "{{orderCode2}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const _end = Date.now() + 2500; while (Date.now() < _end) {}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"ESTIMATED 30.000\", function () { const d = pm.response.json().data; pm.expect(d).to.have.lengthOf(1); pm.expect(d[0].amount).to.eql(30000); });",
+                  "pm.collectionVariables.set(\"commissionId2\", pm.response.json().data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.11 Admin xác nhận hoa hồng đơn mới",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/commissions/{{commissionId2}}/confirm",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "commissions",
+                "{{commissionId2}}",
+                "confirm"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.12 Chi trả: tự trừ khoản đã chờ (30.000 - 20.000 = thực chuyển 10.000)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/payouts",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "payouts"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"affiliateId\": \"{{affiliateId}}\",\n  \"paymentReference\": \"PM-ADJ-{{rid}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"thực chuyển 10.000, đã trừ 20.000\", function () { const p = pm.response.json().data; pm.expect(p.totalAmount).to.eql(10000); pm.expect(p.adjustmentAmount).to.eql(20000); });",
+                  "pm.test(\"liệt kê hoa hồng và khoản đã trừ\", function () { const p = pm.response.json().data; pm.expect(p.commissions).to.have.lengthOf(1); pm.expect(p.adjustments).to.have.lengthOf(1); pm.expect(p.adjustments[0].orderCode).to.eql(pm.collectionVariables.get('orderCode')); });",
+                  "pm.collectionVariables.set(\"payoutId2\", pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.13 Khoản trừ thành APPLIED, gắn đợt chi",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/adjustments/{{adjustmentId}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "adjustments",
+                "{{adjustmentId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"APPLIED, gắn đúng đợt chi\", function () { const a = pm.response.json().data; pm.expect(a.status).to.eql('APPLIED'); pm.expect(a.appliedPayoutId).to.eql(pm.collectionVariables.get('payoutId2')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.14 Không miễn trừ được khoản đã trừ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/adjustments/{{adjustmentId}}/waive",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "adjustments",
+                "{{adjustmentId}}",
+                "waive"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Muộn rồi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"lỗi BUSINESS_RULE_VIOLATION theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"BUSINESS_RULE_VIOLATION\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.15 Thiếu lý do miễn trừ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/adjustments/{{adjustmentId}}/waive",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "adjustments",
+                "{{adjustmentId}}",
+                "waive"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"lỗi VALIDATION_FAILED theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"VALIDATION_FAILED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.16 CTV không tự miễn trừ",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/adjustments/{{adjustmentId}}/waive",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "adjustments",
+                "{{adjustmentId}}",
+                "waive"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Tự miễn cho mình\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 403\", function () { pm.response.to.have.status(403); });",
+                  "pm.test(\"lỗi FORBIDDEN theo phong bì chuẩn\", function () { const j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"FORBIDDEN\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.17 Admin xem danh sách khoản trừ của CTV",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/adjustments?filter[affiliateId]={{affiliateId}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "adjustments"
+              ],
+              "query": [
+                {
+                  "key": "filter[affiliateId]",
+                  "value": "{{affiliateId}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"có khoản đã trừ\", function () { const d = pm.response.json().data; pm.expect(d).to.have.lengthOf(1); pm.expect(d[0].status).to.eql('APPLIED'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.18 Không còn khoản chờ trừ",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/me/commissions/summary",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "me",
+                "commissions",
+                "summary"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{ctvToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"pendingAdjustments 0\", function () { pm.expect(pm.response.json().data.pendingAdjustments).to.eql({ count: 0, amount: 0 }); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Phân quyền",
       "item": [
         {
           "name": "5.1 Không đăng nhập",

@@ -21,7 +21,7 @@ Chuyển tiếp theo kiểu stream: file `.xlsx` xuất khách hàng đi thẳng
 | Service | Tiền tố |
 |---|---|
 | user | `/auth`, `/users` |
-| affiliate | `/me/affiliate`, `/me/links`, `/me/commissions`, `/me/payouts`, `/affiliates`, `/commissions`, `/payouts`, `/public/referrals` |
+| affiliate | `/me/affiliate`, `/me/links`, `/me/commissions`, `/me/payouts`, `/me/adjustments`, `/affiliates`, `/commissions`, `/payouts`, `/adjustments`, `/public/referrals` |
 | tracking | `/public/tracking`, `/me/stats`, và riêng `POST /public/referrals/click` |
 | catalog | `/public/categories`, `/public/products`, `/categories`, `/products` |
 | ordering | `/public/orders`, `/orders`, `/me/orders` |

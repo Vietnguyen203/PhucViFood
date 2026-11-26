@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ActorType, ActorTypeCodec, AffiliateStatus, AffiliateStatusCodec, AttributionSource, AttributionSourceCodec,
+  ActorType, ActorTypeCodec, AdjustmentStatus, AdjustmentStatusCodec, AffiliateStatus, AffiliateStatusCodec, AttributionSource, AttributionSourceCodec,
   CommissionStatus, CommissionStatusCodec, ContactChannelCodec, ConfirmSourceCodec, OrderStatus, OrderStatusCode,
   OrderStatusCodec, PaymentMethod, PaymentMethodCodec, PaymentStatus, PaymentStatusCodec, ReceivedBy, ReceivedByCodec,
   StockMovementReasonCodec, TrackingEventTypeCodec, UserRole, UserRoleCode, UserRoleCodec, UserStatus, UserStatusCodec, createCodec, type EnumCodec,
@@ -18,6 +18,7 @@ const FROZEN: Array<[string, EnumCodec<string>, Record<string, number>]> = [
   ['TrackingEventType', TrackingEventTypeCodec, { PRODUCT_VIEW: 1, ADD_TO_CART: 2, CHECKOUT_START: 3 }],
   ['CommissionStatus', CommissionStatusCodec, { ESTIMATED: 1, CONFIRMED: 2, PAID: 3, CANCELLED: 4 }],
   ['ConfirmSource', ConfirmSourceCodec, { CUSTOMER: 1, ADMIN: 2 }],
+  ['AdjustmentStatus', AdjustmentStatusCodec, { PENDING: 1, APPLIED: 2, WAIVED: 3 }],
   ['OrderStatus', OrderStatusCodec, { PLACED: 1, CONFIRMED: 2, SHIPPING: 3, DELIVERED: 4, COMPLETED: 5, CANCELLED: 6, RETURNED: 7 }],
   ['PaymentMethod', PaymentMethodCodec, { COD: 1, BANK_QR: 2 }],
   ['PaymentStatus', PaymentStatusCodec, { PENDING: 1, UNPAID: 2, PAID: 3, REFUNDED: 4 }],
@@ -44,7 +45,7 @@ describe('mã số enum (khóa cứng)', () => {
       [UserRole, UserRoleCodec], [OrderStatus, OrderStatusCodec], [PaymentMethod, PaymentMethodCodec],
       [PaymentStatus, PaymentStatusCodec], [AttributionSource, AttributionSourceCodec], [ReceivedBy, ReceivedByCodec],
       [ActorType, ActorTypeCodec], [AffiliateStatus, AffiliateStatusCodec], [CommissionStatus, CommissionStatusCodec],
-      [UserStatus, UserStatusCodec],
+      [UserStatus, UserStatusCodec], [AdjustmentStatus, AdjustmentStatusCodec],
     ];
     for (const [stringEnum, codec] of pairs) expect([...codec.names].sort()).toEqual(Object.values(stringEnum).sort());
   });

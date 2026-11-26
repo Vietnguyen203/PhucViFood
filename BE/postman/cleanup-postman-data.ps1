@@ -12,6 +12,7 @@ $idList = ($affIds | ForEach-Object { "'$_'" }) -join ','
 if ($idList) {
   Invoke-Sql 'tracking_db' "delete from tracking.referral_clicks where affiliate_id in ($idList); delete from tracking.tracking_events where affiliate_id in ($idList);" | Out-Null
   Invoke-Sql 'affiliate_db' @"
+delete from commission.adjustments where affiliate_id in ($idList);
 delete from commission.commissions where affiliate_id in ($idList);
 delete from commission.payouts where affiliate_id in ($idList);
 delete from commission.outbox_events where payload->'payload'->>'affiliateId' in ($idList);

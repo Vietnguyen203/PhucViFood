@@ -9,7 +9,7 @@ Mỗi service một collection. Các collection mới (gateway, catalog, orderin
 | `phucvi-catalog.postman_collection.json` | 31 | 59 | Danh mục, sản phẩm, API công khai, ẩn/hiện, sổ cái tồn kho |
 | `phucvi-ordering.postman_collection.json` | 38 | 74 | Đặt hàng (giá lấy từ catalog, ship, idempotency), tra cứu, luồng trạng thái, CSKH, thanh toán, kho theo đơn |
 | `phucvi-customer.postman_collection.json` | 35 | 70 | Hồ sơ khách, phân loại, đồng ý tư vấn, xuất Excel và nhật ký, ngưỡng, CTV không xem được khách |
-| `phucvi-affiliate.postman_collection.json` | 35 | 68 | Hồ sơ CTV, duyệt/khóa, link theo kênh, hoa hồng theo đơn, xác nhận, chi trả |
+| `phucvi-affiliate.postman_collection.json` | 53 | 99 | Hồ sơ CTV, duyệt/khóa, link theo kênh, hoa hồng theo đơn, xác nhận, chi trả, đơn hoàn sau khi chi (khoản trừ) |
 | `phucvi-tracking.postman_collection.json` | 25 | 48 | Bấm link, tương tác, thống kê, cookie dùng được khi đặt hàng |
 | `phucvi-local.postman_environment.json` | | | `gatewayUrl`, `baseUrl` (service user), `adminEmail`, `adminPassword` (admin của seed, chỉ dùng local) |
 | `cleanup-postman-data.ps1` | | | Xóa dữ liệu do các collection tạo ra |
