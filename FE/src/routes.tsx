@@ -4,7 +4,9 @@ import CheckoutPage from "./pages/CheckoutPage";
 import CTVPage from "./pages/CTVPage";
 import HomePage from "./pages/HomePage";
 import OrderPage from "./pages/OrderPage";
+import ProductPage from "./pages/ProductPage";
 import ReferralLanding from "./pages/ReferralLanding";
+import SearchPage from "./pages/SearchPage";
 
 /** Trang quản trị tải theo yêu cầu: khách mua hàng không phải tải mã của khu quản trị. */
 const admin = <T extends { default: React.ComponentType }>(load: () => Promise<T>) => ({
@@ -21,6 +23,8 @@ const router = createBrowserRouter([
     children: [
       { path: "/", Component: HomePage },
       { path: "/ctv", Component: CTVPage },
+      { path: "/san-pham/:slug", Component: ProductPage },
+      { path: "/tim-kiem", Component: SearchPage },
       { path: "/thanh-toan", Component: CheckoutPage },
       // Tra cứu đơn bằng mã đơn + SĐT; có mã trên đường dẫn thì tự tra cứu khi vừa đặt hàng xong.
       { path: "/don-hang/:code?", Component: OrderPage },

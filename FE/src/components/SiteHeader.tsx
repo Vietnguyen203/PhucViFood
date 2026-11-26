@@ -1,11 +1,23 @@
-import { useState } from "react";
-import { Link } from "react-router";
+import { useState, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router";
+import { normalizeSearch } from "../lib/catalog";
 import { useCart } from "../context/CartContext";
 import { HomeIcon } from "./Icon";
 
 export function HomeHeader() {
   const [open, setOpen] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [term, setTerm] = useState("");
+  const navigate = useNavigate();
   const { count, openCart } = useCart();
+
+  function onSearch(ev: FormEvent) {
+    ev.preventDefault();
+    const q = normalizeSearch(term);
+    if (!q) return;
+    setSearching(false);
+    navigate(`/tim-kiem?q=${encodeURIComponent(q)}`);
+  }
   return (
     <>
       <div className="home-topbar">
@@ -40,9 +52,19 @@ export function HomeHeader() {
           </Link>
         </nav>
         <div className="home-header-actions">
-          <button aria-label="Tìm kiếm">
-            <HomeIcon name="search" size={18} />
-          </button>
+          {searching ? (
+            <form className="shop-header-search" role="search" onSubmit={onSearch}>
+              <input
+                autoFocus type="search" value={term} onChange={(e) => setTerm(e.target.value)} maxLength={100}
+                placeholder="Tìm sản phẩm..." aria-label="Tìm sản phẩm" onKeyDown={(e) => { if (e.key === "Escape") setSearching(false); }}
+              />
+              <button type="submit" aria-label="Tìm"><HomeIcon name="search" size={18} /></button>
+            </form>
+          ) : (
+            <button aria-label="Tìm kiếm" onClick={() => setSearching(true)}>
+              <HomeIcon name="search" size={18} />
+            </button>
+          )}
           <button className="home-account" aria-label="Tài khoản">
             <HomeIcon name="user" size={18} />
           </button>

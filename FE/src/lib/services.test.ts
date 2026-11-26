@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fetchCategories, fetchProducts } from './catalog';
+import { fetchCategories, fetchProductBySlug, fetchProducts, fetchRelated, normalizeSearch } from './catalog';
 import { cancelOrder, confirmReceived, lookupOrder, newIdempotencyKey, placeOrder } from './orders';
 import { formatDiscount, formatVnd } from './money';
 import { MemoryStore } from './storage';
@@ -58,6 +58,42 @@ describe('catalog', () => {
   it('thiếu meta phân trang thì tự suy ra từ số dòng', async () => {
     fetchMock.mockImplementation(async () => ok([{ id: 'a' }, { id: 'b' }]));
     expect((await fetchProducts()).pagination).toMatchObject({ total: 2, totalPages: 1 });
+  });
+});
+
+describe('catalog: chi tiết, tìm kiếm, gợi ý', () => {
+  it('chi tiết theo slug: gọi đúng đường dẫn, mã hóa ký tự lạ', async () => {
+    fetchMock.mockImplementation(async () => ok({ id: 'p1', slug: 'kho-ca-loc' }));
+    expect((await fetchProductBySlug('kho-ca-loc')).id).toBe('p1');
+    await fetchProductBySlug('a/b?c');
+    expect(calls()[0].url).toBe('/api/public/products/kho-ca-loc');
+    expect(calls()[1].url).toBe('/api/public/products/a%2Fb%3Fc');
+  });
+
+  it('slug không tồn tại: ném ApiError 404', async () => {
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ success: false, error: { code: 'NOT_FOUND', message: 'x' } }), { status: 404 }));
+    await expect(fetchProductBySlug('khong-co')).rejects.toMatchObject({ status: 404, code: 'NOT_FOUND' });
+  });
+
+  it('normalizeSearch: gọn khoảng trắng, cắt 100 ký tự, rỗng khi không có', () => {
+    expect(normalizeSearch('  khô   cá \n lóc ')).toBe('khô cá lóc');
+    expect(normalizeSearch('a'.repeat(150))).toHaveLength(100);
+    expect(normalizeSearch(null)).toBe('');
+    expect(normalizeSearch('   ')).toBe('');
+  });
+
+  it('tìm kiếm: gửi q đã gọn lên backend', async () => {
+    fetchMock.mockImplementation(async () => ok([]));
+    await fetchProducts({ q: normalizeSearch('  mực  khô ') });
+    expect(new URL(calls()[0].url, 'http://x').searchParams.get('q')).toBe('mực khô');
+  });
+
+  it('gợi ý: cùng danh mục, bỏ chính nó, tối đa limit; không có danh mục thì rỗng', async () => {
+    fetchMock.mockImplementation(async () => ok([{ id: 'p1' }, { id: 'p2' }, { id: 'p3' }]));
+    const r = await fetchRelated({ id: 'p1', category: { id: 'c1', name: 'x', slug: 'x' } }, 2);
+    expect(r.map((p) => p.id)).toEqual(['p2', 'p3']);
+    expect(new URL(calls()[0].url, 'http://x').searchParams.get('filter[categoryId]')).toBe('c1');
+    expect(await fetchRelated({ id: 'p1' })).toEqual([]);
   });
 });
 

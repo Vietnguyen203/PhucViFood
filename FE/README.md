@@ -7,6 +7,8 @@ React 19 + Vite + Tailwind (xuất từ Figma Make), gọi backend **chỉ qua g
 | Đường dẫn | Việc | API (qua gateway) |
 |---|---|---|
 | `/` | Trang chủ: danh mục, sản phẩm thật (lọc theo danh mục, "Xem thêm"), thêm vào giỏ | `GET /public/categories`, `GET /public/products` |
+| `/san-pham/:slug` | Chi tiết sản phẩm: giá, giảm giá, còn/hết hàng, chọn số lượng, thêm vào giỏ hoặc "Mua ngay", sản phẩm cùng danh mục; ghi sự kiện `PRODUCT_VIEW` cho CTV | `GET /public/products/:slug` |
+| `/tim-kiem?q=...&sort=...` | Kết quả tìm kiếm (tên, mô tả), sắp xếp, "Xem thêm"; ô tìm kiếm ở header | `GET /public/products?q=` |
 | (mọi trang) | Giỏ hàng dạng ngăn kéo, lưu trong trình duyệt, đồng bộ giữa các tab | |
 | `/thanh-toan` | Thanh toán: thông tin giao hàng, COD hoặc chuyển khoản, mã CTV, đồng ý tư vấn | `POST /public/orders` (có `Idempotency-Key`) |
 | `/don-hang/:code?` | Tra cứu đơn bằng mã + SĐT; thông tin chuyển khoản và hạn thanh toán; hủy đơn; xác nhận đã nhận hàng | `GET /public/orders/:code`, `POST .../cancel`, `POST .../confirm-received` |
@@ -17,7 +19,7 @@ React 19 + Vite + Tailwind (xuất từ Figma Make), gọi backend **chỉ qua g
 
 Khi khách vào qua link CTV, FE gửi cookie kèm đơn hàng (backend quyết định hoa hồng) và ghi nhận sự kiện `ADD_TO_CART`, `CHECKOUT_START` cho thống kê của CTV.
 
-**Chưa làm:** trang chi tiết sản phẩm (nên chưa ghi `PRODUCT_VIEW`), tìm kiếm trên header.
+**Chưa làm:** tài khoản khách hàng, yêu thích (nút trái tim chỉ là hình), lọc theo giá, gợi ý khi gõ tìm kiếm.
 
 ## Giao diện quản trị (`/admin`)
 
@@ -78,7 +80,7 @@ pnpm --filter figma-make-app test       # test đơn vị lớp thư viện src/
 pnpm --filter figma-make-app build
 ```
 
-Đã chạy tay trên trình duyệt với backend thật. Khu quản trị: đăng nhập (sai mật khẩu, đúng), tự làm mới token, xác nhận và hủy đơn (lý do quá ngắn bị chặn), sửa sản phẩm (bỏ giá gốc), ẩn/hiện, xác nhận hoa hồng, tạo đợt chi trả, tải Excel, các màn danh sách. Khu CTV: đăng ký (mật khẩu yếu, không khớp bị chặn), mã giới thiệu sai, gửi hồ sơ, admin duyệt, tạo link, đăng nhập CTV seed và các trang tổng quan, link, hoa hồng, chi trả, đơn hàng. Cửa hàng: xem sản phẩm, thêm giỏ, đặt đơn COD và chuyển khoản, link CTV (ghi nhận lượt bấm, sự kiện, nguồn LINK kèm kênh trong đơn), hủy đơn (hàng về kho), lỗi hết hàng, backend sập (thông báo kèm nút thử lại).
+Đã chạy tay trên trình duyệt với backend thật. Khu quản trị: đăng nhập (sai mật khẩu, đúng), tự làm mới token, xác nhận và hủy đơn (lý do quá ngắn bị chặn), sửa sản phẩm (bỏ giá gốc), ẩn/hiện, xác nhận hoa hồng, tạo đợt chi trả, tải Excel, các màn danh sách. Khu CTV: đăng ký (mật khẩu yếu, không khớp bị chặn), mã giới thiệu sai, gửi hồ sơ, admin duyệt, tạo link, đăng nhập CTV seed và các trang tổng quan, link, hoa hồng, chi trả, đơn hàng. Cửa hàng: xem sản phẩm, thêm giỏ, đặt đơn COD và chuyển khoản, link CTV (ghi nhận lượt bấm, sự kiện, nguồn LINK kèm kênh trong đơn), hủy đơn (hàng về kho), lỗi hết hàng, trang chi tiết (sự kiện `PRODUCT_VIEW` ghi vào tracking khi vào qua link CTV, slug không có), tìm kiếm (từ khóa thừa khoảng trắng, sắp xếp, không kết quả), "Mua ngay", backend sập (thông báo kèm nút thử lại).
 
 ## Cấu trúc
 

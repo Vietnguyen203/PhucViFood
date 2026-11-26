@@ -29,3 +29,20 @@ export async function fetchProducts(query: ProductQuery = {}, signal?: AbortSign
   const total = r.data.length;
   return { items: r.data, pagination: r.meta?.pagination ?? { page: 1, pageSize: total, total, totalPages: 1 } };
 }
+
+/** Chi tiết một sản phẩm theo slug (đường dẫn thân thiện). 404 nếu không có hoặc đã ngừng bán. */
+export async function fetchProductBySlug(slug: string, signal?: AbortSignal): Promise<Product> {
+  return (await api<Product>(`/public/products/${encodeURIComponent(slug)}`, { signal })).data;
+}
+
+/** Từ khóa tìm kiếm gọn: bỏ khoảng trắng thừa, tối đa 100 ký tự. Rỗng nghĩa là không tìm. */
+export function normalizeSearch(raw: string | null | undefined): string {
+  return (raw ?? '').replace(/\s+/g, ' ').trim().slice(0, 100);
+}
+
+/** Sản phẩm cùng danh mục (trừ chính nó) để gợi ý ở trang chi tiết. */
+export async function fetchRelated(product: Pick<Product, 'id' | 'category'>, limit = 4, signal?: AbortSignal): Promise<Product[]> {
+  if (!product.category) return [];
+  const { items } = await fetchProducts({ categoryId: product.category.id, pageSize: limit + 1 }, signal);
+  return items.filter((p) => p.id !== product.id).slice(0, limit);
+}

@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { PRODUCT_PLACEHOLDER } from "../components/CartDrawer";
 import { HomeIcon } from "../components/Icon";
+import { ProductCard } from "../components/ProductCard";
 import { HomeFooter } from "../components/SiteFooter";
 import { HomeHeader } from "../components/SiteHeader";
-import { useCart } from "../context/CartContext";
 import { describeError } from "../lib/api";
 import { fetchCategories, fetchProducts, type ProductPage } from "../lib/catalog";
-import { formatDiscount, formatVnd } from "../lib/money";
 import type { Product } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
 import "../home.css";
@@ -184,32 +182,6 @@ function CategorySection({ selected, onSelect }: { selected: string | null; onSe
         </div>
       )}
     </section>
-  );
-}
-
-function ProductCard({ product }: { product: Product }) {
-  const { add } = useCart();
-  return (
-    <article className="home-product-card">
-      <div className="home-product-image">
-        <img src={product.imageUrl ?? PRODUCT_PLACEHOLDER} alt={product.name} />
-        {!product.inStock ? <span>Hết hàng</span> : product.discountPercent > 0 ? <span>{formatDiscount(product.discountPercent)}</span> : null}
-        <button aria-label="Thêm vào yêu thích">
-          <HomeIcon name="heart" size={17} />
-        </button>
-      </div>
-      <div className="home-product-info">
-        <h3>{product.name}</h3>
-        {product.unit && <small className="home-product-unit">{product.unit}</small>}
-        <div className="home-price">
-          <strong>{formatVnd(product.price)}</strong>
-          {product.originalPrice !== null && product.originalPrice > product.price && <del>{formatVnd(product.originalPrice)}</del>}
-        </div>
-        <button disabled={!product.inStock} onClick={() => add(product)}>
-          {product.inStock ? "Thêm vào giỏ" : "Hết hàng"} <HomeIcon name="cart" size={16} />
-        </button>
-      </div>
-    </article>
   );
 }
 
