@@ -11,11 +11,13 @@ React 19 + Vite + Tailwind (xuất từ Figma Make), gọi backend **chỉ qua g
 | `/thanh-toan` | Thanh toán: thông tin giao hàng, COD hoặc chuyển khoản, mã CTV, đồng ý tư vấn | `POST /public/orders` (có `Idempotency-Key`) |
 | `/don-hang/:code?` | Tra cứu đơn bằng mã + SĐT; thông tin chuyển khoản và hạn thanh toán; hủy đơn; xác nhận đã nhận hàng | `GET /public/orders/:code`, `POST .../cancel`, `POST .../confirm-received` |
 | `/r/:code?c=kênh` | Link giới thiệu của CTV: ghi nhận lượt bấm, lưu cookie, về trang chủ | `POST /public/referrals/click` |
-| `/ctv` | Trang giới thiệu chương trình CTV (nội dung tĩnh; giỏ hàng dùng chung) | |
+| `/ctv` | Trang giới thiệu chương trình CTV (nội dung tĩnh; giỏ hàng dùng chung), nút đăng nhập/đăng ký dẫn vào khu CTV | |
+| `/ctv/dang-ky`, `/ctv/dang-nhap` | Đăng ký, đăng nhập cộng tác viên | `POST /auth/register`, `/auth/login` |
+| `/ctv/tai-khoan/*` | Khu CTV (xem mục dưới) | `/me/*` |
 
 Khi khách vào qua link CTV, FE gửi cookie kèm đơn hàng (backend quyết định hoa hồng) và ghi nhận sự kiện `ADD_TO_CART`, `CHECKOUT_START` cho thống kê của CTV.
 
-**Chưa làm:** đăng nhập, đăng ký CTV và bảng điều khiển CTV thật (trang `/ctv` vẫn là trang giới thiệu, nút "Đăng nhập", "Đăng ký CTV" còn là neo), trang chi tiết sản phẩm (nên chưa ghi `PRODUCT_VIEW`), tìm kiếm trên header.
+**Chưa làm:** trang chi tiết sản phẩm (nên chưa ghi `PRODUCT_VIEW`), tìm kiếm trên header.
 
 ## Giao diện quản trị (`/admin`)
 
@@ -35,6 +37,21 @@ Chỉ tài khoản ADMIN (đăng nhập `/admin/login`; tài khoản dev nằm t
 Mã: `src/lib/admin/` (phiên và tự làm mới `auth.ts`, dựng truy vấn danh sách `query.ts`, tên file tải về `download.ts`, kiểu dữ liệu `types.ts`; có test), `src/admin/` (khung, trang, thành phần dùng chung `ui.tsx`, `admin.css`).
 
 Chưa làm ở khu quản trị: quản lý tài khoản người dùng, cấu hình tài khoản ngân hàng nhận chuyển khoản, bảng thống kê tổng quan. Màn hình hẹp có menu thu gọn nhưng bảng cuộn ngang.
+
+## Khu cộng tác viên (`/ctv/tai-khoan`)
+
+Tài khoản vai trò AFFILIATE (phiên lưu riêng với khu quản trị, khóa `pv.partner.session`; dùng chung khung đăng nhập, làm mới token và giao diện `ad-*` với khu quản trị). Đăng ký chỉ cần email và mật khẩu (8+ ký tự, có chữ và số), sau đó điền hồ sơ (họ tên, SĐT, mã giới thiệu, tài khoản nhận tiền) để Phúc Vị duyệt. Chưa được duyệt (chờ duyệt, từ chối, tạm ngưng) thì chỉ thấy hồ sơ và trạng thái.
+
+| Mục | Việc |
+|---|---|
+| Tổng quan | Hoa hồng có thể nhận đợt tới, tạm tính, đã chi, khoản trừ chờ; lượt bấm, người truy cập, thêm giỏ, bắt đầu thanh toán theo kênh (7/30/90 ngày) |
+| Link giới thiệu | Tạo link theo kênh, sao chép, đổi tên, bật/tắt |
+| Hoa hồng | Danh sách theo trạng thái, kèm khoản trừ nếu có |
+| Chi trả và khoản trừ | Các đợt đã chi (chi tiết đơn trong đợt), khoản trừ chờ/đã trừ/đã miễn |
+| Đơn hàng | Đơn từ link của CTV (tên khách viết tắt, không có SĐT hay địa chỉ) |
+| Hồ sơ | Xem hợp đồng, tỷ lệ; sửa họ tên và tài khoản nhận tiền |
+
+Mã: `src/partner/`, `src/lib/partner.ts`, `src/lib/partnerAuth.ts`.
 
 ## Chạy
 
@@ -61,11 +78,11 @@ pnpm --filter figma-make-app test       # test đơn vị lớp thư viện src/
 pnpm --filter figma-make-app build
 ```
 
-Đã chạy tay trên trình duyệt với backend thật. Khu quản trị: đăng nhập (sai mật khẩu, đúng), tự làm mới token, xác nhận và hủy đơn (lý do quá ngắn bị chặn), sửa sản phẩm (bỏ giá gốc), ẩn/hiện, xác nhận hoa hồng, tạo đợt chi trả, tải Excel, các màn danh sách. Cửa hàng: xem sản phẩm, thêm giỏ, đặt đơn COD và chuyển khoản, link CTV (ghi nhận lượt bấm, sự kiện, nguồn LINK kèm kênh trong đơn), hủy đơn (hàng về kho), lỗi hết hàng, backend sập (thông báo kèm nút thử lại).
+Đã chạy tay trên trình duyệt với backend thật. Khu quản trị: đăng nhập (sai mật khẩu, đúng), tự làm mới token, xác nhận và hủy đơn (lý do quá ngắn bị chặn), sửa sản phẩm (bỏ giá gốc), ẩn/hiện, xác nhận hoa hồng, tạo đợt chi trả, tải Excel, các màn danh sách. Khu CTV: đăng ký (mật khẩu yếu, không khớp bị chặn), mã giới thiệu sai, gửi hồ sơ, admin duyệt, tạo link, đăng nhập CTV seed và các trang tổng quan, link, hoa hồng, chi trả, đơn hàng. Cửa hàng: xem sản phẩm, thêm giỏ, đặt đơn COD và chuyển khoản, link CTV (ghi nhận lượt bấm, sự kiện, nguồn LINK kèm kênh trong đơn), hủy đơn (hàng về kho), lỗi hết hàng, backend sập (thông báo kèm nút thử lại).
 
 ## Cấu trúc
 
-- `src/admin/`: giao diện quản trị (xem mục trên).
+- `src/admin/`: giao diện quản trị; `src/partner/`: khu cộng tác viên (xem các mục trên).
 - `src/lib/`: lớp gọi API (`api.ts`), kiểu dữ liệu, giỏ hàng, kiểm tra và dựng dữ liệu thanh toán, link CTV, theo dõi. Có test (`*.test.ts`).
 - `src/context/CartContext.tsx`: giỏ hàng toàn ứng dụng.
 - `src/components/`: khung chung (header, footer, icon, ngăn kéo giỏ, layout gốc).

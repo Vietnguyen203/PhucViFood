@@ -8,35 +8,43 @@ type Api = ReturnType<typeof createApi>;
 
 export const SESSION_KEY = 'pv.admin.session';
 
-export function createSessionStore(store: KeyValueStore) {
+export function createSessionStore(store: KeyValueStore, key = SESSION_KEY) {
   return {
     load(): Session | null {
       try {
-        const v = JSON.parse(store.getItem(SESSION_KEY) ?? 'null') as Partial<Session> | null;
+        const v = JSON.parse(store.getItem(key) ?? 'null') as Partial<Session> | null;
         return v?.accessToken && v.refreshToken && v.user?.role ? (v as Session) : null;
       } catch { return null; }
     },
-    save(s: Session) { store.setItem(SESSION_KEY, JSON.stringify(s)); },
-    clear() { store.removeItem(SESSION_KEY); },
+    save(s: Session) { store.setItem(key, JSON.stringify(s)); },
+    clear() { store.removeItem(key); },
   };
 }
 
 interface TokenPayload { user: AdminUser; accessToken: string; refreshToken: string }
 
-export interface AdminAuthOptions { api: Api; store: KeyValueStore; onSessionLost?: () => void }
+export interface AdminAuthOptions {
+  api: Api; store: KeyValueStore; onSessionLost?: () => void;
+  /** Vai trò được phép vào khu vực này (mặc định ADMIN; khu CTV dùng AFFILIATE). */
+  role?: string;
+  /** Khóa lưu phiên; mỗi khu vực một khóa để hai phiên không đè nhau. */
+  sessionKey?: string;
+}
 
-export function createAdminAuth({ api, store, onSessionLost }: AdminAuthOptions) {
-  const sessions = createSessionStore(store);
+export function createAdminAuth({ api, store, onSessionLost, role = 'ADMIN', sessionKey }: AdminAuthOptions) {
+  const sessions = createSessionStore(store, sessionKey);
   let refreshing: Promise<Session | null> | null = null;
 
-  /** Đăng nhập; chỉ nhận ADMIN (tài khoản khác đăng nhập được nhưng không có quyền, nên từ chối sớm và không lưu phiên). */
-  async function login(email: string, password: string): Promise<Session> {
-    const { data } = await api<TokenPayload>('/auth/login', { method: 'POST', body: { email, password } });
-    if (data.user.role !== 'ADMIN') throw new ApiError(403, 'FORBIDDEN', 'Tài khoản này không có quyền quản trị.');
+  /** Đăng nhập hoặc đăng ký; chỉ nhận đúng vai trò của khu vực (tài khoản khác không lưu phiên, tránh vào nhầm khu). */
+  async function authenticate(path: '/auth/login' | '/auth/register', email: string, password: string): Promise<Session> {
+    const { data } = await api<TokenPayload>(path, { method: 'POST', body: { email, password } });
+    if (data.user.role !== role) throw new ApiError(403, 'FORBIDDEN', 'Tài khoản này không có quyền vào khu vực này.');
     const s: Session = { accessToken: data.accessToken, refreshToken: data.refreshToken, user: data.user };
     sessions.save(s);
     return s;
   }
+  const login = (email: string, password: string) => authenticate('/auth/login', email, password);
+  const register = (email: string, password: string) => authenticate('/auth/register', email, password);
 
   async function logout(): Promise<void> {
     const s = sessions.load();
@@ -77,6 +85,6 @@ export function createAdminAuth({ api, store, onSessionLost }: AdminAuthOptions)
     }
   }
 
-  return { login, logout, authed, session: () => sessions.load() };
+  return { login, register, logout, authed, session: () => sessions.load() };
 }
 export type AdminAuth = ReturnType<typeof createAdminAuth>;

@@ -10,6 +10,10 @@ import ReferralLanding from "./pages/ReferralLanding";
 const admin = <T extends { default: React.ComponentType }>(load: () => Promise<T>) => ({
   lazy: async () => ({ Component: (await load()).default }),
 });
+/** Trang xuất theo tên (nhiều trang chung một file). */
+const named = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, name: K) => ({
+  lazy: async () => ({ Component: (await load())[name] }),
+});
 
 const router = createBrowserRouter([
   {
@@ -46,6 +50,27 @@ const router = createBrowserRouter([
           { path: "cai-dat", ...admin(() => import("./admin/SettingsPage")) },
           { path: "san-pham", ...admin(() => import("./admin/ProductsPage")) },
           { path: "danh-muc", ...admin(() => import("./admin/CategoriesPage")) },
+        ],
+      },
+    ],
+  },
+  // Khu cộng tác viên: đăng nhập, đăng ký và bảng điều khiển (trang giới thiệu /ctv nằm trong khung cửa hàng).
+  {
+    // Cha không có path: /ctv (trang giới thiệu) vẫn thuộc khung cửa hàng, chỉ các đường dẫn con dưới đây dùng khu CTV.
+    ...admin(() => import("./partner/PartnerLayout").then((m) => ({ default: m.PartnerRoot }))),
+    children: [
+      { path: "/ctv/dang-nhap", ...admin(() => import("./partner/AuthPage").then((m) => ({ default: () => <m.default mode="login" /> }))) },
+      { path: "/ctv/dang-ky", ...admin(() => import("./partner/AuthPage").then((m) => ({ default: () => <m.default mode="register" /> }))) },
+      {
+        path: "/ctv/tai-khoan",
+        ...admin(() => import("./partner/PartnerLayout")),
+        children: [
+          { index: true, ...admin(() => import("./partner/OverviewPage")) },
+          { path: "link", ...admin(() => import("./partner/LinksPage")) },
+          { path: "hoa-hong", ...named(() => import("./partner/EarningsPages"), "CommissionsPage") },
+          { path: "chi-tra", ...named(() => import("./partner/EarningsPages"), "PayoutsPage") },
+          { path: "don-hang", ...named(() => import("./partner/EarningsPages"), "OrdersPage") },
+          { path: "ho-so", ...admin(() => import("./partner/ProfilePage")) },
         ],
       },
     ],

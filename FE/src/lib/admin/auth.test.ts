@@ -38,6 +38,26 @@ describe('đăng nhập quản trị', () => {
   });
 });
 
+describe('khu vực CTV', () => {
+  const aff = { ...user, role: 'AFFILIATE' };
+  it('đăng ký lưu phiên dưới khóa riêng', async () => {
+    const calls: string[] = [];
+    const store = new MemoryStore();
+    const f = vi.fn(async (url: string | URL | Request) => { calls.push(String(url)); return ok({ user: aff, accessToken: 'a', refreshToken: 'r' }); });
+    const auth = createAdminAuth({ api: createApi({ baseUrl: '/api', fetch: f as unknown as typeof fetch }), store, role: 'AFFILIATE', sessionKey: 'pv.partner.session' });
+    await auth.register('c@d.vn', 'matkhau1');
+    expect(calls).toEqual(['/api/auth/register']);
+    expect(store.getItem('pv.partner.session')).toContain('AFFILIATE');
+    expect(store.getItem(SESSION_KEY)).toBeNull();
+  });
+  it('tài khoản ADMIN không vào được khu CTV', async () => {
+    const f = vi.fn(async () => ok({ user, accessToken: 'a', refreshToken: 'r' }));
+    const auth = createAdminAuth({ api: createApi({ baseUrl: '/api', fetch: f as unknown as typeof fetch }), store: new MemoryStore(), role: 'AFFILIATE', sessionKey: 'k' });
+    await expect(auth.login('a@b.vn', 'x')).rejects.toMatchObject({ status: 403 });
+    expect(auth.session()).toBeNull();
+  });
+});
+
 describe('gọi API có token', () => {
   it('không có phiên: báo mất phiên', async () => {
     const { auth, lost } = setup(() => ok(1));

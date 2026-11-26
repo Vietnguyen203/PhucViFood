@@ -317,10 +317,10 @@ function Header() {
           <Icon name="cart" size={19} />
           {count > 0 && <span>{count > 99 ? "99+" : count}</span>}
         </button>
-        <a className="login-link" href="#login">
+        <a className="login-link" href="/ctv/dang-nhap">
           Đăng nhập
         </a>
-        <a className="header-signup" href="#signup">
+        <a className="header-signup" href="/ctv/dang-ky">
           Đăng ký CTV
         </a>
         <button className="menu-button" onClick={() => setOpen(true)} aria-label="Mở menu">
@@ -422,7 +422,7 @@ function Hero() {
             nhận thu nhập khi có đơn thành công.
           </p>
           <div className="hero-actions">
-            <a className="button primary-button" href="#signup">
+            <a className="button primary-button" href="/ctv/dang-ky">
               Đăng ký làm cộng tác viên <Icon name="arrow" size={18} />
             </a>
             <a className="button secondary-button" href="#products">
@@ -662,7 +662,7 @@ function DashboardPreview() {
             <Icon name="check" size={16} /> Tạo link giới thiệu trong vài giây
           </li>
         </ul>
-        <a className="button primary-button" href="#signup">
+        <a className="button primary-button" href="/ctv/dang-ky">
           Trở thành đối tác <Icon name="arrow" size={17} />
         </a>
       </div>
@@ -822,7 +822,7 @@ function Tiers() {
                   </li>
                 ))}
               </ul>
-              <a href="#signup">
+              <a href="/ctv/dang-ky">
                 Bắt đầu ngay <Icon name="arrow" size={16} />
               </a>
             </article>
@@ -909,7 +909,7 @@ function FinalCTA() {
         <h2>Sẵn sàng kiếm tiền cùng Phúc Vị?</h2>
         <p>Tạo tài khoản trong 1 phút và chia sẻ sản phẩm đầu tiên ngay hôm nay.</p>
       </div>
-      <a className="button gold-button" href="#register">
+      <a className="button gold-button" href="/ctv/dang-ky">
         Đăng ký làm cộng tác viên <Icon name="arrow" size={18} />
       </a>
     </section>
@@ -943,7 +943,7 @@ function Footer() {
           <a href="#steps">Cách hoạt động</a>
           <a href="#tiers">Chính sách hoa hồng</a>
           <a href="#videos">Kho nội dung</a>
-          <a href="#signup">Đăng ký CTV</a>
+          <a href="/ctv/dang-ky">Đăng ký CTV</a>
         </div>
         <div className="footer-column">
           <strong>Hỗ trợ</strong>
