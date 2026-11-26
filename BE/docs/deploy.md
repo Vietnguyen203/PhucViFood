@@ -73,6 +73,6 @@ Build đủ 7 image; cả stack lên healthy; 6 bộ Postman (gateway, catalog, 
 - Service chạy bằng `tsx` từ mã TypeScript, image gồm cả devDependencies. Production thật nên biên dịch ra JavaScript và chỉ cài dependency chạy để image nhỏ và khởi động nhanh.
 - Migration có thể tách riêng (`pnpm stack:migrate` + `RUN_MIGRATIONS=false`) nhưng chưa có quy trình rollback tự động: Prisma không có migration lùi, sửa lỗi bằng migration mới.
 - Postgres (5433), RabbitMQ (5672, 15672) vẫn mở cổng ra máy chủ để tiện dev. Lên máy thật nên bỏ `ports` của hai dịch vụ này (hoặc đặt sau tường lửa) và dùng mật khẩu mạnh.
-- Giao diện web (`FE/`) chưa đóng gói trong stack; Caddy mới chuyển `/api/*` vào gateway, đường dẫn khác trả 404.
+- Giao diện web (`FE/`) chưa đóng gói trong stack; Caddy mới chuyển `/api/*` vào gateway, đường dẫn khác trả 404. FE gọi API bằng đường dẫn cùng nguồn `/api` (khi dev Vite chuyển tiếp tới gateway), nên khi triển khai FE phải được phục vụ cùng nguồn với Caddy hoặc đặt `VITE_API_BASE` và `CORS_ORIGINS` (xem `FE/README.md`).
 - Trạng thái giới hạn tốc độ và ngắt mạch nằm trong bộ nhớ từng tiến trình (xem `gateway-service.md`, `shared-library.md`).
 - Chưa có CI/CD đẩy image lên registry và tự triển khai.

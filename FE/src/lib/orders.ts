@@ -1,0 +1,27 @@
+import { api } from './api';
+import type { PlaceOrderPayload } from './checkout';
+import type { PublicOrder } from './types';
+
+/** Khóa chống đặt trùng khi bấm đúp hoặc mạng chập chờn thử lại: cùng khóa thì backend trả lại đúng đơn cũ. Gồm 8-100 ký tự chữ, số, . _ - */
+export function newIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return `k-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
+export async function placeOrder(payload: PlaceOrderPayload, idempotencyKey: string, signal?: AbortSignal): Promise<PublicOrder> {
+  return (await api<PublicOrder>('/public/orders', { method: 'POST', body: payload, headers: { 'idempotency-key': idempotencyKey }, signal })).data;
+}
+
+/** Tra cứu bằng mã đơn và SĐT đã dùng khi đặt (sai một trong hai đều báo không tìm thấy). */
+export async function lookupOrder(code: string, phone: string, signal?: AbortSignal): Promise<PublicOrder> {
+  const path = `/public/orders/${encodeURIComponent(code.trim().toUpperCase())}?phone=${encodeURIComponent(phone.trim())}`;
+  return (await api<PublicOrder>(path, { signal })).data;
+}
+
+export async function cancelOrder(code: string, phone: string, reason?: string): Promise<PublicOrder> {
+  return (await api<PublicOrder>(`/public/orders/${encodeURIComponent(code)}/cancel`, { method: 'POST', body: { phone: phone.trim(), ...(reason?.trim() ? { reason: reason.trim() } : {}) } })).data;
+}
+
+export async function confirmReceived(code: string, phone: string): Promise<PublicOrder> {
+  return (await api<PublicOrder>(`/public/orders/${encodeURIComponent(code)}/confirm-received`, { method: 'POST', body: { phone: phone.trim() } })).data;
+}

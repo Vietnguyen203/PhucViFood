@@ -19,7 +19,7 @@ NestJS + DDD + microservice (pnpm + Turborepo), Next.js, PostgreSQL (mỗi servi
 - Tham chiếu giữa các service chỉ lưu UUID, không khóa ngoại, không join chéo database (cần dữ liệu service khác thì gọi API nội bộ hoặc nghe sự kiện).
 
 ## Cấu trúc thư mục
-- `FE/`: giao diện (React + Vite, xuất từ Figma Make).
+- `FE/`: giao diện (React + Vite, xuất từ Figma Make), gọi backend qua gateway (`/api`); xem `FE/README.md`.
 - `BE/services/`: các service (gateway, user, catalog, ordering, customer, affiliate, tracking).
 - `BE/packages/`: thư viện dùng chung.
 - `BE/infra/`: Docker Compose (Postgres, RabbitMQ; profile `app` chạy cả 7 service + Caddy), Dockerfile dùng chung, Caddyfile.

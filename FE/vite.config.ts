@@ -36,6 +36,8 @@ react(),
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
       port: parseInt(process.env.PORT || '8443'),
       strictPort: true,
+      // Mọi yêu cầu API của FE đi qua gateway: /api/* được chuyển tiếp tới gateway (cùng nguồn nên không dính CORS).
+      proxy: { '/api': { target: process.env.GATEWAY_URL || 'http://localhost:3000', changeOrigin: true } },
       watch: {
         ignored: [
           '**/.figma/**',
@@ -45,6 +47,7 @@ react(),
     preview: {
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
       port: parseInt(process.env.PORT || '8443'),
+      proxy: { '/api': { target: process.env.GATEWAY_URL || 'http://localhost:3000', changeOrigin: true } },
     },
   }
 })

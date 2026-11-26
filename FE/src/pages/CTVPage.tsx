@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCart } from "../context/CartContext";
 
 type IconName =
   | "menu"
@@ -285,6 +286,7 @@ const faqs = [
 
 function Header() {
   const [open, setOpen] = useState(false);
+  const { count, openCart } = useCart();
   return (
     <header className="site-header">
       <a href="#home" className="logo-link">
@@ -311,9 +313,9 @@ function Header() {
         </a>
       </nav>
       <div className="header-actions">
-        <button className="cart-icon" aria-label="Giỏ hàng">
+        <button className="cart-icon" onClick={openCart} aria-label={`Giỏ hàng, ${count} sản phẩm`}>
           <Icon name="cart" size={19} />
-          <span>2</span>
+          {count > 0 && <span>{count > 99 ? "99+" : count}</span>}
         </button>
         <a className="login-link" href="#login">
           Đăng nhập

@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Xóa theo thứ tự phụ thuộc để chạy lại được nhiều lần.
+  await prisma.stockMovement.deleteMany(); // sổ cái có khóa ngoại tới sản phẩm: xóa trước, nếu không seed lỗi khi đã có đơn hàng
   await prisma.product.deleteMany();
   await prisma.category.deleteMany();
 

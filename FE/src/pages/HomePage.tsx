@@ -1,133 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
+import { PRODUCT_PLACEHOLDER } from "../components/CartDrawer";
+import { HomeIcon } from "../components/Icon";
+import { HomeFooter } from "../components/SiteFooter";
+import { HomeHeader } from "../components/SiteHeader";
+import { useCart } from "../context/CartContext";
+import { describeError } from "../lib/api";
+import { fetchCategories, fetchProducts, type ProductPage } from "../lib/catalog";
+import { formatDiscount, formatVnd } from "../lib/money";
+import type { Product } from "../lib/types";
+import { useAsync } from "../lib/useAsync";
 import "../home.css";
-
-type HomeIconName =
-  | "menu"
-  | "close"
-  | "search"
-  | "user"
-  | "cart"
-  | "chevron"
-  | "arrow"
-  | "heart"
-  | "star"
-  | "leaf"
-  | "shield"
-  | "truck"
-  | "facebook"
-  | "tiktok"
-  | "youtube"
-  | "instagram"
-  | "phone"
-  | "mail"
-  | "pin";
-
-const homeIconPaths: Record<HomeIconName, React.ReactNode> = {
-  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
-  close: <path d="m6 6 12 12M18 6 6 18" />,
-  search: (
-    <>
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-4-4" />
-    </>
-  ),
-  user: (
-    <>
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4.5 21a7.5 7.5 0 0 1 15 0" />
-    </>
-  ),
-  cart: (
-    <>
-      <path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6" />
-      <circle cx="10" cy="20" r="1" />
-      <circle cx="18" cy="20" r="1" />
-    </>
-  ),
-  chevron: <path d="m8 10 4 4 4-4" />,
-  arrow: (
-    <>
-      <path d="M5 12h14M14 7l5 5-5 5" />
-    </>
-  ),
-  heart: (
-    <path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6L12 21l8.8-8.8a5.4 5.4 0 0 0 0-7.6Z" />
-  ),
-  star: <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z" />,
-  leaf: (
-    <>
-      <path d="M20 4C10 4 5 9 5 17c8 0 13-5 15-13Z" />
-      <path d="M4 20c3-5 7-8 12-11" />
-    </>
-  ),
-  shield: (
-    <>
-      <path d="M12 3 20 6v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z" />
-      <path d="m8.5 12 2.2 2.2 4.8-5" />
-    </>
-  ),
-  truck: (
-    <>
-      <path d="M3 6h11v11H3zM14 10h4l3 3v4h-7z" />
-      <circle cx="7" cy="19" r="2" />
-      <circle cx="18" cy="19" r="2" />
-    </>
-  ),
-  facebook: <path d="M14 8h3V4h-3a5 5 0 0 0-5 5v3H6v4h3v6h4v-6h3l1-4h-4V9c0-.6.4-1 1-1Z" />,
-  tiktok: (
-    <>
-      <path d="M14 4v11.5a4.5 4.5 0 1 1-4-4.5" />
-      <path d="M14 4c.6 3 2.3 4.5 5 5" />
-    </>
-  ),
-  youtube: (
-    <>
-      <path d="M22 12s0-5-1-6c-1-1-9-1-9-1s-8 0-9 1-1 6-1 6 0 5 1 6 9 1 9 1 8 0 9-1 1-6 1-6Z" />
-      <path d="m10 9 5 3-5 3Z" />
-    </>
-  ),
-  instagram: (
-    <>
-      <rect x="3" y="3" width="18" height="18" rx="5" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="17.5" cy="6.5" r=".8" fill="currentColor" />
-    </>
-  ),
-  phone: (
-    <path d="M7 3H4a1 1 0 0 0-1 1c0 9.4 7.6 17 17 17a1 1 0 0 0 1-1v-3l-5-2-1.5 2c-3.5-1.5-6-4-7.5-7.5L9 8 7 3Z" />
-  ),
-  mail: (
-    <>
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="m4 7 8 6 8-6" />
-    </>
-  ),
-  pin: (
-    <>
-      <path d="M12 22s7-6 7-13a7 7 0 1 0-14 0c0 7 7 13 7 13Z" />
-      <circle cx="12" cy="9" r="2" />
-    </>
-  ),
-};
-
-function HomeIcon({ name, size = 20 }: { name: HomeIconName; size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {homeIconPaths[name]}
-    </svg>
-  );
-}
 
 const slides = [
   {
@@ -157,67 +40,15 @@ const slides = [
   },
 ];
 
-const categories = [
-  {
-    name: "Đặc sản Việt",
-    count: "18 sản phẩm",
-    image:
-      "https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=900&q=88",
-  },
-  {
-    name: "Đồ ăn chế biến",
-    count: "16 sản phẩm",
-    image:
-      "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=900&q=88",
-  },
-  {
-    name: "Hạt & đồ ăn vặt",
-    count: "24 sản phẩm",
-    image:
-      "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&w=900&q=88",
-  },
-  {
-    name: "Quà tặng",
-    count: "12 bộ quà",
-    image:
-      "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=900&q=88",
-  },
+/** Ảnh minh họa cho thẻ danh mục (backend chưa có ảnh danh mục); lặp lại theo thứ tự. */
+const CATEGORY_IMAGES = [
+  "https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=900&q=88",
+  "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=900&q=88",
+  "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&w=900&q=88",
+  "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=900&q=88",
 ];
 
-const bestSellers = [
-  {
-    name: "Lạp xưởng tươi cao cấp",
-    price: "189.000₫",
-    oldPrice: "220.000₫",
-    badge: "-14%",
-    image:
-      "https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=800&q=88",
-  },
-  {
-    name: "Khô gà lá chanh thượng hạng",
-    price: "145.000₫",
-    oldPrice: "",
-    badge: "Bán chạy",
-    image:
-      "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=800&q=88",
-  },
-  {
-    name: "Hạt sen sấy giòn nguyên vị",
-    price: "125.000₫",
-    oldPrice: "150.000₫",
-    badge: "-17%",
-    image:
-      "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&w=800&q=88",
-  },
-  {
-    name: "Set quà Phúc Lộc Viên Mãn",
-    price: "759.000₫",
-    oldPrice: "850.000₫",
-    badge: "Mới",
-    image:
-      "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=800&q=88",
-  },
-];
+const PAGE_SIZE = 8;
 
 const articles = [
   {
@@ -246,68 +77,6 @@ const articles = [
       "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1000&q=88",
   },
 ];
-
-function HomeHeader() {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <div className="home-topbar">
-        <span>Miễn phí giao hàng cho đơn từ 500.000₫</span>
-        <span>Hotline: 1900 6868</span>
-      </div>
-      <header className="home-header">
-        <Link className="home-logo" to="/">
-          <img src="/images/phuc-vi-logo-official-transparent.png" alt="Phúc Vị Foods" />
-        </Link>
-        <nav className={open ? "open" : ""}>
-          <button className="home-nav-close" onClick={() => setOpen(false)} aria-label="Đóng menu">
-            <HomeIcon name="close" />
-          </button>
-          <a href="#categories" onClick={() => setOpen(false)}>
-            Danh mục
-          </a>
-          <a href="#best-sellers" onClick={() => setOpen(false)}>
-            Sản phẩm
-          </a>
-          <a href="#brand-story" onClick={() => setOpen(false)}>
-            Về Phúc Vị
-          </a>
-          <a href="#news" onClick={() => setOpen(false)}>
-            Tin tức
-          </a>
-          <Link className="partner-nav-link" to="/ctv" onClick={() => setOpen(false)}>
-            Cộng tác viên
-          </Link>
-        </nav>
-        <div className="home-header-actions">
-          <button aria-label="Tìm kiếm">
-            <HomeIcon name="search" size={18} />
-          </button>
-          <button className="home-account" aria-label="Tài khoản">
-            <HomeIcon name="user" size={18} />
-          </button>
-          <button className="home-cart" aria-label="Giỏ hàng">
-            <HomeIcon name="cart" size={18} />
-            <span>2</span>
-          </button>
-          <Link className="home-ctv-button" to="/ctv">
-            Đăng ký CTV
-          </Link>
-          <button className="home-menu-button" onClick={() => setOpen(true)} aria-label="Mở menu">
-            <HomeIcon name="menu" />
-          </button>
-        </div>
-        {open && (
-          <button
-            className="home-nav-overlay"
-            onClick={() => setOpen(false)}
-            aria-label="Đóng menu"
-          />
-        )}
-      </header>
-    </>
-  );
-}
 
 function HomeHero() {
   const [active, setActive] = useState(0);
@@ -373,7 +142,17 @@ function HomeSectionHeading({
   );
 }
 
-function CategorySection() {
+function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  return (
+    <div className="home-load-error" role="alert">
+      <p>{describeError(error, "Không tải được dữ liệu.")}</p>
+      <button onClick={onRetry}>Thử lại</button>
+    </div>
+  );
+}
+
+function CategorySection({ selected, onSelect }: { selected: string | null; onSelect: (id: string | null) => void }) {
+  const { data: categories, loading, error, reload } = useAsync((signal) => fetchCategories(signal), []);
   return (
     <section className="home-section" id="categories">
       <HomeSectionHeading
@@ -381,64 +160,102 @@ function CategorySection() {
         title="Khám phá danh mục"
         description="Từ đặc sản thân quen đến những bộ quà tinh tế, Phúc Vị mang vị ngon Việt đến gần bạn hơn."
       />
-      <div className="home-category-grid">
-        {categories.map((category) => (
-          <a href="#best-sellers" className="home-category-card" key={category.name}>
-            <img src={category.image} alt={category.name} />
-            <div />
-            <span>
-              <small>{category.count}</small>
-              <strong>{category.name}</strong>
-              <b>
-                Xem sản phẩm <HomeIcon name="arrow" size={14} />
-              </b>
-            </span>
-          </a>
-        ))}
-      </div>
+      {error ? <LoadError error={error} onRetry={reload} /> : (
+        <div className="home-category-grid">
+          {loading && !categories && <p className="home-loading">Đang tải danh mục...</p>}
+          {categories?.map((category, index) => (
+            <a
+              href="#best-sellers"
+              className={`home-category-card${selected === category.id ? " selected" : ""}`}
+              key={category.id}
+              onClick={() => onSelect(selected === category.id ? null : category.id)}
+              aria-pressed={selected === category.id}
+            >
+              <img src={CATEGORY_IMAGES[index % CATEGORY_IMAGES.length]} alt={category.name} />
+              <div />
+              <span>
+                <strong>{category.name}</strong>
+                <b>
+                  {selected === category.id ? "Bỏ lọc" : "Xem sản phẩm"} <HomeIcon name="arrow" size={14} />
+                </b>
+              </span>
+            </a>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
 
-function BestSellers() {
+function ProductCard({ product }: { product: Product }) {
+  const { add } = useCart();
+  return (
+    <article className="home-product-card">
+      <div className="home-product-image">
+        <img src={product.imageUrl ?? PRODUCT_PLACEHOLDER} alt={product.name} />
+        {!product.inStock ? <span>Hết hàng</span> : product.discountPercent > 0 ? <span>{formatDiscount(product.discountPercent)}</span> : null}
+        <button aria-label="Thêm vào yêu thích">
+          <HomeIcon name="heart" size={17} />
+        </button>
+      </div>
+      <div className="home-product-info">
+        <h3>{product.name}</h3>
+        {product.unit && <small className="home-product-unit">{product.unit}</small>}
+        <div className="home-price">
+          <strong>{formatVnd(product.price)}</strong>
+          {product.originalPrice !== null && product.originalPrice > product.price && <del>{formatVnd(product.originalPrice)}</del>}
+        </div>
+        <button disabled={!product.inStock} onClick={() => add(product)}>
+          {product.inStock ? "Thêm vào giỏ" : "Hết hàng"} <HomeIcon name="cart" size={16} />
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function ProductsSection({ categoryId, onClear }: { categoryId: string | null; onClear: () => void }) {
+  const [pages, setPages] = useState(1);
+  // Đổi danh mục thì về trang đầu.
+  useEffect(() => setPages(1), [categoryId]);
+  const { data, loading, error, reload } = useAsync(
+    async (signal) => {
+      const items: Product[] = [];
+      let last: ProductPage | undefined;
+      for (let page = 1; page <= pages; page++) {
+        last = await fetchProducts({ categoryId: categoryId ?? undefined, page, pageSize: PAGE_SIZE }, signal);
+        items.push(...last.items);
+      }
+      return { items, pagination: last!.pagination };
+    },
+    [categoryId, pages],
+  );
+  const hasMore = data ? data.pagination.page < data.pagination.totalPages : false;
+
   return (
     <section className="home-products-wrap" id="best-sellers">
       <div className="home-section">
         <HomeSectionHeading
-          label="Được khách hàng yêu thích"
-          title="Sản phẩm bán chạy"
-          description="Những hương vị được lựa chọn nhiều nhất tại Phúc Vị Foods."
+          label="Hương vị tuyển chọn"
+          title="Sản phẩm của Phúc Vị"
+          description="Những đặc sản được Phúc Vị tuyển chọn kỹ lưỡng, sẵn sàng giao đến tận nhà bạn."
         />
-        <div className="home-product-grid">
-          {bestSellers.map((product) => (
-            <article className="home-product-card" key={product.name}>
-              <div className="home-product-image">
-                <img src={product.image} alt={product.name} />
-                <span>{product.badge}</span>
-                <button aria-label="Thêm vào yêu thích">
-                  <HomeIcon name="heart" size={17} />
-                </button>
-              </div>
-              <div className="home-product-info">
-                <div className="home-rating">
-                  <span>★★★★★</span>
-                  <small>4.9</small>
-                </div>
-                <h3>{product.name}</h3>
-                <div className="home-price">
-                  <strong>{product.price}</strong>
-                  {product.oldPrice && <del>{product.oldPrice}</del>}
-                </div>
-                <button>
-                  Thêm vào giỏ <HomeIcon name="cart" size={16} />
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-        <a className="home-more-link" href="#best-sellers">
-          Xem tất cả sản phẩm <HomeIcon name="arrow" size={16} />
-        </a>
+        {categoryId && (
+          <p className="home-filter-note">Đang lọc theo danh mục. <button onClick={onClear}>Xem tất cả</button></p>
+        )}
+        {error ? <LoadError error={error} onRetry={reload} /> : (
+          <>
+            {loading && !data && <p className="home-loading">Đang tải sản phẩm...</p>}
+            {data && data.items.length === 0 && <p className="home-loading">Chưa có sản phẩm nào trong mục này.</p>}
+            <div className="home-product-grid">
+              {data?.items.map((product) => <ProductCard product={product} key={product.id} />)}
+            </div>
+            {hasMore && (
+              <button className="home-more-link" onClick={() => setPages((n) => n + 1)} disabled={loading}>
+                {loading ? "Đang tải..." : "Xem thêm sản phẩm"} <HomeIcon name="arrow" size={16} />
+              </button>
+            )}
+          </>
+        )}
       </div>
     </section>
   );
@@ -569,74 +386,15 @@ function NewsSection() {
   );
 }
 
-function HomeFooter() {
-  return (
-    <footer className="home-footer">
-      <div className="home-footer-main">
-        <div className="home-footer-brand">
-          <img src="/images/phuc-vi-logo-official-transparent.png" alt="Phúc Vị Foods" />
-          <p>Gìn giữ hương vị Việt, trao gửi niềm vui trong từng sản phẩm.</p>
-          <div>
-            <a href="#facebook" aria-label="Facebook">
-              <HomeIcon name="facebook" size={16} />
-            </a>
-            <a href="#instagram" aria-label="Instagram">
-              <HomeIcon name="instagram" size={16} />
-            </a>
-            <a href="#tiktok" aria-label="TikTok">
-              <HomeIcon name="tiktok" size={16} />
-            </a>
-            <a href="#youtube" aria-label="YouTube">
-              <HomeIcon name="youtube" size={16} />
-            </a>
-          </div>
-        </div>
-        <div className="home-footer-column">
-          <strong>Khám phá</strong>
-          <a href="#categories">Danh mục sản phẩm</a>
-          <a href="#best-sellers">Sản phẩm bán chạy</a>
-          <a href="#brand-story">Câu chuyện Phúc Vị</a>
-          <a href="#news">Tin tức & Blog</a>
-        </div>
-        <div className="home-footer-column">
-          <strong>Hỗ trợ khách hàng</strong>
-          <a href="#shipping">Chính sách giao hàng</a>
-          <a href="#returns">Chính sách đổi trả</a>
-          <a href="#payment">Hướng dẫn thanh toán</a>
-          <Link to="/ctv">Chương trình CTV</Link>
-        </div>
-        <div className="home-footer-column home-contact">
-          <strong>Liên hệ</strong>
-          <p>
-            <HomeIcon name="pin" size={16} />
-            128 Nguyễn Văn Linh, Quận 7, TP.HCM
-          </p>
-          <p>
-            <HomeIcon name="phone" size={16} />
-            1900 6868
-          </p>
-          <p>
-            <HomeIcon name="mail" size={16} />
-            hello@phucvifoods.vn
-          </p>
-        </div>
-      </div>
-      <div className="home-footer-bottom">
-        <span>© 2025 Phúc Vị Foods. All rights reserved.</span>
-        <span>Hương vị của hạnh phúc</span>
-      </div>
-    </footer>
-  );
-}
-
 export default function HomePage() {
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   return (
     <div className="home-page">
       <HomeHeader />
       <main>
         <HomeHero />
-        <CategorySection />
-        <BestSellers />
+        <CategorySection selected={categoryId} onSelect={setCategoryId} />
+        <ProductsSection categoryId={categoryId} onClear={() => setCategoryId(null)} />
         <BrandStory />
         <PartnerCTA />
         <NewsSection />
