@@ -5,6 +5,7 @@ import type { Response } from 'express';
 import { AffiliateClient, toClientError } from '../clients/clients';
 import { IDEMPOTENCY_KEY_REGEX } from '../common/validators';
 import { SettingsService } from '../settings/settings.service';
+import { AdminStatsService } from '../stats/admin-stats.service';
 import { AdminReasonDto, CareNoteDto, CustomerCancelDto, PaymentDto, PhoneDto, PlaceOrderDto } from './dto';
 import { OrderPlacementService } from './order-placement.service';
 import { AffiliateOrdersService, OrdersService } from './orders.service';
@@ -59,7 +60,16 @@ export class PublicOrdersController {
 @Roles('ADMIN')
 @Controller('orders')
 export class AdminOrdersController {
-  constructor(@Inject(OrdersService) private readonly orders: OrdersService) {}
+  constructor(
+    @Inject(OrdersService) private readonly orders: OrdersService,
+    @Inject(AdminStatsService) private readonly stats: AdminStatsService,
+  ) {}
+
+  /** Số liệu tổng quan: đơn theo trạng thái, doanh thu hôm nay/7/30 ngày, doanh thu 14 ngày gần nhất. Khai báo trước ':id'. */
+  @Get('stats')
+  overview() {
+    return this.stats.overview();
+  }
 
   /** Hàng chờ CSKH: đơn đã giao chưa hoàn tất, lâu nhất lên đầu. Khai báo trước ':id'. */
   @Get('cskh-queue') @ParamTypes(Object)

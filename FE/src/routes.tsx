@@ -41,7 +41,8 @@ const router = createBrowserRouter([
       {
         ...admin(() => import("./admin/AdminLayout")),
         children: [
-          { index: true, element: <Navigate to="/admin/don-hang" replace /> },
+          { index: true, ...admin(() => import("./admin/DashboardPage")) },
+          { path: "cai-dat-cua-hang", ...admin(() => import("./admin/ShopSettingsPage")) },
           { path: "don-hang", ...admin(() => import("./admin/OrdersPage")) },
           { path: "don-hang/:id", ...admin(() => import("./admin/OrderDetailPage")) },
           { path: "cskh", ...admin(() => import("./admin/CskhPage")) },

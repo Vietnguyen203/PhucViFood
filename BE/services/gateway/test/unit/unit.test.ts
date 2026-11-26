@@ -59,6 +59,13 @@ describe('resolveService', () => {
   it('không bao giờ chuyển tiếp /internal hay đường dẫn lạ', () => {
     for (const p of ['/internal/stock/reserve', '/internal/customers/upsert', '/internal/attribution/resolve', '/me', '/', '/admin']) expect(resolveService(p)).toBeNull();
   });
+  it('API cấu hình quản trị đi đúng service', () => {
+    expect(resolveService('/order-settings')).toBe('ordering');
+    expect(resolveService('/order-settings/payment.bank_name')).toBe('ordering');
+    expect(resolveService('/orders/stats')).toBe('ordering');
+    expect(resolveService('/affiliate-settings')).toBe('affiliate');
+    expect(resolveService('/customer-settings')).toBe('customer');
+  });
   it('mỗi tiền tố chỉ thuộc một service', () => {
     const all = Object.values(ROUTE_PREFIXES).flat();
     expect(new Set(all).size).toBe(all.length);

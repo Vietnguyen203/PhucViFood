@@ -104,3 +104,18 @@
   .ad-grid2, .ad-cols { grid-template-columns: 1fr; }
   .ad-dl { grid-template-columns: 1fr; }
 }
+
+/* ───────── Tổng quan ───────── */
+.ad-stat-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.ad-stat-link { text-decoration: none; color: inherit; display: block; }
+.ad-stat-link:hover .ad-stat { border-color: var(--ad-primary); }
+.ad-stat { height: 100%; }
+.ad-stat-value { font-size: 24px; font-weight: 700; margin: 4px 0; }
+.ad-stat.amber { border-color: #f0c36d; background: #fffaf0; }
+.ad-stat.red { border-color: #f5c2bc; background: #fff6f5; }
+.ad-chart { display: flex; align-items: flex-end; gap: 6px; height: 180px; padding-top: 8px; }
+.ad-bar { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; text-align: center; }
+.ad-bar-fill { background: var(--ad-primary); border-radius: 4px 4px 0 0; min-height: 0; transition: height .2s; }
+.ad-bar:hover .ad-bar-fill { background: var(--ad-primary-dark); }
+.ad-bar span { font-size: 11px; color: var(--ad-muted); margin-top: 4px; white-space: nowrap; overflow: hidden; }
+@media (max-width: 600px) { .ad-bar:nth-child(even) span { visibility: hidden; } }

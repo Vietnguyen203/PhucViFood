@@ -27,6 +27,8 @@ Chỉ tài khoản ADMIN (đăng nhập `/admin/login`; tài khoản dev nằm t
 
 | Mục | Việc |
 |---|---|
+| Tổng quan (`/admin`) | Doanh thu hôm nay / 7 / 30 ngày và biểu đồ 14 ngày; đơn theo trạng thái; việc cần xử lý (đơn chờ chuyển khoản, chờ CSKH, CTV chờ duyệt, hoa hồng chờ chi, khoản trừ chờ); hàng sắp hết |
+| Cấu hình bán hàng | Phí ship và mức miễn phí, hạn giữ hàng chuyển khoản, tài khoản nhận tiền, hạn cookie link CTV; cảnh báo khi chưa cấu hình đủ tài khoản nhận tiền |
 | Đơn hàng, chi tiết đơn | Lọc (trạng thái, thanh toán, hình thức, ngày, tìm mã/tên/SĐT); xác nhận, giao, đã giao, hoàn tất, hủy/hoàn (bắt buộc lý do); đánh dấu đã thanh toán/hoàn tiền; ghi nhận CSKH |
 | Hàng chờ CSKH | Đơn đã giao chưa hoàn tất, số ngày chờ, lần liên hệ gần nhất |
 | Sản phẩm và tồn kho | Thêm, sửa, ẩn/hiện, xóa; điều chỉnh kho kèm lý do; sổ kho (lịch sử thay đổi); lọc hàng sắp hết |
@@ -38,7 +40,7 @@ Chỉ tài khoản ADMIN (đăng nhập `/admin/login`; tài khoản dev nằm t
 
 Mã: `src/lib/admin/` (phiên và tự làm mới `auth.ts`, dựng truy vấn danh sách `query.ts`, tên file tải về `download.ts`, kiểu dữ liệu `types.ts`; có test), `src/admin/` (khung, trang, thành phần dùng chung `ui.tsx`, `admin.css`).
 
-Chưa làm ở khu quản trị: quản lý tài khoản người dùng, cấu hình tài khoản ngân hàng nhận chuyển khoản, bảng thống kê tổng quan. Màn hình hẹp có menu thu gọn nhưng bảng cuộn ngang.
+Chưa làm ở khu quản trị: quản lý tài khoản người dùng, tỷ lệ hoa hồng mặc định (cột `default_rate_bps` chưa được backend dùng), báo cáo theo khoảng ngày tùy chọn. Màn hình hẹp có menu thu gọn nhưng bảng cuộn ngang.
 
 ## Khu cộng tác viên (`/ctv/tai-khoan`)
 
@@ -80,7 +82,7 @@ pnpm --filter figma-make-app test       # test đơn vị lớp thư viện src/
 pnpm --filter figma-make-app build
 ```
 
-Đã chạy tay trên trình duyệt với backend thật. Khu quản trị: đăng nhập (sai mật khẩu, đúng), tự làm mới token, xác nhận và hủy đơn (lý do quá ngắn bị chặn), sửa sản phẩm (bỏ giá gốc), ẩn/hiện, xác nhận hoa hồng, tạo đợt chi trả, tải Excel, các màn danh sách. Khu CTV: đăng ký (mật khẩu yếu, không khớp bị chặn), mã giới thiệu sai, gửi hồ sơ, admin duyệt, tạo link, đăng nhập CTV seed và các trang tổng quan, link, hoa hồng, chi trả, đơn hàng. Cửa hàng: xem sản phẩm, thêm giỏ, đặt đơn COD và chuyển khoản, link CTV (ghi nhận lượt bấm, sự kiện, nguồn LINK kèm kênh trong đơn), hủy đơn (hàng về kho), lỗi hết hàng, trang chi tiết (sự kiện `PRODUCT_VIEW` ghi vào tracking khi vào qua link CTV, slug không có), tìm kiếm (từ khóa thừa khoảng trắng, sắp xếp, không kết quả), "Mua ngay", backend sập (thông báo kèm nút thử lại).
+Đã chạy tay trên trình duyệt với backend thật. Khu quản trị: đăng nhập (sai mật khẩu, đúng), trang tổng quan, sửa phí ship ở cấu hình bán hàng, tự làm mới token, xác nhận và hủy đơn (lý do quá ngắn bị chặn), sửa sản phẩm (bỏ giá gốc), ẩn/hiện, xác nhận hoa hồng, tạo đợt chi trả, tải Excel, các màn danh sách. Khu CTV: đăng ký (mật khẩu yếu, không khớp bị chặn), mã giới thiệu sai, gửi hồ sơ, admin duyệt, tạo link, đăng nhập CTV seed và các trang tổng quan, link, hoa hồng, chi trả, đơn hàng. Cửa hàng: xem sản phẩm, thêm giỏ, đặt đơn COD và chuyển khoản, link CTV (ghi nhận lượt bấm, sự kiện, nguồn LINK kèm kênh trong đơn), hủy đơn (hàng về kho), lỗi hết hàng, trang chi tiết (sự kiện `PRODUCT_VIEW` ghi vào tracking khi vào qua link CTV, slug không có), tìm kiếm (từ khóa thừa khoảng trắng, sắp xếp, không kết quả), "Mua ngay", backend sập (thông báo kèm nút thử lại).
 
 ## Cấu trúc
 

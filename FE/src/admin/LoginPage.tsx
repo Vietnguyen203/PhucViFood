@@ -12,14 +12,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  if (session) return <Navigate to="/admin/don-hang" replace />;
+  if (session) return <Navigate to="/admin" replace />;
 
   async function submit(ev: FormEvent) {
     ev.preventDefault();
     if (busy) return;
     if (!email.trim() || !password) { setError("Vui lòng nhập email và mật khẩu."); return; }
     setBusy(true); setError(null);
-    try { await login(email.trim(), password); navigate("/admin/don-hang", { replace: true }); } catch (e) {
+    try { await login(email.trim(), password); navigate("/admin", { replace: true }); } catch (e) {
       setError(e instanceof ApiError && e.status === 401 ? "Email hoặc mật khẩu không đúng." : e instanceof ApiError && e.status === 429 ? "Thử quá nhiều lần, vui lòng đợi một chút." : describeError(e));
     } finally { setBusy(false); }
   }

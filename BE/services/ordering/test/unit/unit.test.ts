@@ -2,6 +2,7 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { describe, expect, it } from 'vitest';
 import { generateOrderCode, IDEMPOTENCY_KEY_REGEX, ORDER_CODE_REGEX, orderIdFromKey } from '../../src/common/validators';
+import { startOfVnDay, vnDateKey } from '../../src/stats/admin-stats.service';
 import { loadConfig } from '../../src/config/app-config';
 import { PlaceOrderDto } from '../../src/orders/dto';
 import { toAffiliateView, toPublicView, transferInstructions, type OrderFull } from '../../src/orders/views';
@@ -122,5 +123,21 @@ describe('view dữ liệu theo người xem', () => {
     expect(transferInstructions(order({ paymentStatus: 3 }), bank)).toBeUndefined(); // đã PAID
     expect(transferInstructions(order({ paymentMethod: 1, paymentStatus: 1 }), bank)).toBeUndefined(); // COD
     expect(transferInstructions(order(), null)).toBeUndefined(); // chưa cấu hình tài khoản
+  });
+});
+
+describe('ngày theo giờ Việt Nam (thống kê tổng quan)', () => {
+  it('startOfVnDay: 00:00 giờ VN của ngày chứa thời điểm', () => {
+    // 2026-11-26 03:00 UTC = 10:00 VN ngày 26 → 00:00 VN = 2026-11-25 17:00 UTC
+    expect(startOfVnDay(new Date('2026-11-26T03:00:00Z')).toISOString()).toBe('2026-11-25T17:00:00.000Z');
+    // 2026-11-25 18:00 UTC = 01:00 VN ngày 26 → vẫn là ngày 26
+    expect(startOfVnDay(new Date('2026-11-25T18:00:00Z')).toISOString()).toBe('2026-11-25T17:00:00.000Z');
+    // đúng ranh giới 17:00 UTC = 00:00 VN ngày 26
+    expect(startOfVnDay(new Date('2026-11-25T17:00:00Z')).toISOString()).toBe('2026-11-25T17:00:00.000Z');
+    expect(startOfVnDay(new Date('2026-11-25T16:59:59Z')).toISOString()).toBe('2026-11-24T17:00:00.000Z');
+  });
+  it('vnDateKey: ngày VN của một thời điểm UTC', () => {
+    expect(vnDateKey(new Date('2026-11-25T17:00:00Z'))).toBe('2026-11-26');
+    expect(vnDateKey(new Date('2026-11-25T16:59:59Z'))).toBe('2026-11-25');
   });
 });

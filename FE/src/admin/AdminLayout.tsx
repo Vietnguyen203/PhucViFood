@@ -5,10 +5,11 @@ import { Toasts } from "./ui";
 import "./admin.css";
 
 const NAV: Array<{ group: string; items: Array<[string, string]> }> = [
+  { group: "Tổng quan", items: [["/admin", "Tổng quan"]] },
   { group: "Bán hàng", items: [["/admin/don-hang", "Đơn hàng"], ["/admin/cskh", "Hàng chờ CSKH"], ["/admin/khach-hang", "Khách hàng"]] },
   { group: "Sản phẩm", items: [["/admin/san-pham", "Sản phẩm và tồn kho"], ["/admin/danh-muc", "Danh mục"]] },
   { group: "Cộng tác viên", items: [["/admin/ctv", "Cộng tác viên"], ["/admin/hoa-hong", "Hoa hồng"], ["/admin/chi-tra", "Đợt chi trả"], ["/admin/khoan-tru", "Khoản trừ"]] },
-  { group: "Hệ thống", items: [["/admin/cai-dat", "Cài đặt và nhật ký xuất"]] },
+  { group: "Hệ thống", items: [["/admin/cai-dat-cua-hang", "Cấu hình bán hàng"], ["/admin/cai-dat", "Ngưỡng khách và nhật ký xuất"]] },
 ];
 
 function Shell() {
@@ -23,7 +24,7 @@ function Shell() {
           {NAV.map((g) => (
             <div key={g.group}>
               <h3>{g.group}</h3>
-              {g.items.map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => (isActive ? "active" : "")}>{label}</NavLink>)}
+              {g.items.map(([to, label]) => <NavLink key={to} to={to} end={to === "/admin"} className={({ isActive }) => (isActive ? "active" : "")}>{label}</NavLink>)}
             </div>
           ))}
         </nav>

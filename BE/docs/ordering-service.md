@@ -28,6 +28,9 @@ Tra cứu và thao tác của khách yêu cầu khớp mã đơn và SĐT; sai m
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
 | GET | `/orders` | Danh sách: `filter[status]`, `filter[paymentMethod]`, `filter[paymentStatus]`, `filter[affiliateId]`, `filter[customerId]`, `filter[placedAt]`, `q` (mã, tên, SĐT), `sort`, phân trang |
+| GET | `/orders/stats` | Tổng quan: số đơn theo trạng thái, đơn chờ thanh toán (đang giữ hàng), đơn chờ CSKH, đơn và doanh thu hôm nay / 7 / 30 ngày, doanh thu 14 ngày gần nhất (đủ 14 ngày, ngày không có đơn là 0). Doanh thu = tổng tiền gồm phí ship của đơn hợp lệ (không CANCELLED, RETURNED), tính theo ngày đặt, ngày theo giờ Việt Nam |
+| GET | `/order-settings` | Cấu hình bán hàng sửa được: `shipping.flat_fee`, `shipping.free_threshold`, `payment.hold_minutes`, `payment.bank_name`, `payment.bank_account_no`, `payment.bank_account_holder` (chưa có trong DB thì `value` null: đang dùng mặc định, riêng tài khoản ngân hàng là chưa cấu hình nên đơn chuyển khoản chưa có hướng dẫn) |
+| PATCH | `/order-settings/:key` | Đổi một cấu hình `{value}`: số nguyên trong giới hạn của khóa (phí 0-10 triệu, hạn giữ 1-43.200 phút), hoặc chuỗi (tên ngân hàng, chủ tài khoản; số tài khoản 6-30 chữ số). Lưu người sửa; áp dụng ngay ở bản đang trả lời (các bản khác trong tối đa 60 giây do cache) |
 | GET | `/orders/:id` | Chi tiết: sản phẩm, lịch sử trạng thái, ghi chú CSKH, ghi nhận CTV |
 | POST | `/orders/:id/confirm`, `ship`, `deliver`, `complete` | Chuyển trạng thái theo luồng |
 | POST | `/orders/:id/cancel`, `return` | Hủy (từ PLACED, CONFIRMED, SHIPPING) hoặc ghi nhận trả hàng (từ DELIVERED); bắt buộc `reason` |

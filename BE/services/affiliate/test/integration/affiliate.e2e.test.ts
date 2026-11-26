@@ -819,4 +819,35 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
       expect((await api('GET', `/payouts?filter[affiliateId]=${a.id}`, { token: adminToken() })).body.meta.pagination.total).toBe(1);
     });
   });
+
+  describe('cấu hình chương trình CTV (admin)', () => {
+    it('cần ADMIN: không token 401, CTV 403', async () => {
+      expect((await api('GET', '/affiliate-settings')).status).toBe(401);
+      expect((await api('GET', '/affiliate-settings', { token: tokenFor(uuidv7(), 'AFFILIATE') })).status).toBe(403);
+      expect((await api('PATCH', '/affiliate-settings/cookie_days', { token: tokenFor(uuidv7(), 'AFFILIATE'), body: { value: 7 } })).status).toBe(403);
+    });
+
+    it('chỉ liệt kê khóa có tác dụng (cookie_days); đổi có hiệu lực ngay và ghi người sửa', async () => {
+      const admin = adminToken();
+      const list = (await api('GET', '/affiliate-settings', { token: admin })).body.data;
+      expect(list.map((x: any) => x.key)).toEqual(['cookie_days']);
+      const original = list[0].value ?? 30;
+      const adminId = uuidv7();
+      const r = await api('PATCH', '/affiliate-settings/cookie_days', { token: tokenFor(adminId, 'ADMIN'), body: { value: 45 } });
+      expect(r.status).toBe(200);
+      expect(r.body.data).toMatchObject({ key: 'cookie_days', value: 45, updatedBy: adminId });
+      expect((await api('GET', '/affiliate-settings', { token: admin })).body.data[0].value).toBe(45);
+      await api('PATCH', '/affiliate-settings/cookie_days', { token: admin, body: { value: original } });
+    });
+
+    it('từ chối khóa lạ (kể cả default_rate_bps chưa có tác dụng), giá trị sai kiểu hoặc ngoài giới hạn', async () => {
+      const admin = adminToken();
+      expect((await api('PATCH', '/affiliate-settings/default_rate_bps', { token: admin, body: { value: 500 } })).status).toBe(404);
+      expect((await api('PATCH', '/affiliate-settings/khong.co', { token: admin, body: { value: 1 } })).status).toBe(404);
+      for (const value of [0, 366, 1.5, '30', -1]) {
+        expect((await api('PATCH', '/affiliate-settings/cookie_days', { token: admin, body: { value } })).status, String(value)).toBe(400);
+      }
+      expect((await api('PATCH', '/affiliate-settings/cookie_days', { token: admin, body: {} })).status).toBe(400);
+    });
+  });
 });

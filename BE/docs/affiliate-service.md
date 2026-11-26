@@ -42,6 +42,8 @@ Tiền tố `/api`. JWT do service `user` ký bằng khóa riêng; service này 
 | POST | `/payouts` | Chi trả: gom hoa hồng CONFIRMED của một CTV |
 | GET | `/payouts`, `/payouts/:id` | Các đợt chi trả |
 | GET | `/adjustments`, `/adjustments/:id` | Danh sách và chi tiết khoản trừ (lọc `filter[status]`, `filter[affiliateId]`, tìm theo mã đơn) |
+| GET | `/affiliate-settings` | Cấu hình chương trình CTV sửa được: hiện chỉ `cookie_days` (số ngày cookie ghi nhận link). `default_rate_bps` có trong bảng nhưng chưa được mã nào đọc (tỷ lệ mặc định lấy từ mặc định của cột `commission_rate_bps`) nên không cho sửa |
+| PATCH | `/affiliate-settings/:key` | Đổi `cookie_days` `{value}` (số nguyên 1-365); lưu người sửa, áp dụng ngay ở bản đang trả lời (các bản khác trong tối đa 60 giây) |
 | POST | `/adjustments/:id/waive` | Miễn trừ một khoản đang chờ, bắt buộc `reason` |
 
 ## 2. Quy tắc nghiệp vụ

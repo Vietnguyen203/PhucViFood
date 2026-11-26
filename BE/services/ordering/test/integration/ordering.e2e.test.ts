@@ -747,6 +747,75 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
     });
   });
 
+  describe('tổng quan và cấu hình (admin)', () => {
+    it('cần ADMIN: không token 401, CTV 403', async () => {
+      for (const path of ['/orders/stats', '/order-settings']) {
+        expect((await api('GET', path)).status).toBe(401);
+        expect((await api('GET', path, { token: token('AFFILIATE') })).status).toBe(403);
+      }
+      expect((await api('PATCH', '/order-settings/shipping.flat_fee', { token: token('AFFILIATE'), body: { value: 1 } })).status).toBe(403);
+    });
+
+    it('tổng quan: đơn mới đặt được tính vào hôm nay, theo trạng thái và biểu đồ 14 ngày; đơn hủy không tính doanh thu', async () => {
+      const before = (await api('GET', '/orders/stats', { token: admin() })).body.data;
+      const a = await place({ payment: 'BANK_QR' });
+      const b = await place({ payment: 'COD' });
+      const cancelled = await place({ payment: 'COD' });
+      expect((await api('POST', `/public/orders/${cancelled.body.data.code}/cancel`, { body: { phone: cancelled.phone, reason: 'test tổng quan' } })).status).toBe(200);
+
+      const after = (await api('GET', '/orders/stats', { token: admin() })).body.data;
+      const valid = a.body.data.totalAmount + b.body.data.totalAmount;
+      expect(after.today.orders - before.today.orders).toBe(2);
+      expect(after.today.revenue - before.today.revenue).toBe(valid);
+      expect(after.last7Days.orders).toBeGreaterThanOrEqual(after.today.orders);
+      expect(after.last30Days.revenue).toBeGreaterThanOrEqual(after.last7Days.revenue);
+      expect(after.byStatus.PLACED - before.byStatus.PLACED).toBe(2);
+      expect(after.byStatus.CANCELLED - before.byStatus.CANCELLED).toBe(1);
+      expect(after.awaitingPayment - before.awaitingPayment).toBe(1);
+      expect(Object.keys(after.byStatus).sort()).toEqual(['CANCELLED', 'COMPLETED', 'CONFIRMED', 'DELIVERED', 'PLACED', 'RETURNED', 'SHIPPING']);
+      // biểu đồ: đủ 14 ngày liên tiếp, ngày cuối là hôm nay (giờ VN), tổng khớp với cửa sổ 14 ngày
+      expect(after.daily).toHaveLength(14);
+      const dates = after.daily.map((d: { date: string }) => d.date);
+      expect([...dates].sort()).toEqual(dates);
+      expect(new Set(dates).size).toBe(14);
+      expect(after.daily[13].revenue - (before.daily[13]?.revenue ?? 0)).toBeGreaterThanOrEqual(valid);
+    });
+
+    it('cấu hình: liệt kê đủ khóa sửa được, đổi phí ship có hiệu lực ngay và ghi người sửa', async () => {
+      const list = (await api('GET', '/order-settings', { token: admin() })).body.data as Array<{ key: string; kind: string }>;
+      expect(list.map((x) => x.key).sort()).toEqual(['payment.bank_account_holder', 'payment.bank_account_no', 'payment.bank_name', 'payment.hold_minutes', 'shipping.flat_fee', 'shipping.free_threshold']);
+      const original = (await api('GET', '/order-settings', { token: admin() })).body.data.find((x: { key: string }) => x.key === 'shipping.flat_fee').value;
+      const adminId = uuidv7();
+      const r = await api('PATCH', '/order-settings/shipping.flat_fee', { token: token('ADMIN', adminId), body: { value: 45_000 } });
+      expect(r.status).toBe(200);
+      expect(r.body.data).toMatchObject({ key: 'shipping.flat_fee', value: 45_000, updatedBy: adminId });
+      const order = await place({ items: [{ productId: product({ price: 10_000 }).id, quantity: 1 }] });
+      expect(order.body.data.shippingFee).toBe(45_000);
+      await api('PATCH', '/order-settings/shipping.flat_fee', { token: admin(), body: { value: original ?? 30_000 } });
+    });
+
+    it('cấu hình: từ chối khóa lạ (404), sai kiểu hoặc ngoài giới hạn (400), số tài khoản sai định dạng', async () => {
+      expect((await api('PATCH', '/order-settings/khong.co', { token: admin(), body: { value: 1 } })).status).toBe(404);
+      for (const [key, value] of [['shipping.flat_fee', -1], ['shipping.flat_fee', 1.5], ['shipping.flat_fee', 'abc'], ['payment.hold_minutes', 0], ['payment.bank_name', 123], ['payment.bank_name', '   '], ['payment.bank_account_no', 'abc123']] as const) {
+        const r = await api('PATCH', `/order-settings/${key}`, { token: admin(), body: { value } });
+        expect(r.status, `${key}=${JSON.stringify(value)}`).toBe(400);
+      }
+      expect((await api('PATCH', '/order-settings/shipping.flat_fee', { token: admin(), body: {} })).status).toBe(400);
+    });
+
+    it('cấu hình tài khoản nhận tiền: lưu có cắt khoảng trắng, hướng dẫn chuyển khoản dùng ngay', async () => {
+      const keep = (await api('GET', '/order-settings', { token: admin() })).body.data as Array<{ key: string; value: string | null }>;
+      const prev = (k: string) => keep.find((x) => x.key === k)?.value ?? null;
+      const set = (key: string, value: string) => api('PATCH', `/order-settings/${key}`, { token: admin(), body: { value } });
+      expect((await set('payment.bank_name', '  Techcombank  ')).body.data.value).toBe('Techcombank');
+      await set('payment.bank_account_no', '19031234567890');
+      await set('payment.bank_account_holder', 'CONG TY TEST');
+      const o = await place({ payment: 'BANK_QR' });
+      expect(o.body.data.transferInstructions).toMatchObject({ bankName: 'Techcombank', accountNo: '19031234567890', accountHolder: 'CONG TY TEST' });
+      for (const k of ['payment.bank_name', 'payment.bank_account_no', 'payment.bank_account_holder']) if (prev(k)) await set(k, prev(k) as string);
+    });
+  });
+
   it('trạng thái lưu dạng số trong DB, API trả tên chuỗi', async () => {
     const r = await place({ payment: 'BANK_QR' });
     const raw = await prisma.$queryRawUnsafe<Array<{ status: number; payment_method: number; payment_status: number }>>(
