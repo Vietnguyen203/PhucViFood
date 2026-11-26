@@ -85,7 +85,8 @@ jobs:
         env:
           RABBITMQ_DEFAULT_USER: phucvi
           RABBITMQ_DEFAULT_PASS: phucvi
-        ports: ["5672:5672"]
+        # 15672 (management API): test tích hợp của shared-library gọi API này để đọc hàng đợi dead-letter.
+        ports: ["5672:5672", "15672:15672"]
         options: >-
           --health-cmd "rabbitmq-diagnostics -q ping"
           --health-interval 10s --health-timeout 10s --health-retries 10
