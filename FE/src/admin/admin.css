@@ -119,3 +119,17 @@
 .ad-bar:hover .ad-bar-fill { background: var(--ad-primary-dark); }
 .ad-bar span { font-size: 11px; color: var(--ad-muted); margin-top: 4px; white-space: nowrap; overflow: hidden; }
 @media (max-width: 600px) { .ad-bar:nth-child(even) span { visibility: hidden; } }
+
+/* ───────── Điện thoại ───────── */
+@media (max-width: 600px) {
+  .ad-filters .ad-field { flex: 1 1 calc(50% - 8px); min-width: 0; }
+  .ad-filters .ad-field:first-child { flex-basis: 100%; }
+  .ad-btn { min-height: 38px; }
+  .ad-btn.small { min-height: 32px; }
+  .ad-table td:first-child, .ad-table th:first-child { white-space: nowrap; }
+  .ad-table th, .ad-table td { padding: 8px 10px; }
+  .ad-overlay { padding: 3vh 8px; }
+  .ad-modal-body { padding: 14px; }
+  .ad-form-actions .ad-btn { flex: 1; }
+  .ad-head h1 { font-size: 20px; }
+}

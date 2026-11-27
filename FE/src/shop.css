@@ -208,6 +208,11 @@ button.home-more-link:disabled { opacity: 0.6; cursor: wait; }
 @media (max-width: 760px) {
   .shop-detail { grid-template-columns: 1fr; gap: 18px; }
   .shop-header-search input { width: 110px; }
+  /* Ảnh sản phẩm thấp lại để giá và nút mua hiện ngay trên màn hình đầu */
+  .shop-detail-image { aspect-ratio: 4 / 3; }
+  .shop-buy .shop-qty { flex: 0 0 100%; justify-content: space-between; }
+  .shop-buy .shop-qty input { flex: 1; }
+  .shop-buy > .shop-btn { flex: 1 1 0; }
 }
 
 /* ───────── Phóng to theo cỡ màn hình ─────────

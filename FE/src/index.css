@@ -1630,3 +1630,8 @@ footer {
     height: 560px;
   }
 }
+
+/* Trên điện thoại, ô nhập cỡ chữ dưới 16px làm iOS tự phóng to khi chạm vào; giữ 16px để trang không bị nhảy. */
+@media (max-width: 768px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
+}
