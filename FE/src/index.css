@@ -139,7 +139,7 @@ img {
   top: 1px;
   border-radius: 50%;
   background: var(--gold);
-  font-size: 8px;
+  font-size: 13px;
   font-weight: 700;
 }
 .login-link,
@@ -189,7 +189,7 @@ img {
   border-radius: 30px;
   background: #fff8e6;
   color: #7f5618;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 600;
 }
 .hero h1 {
@@ -207,7 +207,7 @@ img {
   max-width: 590px;
   margin: 0;
   color: #765e5b;
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.75;
 }
 .hero-actions {
@@ -225,7 +225,7 @@ img {
   gap: 10px;
   padding: 0 20px;
   border-radius: 12px;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 700;
   transition: 0.2s;
 }
@@ -266,7 +266,7 @@ img {
 }
 .hero-stats strong {
   color: var(--red);
-  font-size: 13px;
+  font-size: 16px;
 }
 .hero-stats span {
   margin-top: 4px;
@@ -458,7 +458,7 @@ img {
   border-radius: 20px;
   background: #f9e3e0;
   color: var(--red);
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 700;
 }
 .section-heading h2,
@@ -473,7 +473,7 @@ img {
 .section-heading p {
   margin: 0;
   color: #806b67;
-  font-size: 11px;
+  font-size: 15px;
   line-height: 1.7;
 }
 .steps-grid {
@@ -519,7 +519,7 @@ img {
 .step-card p {
   margin: 0;
   color: #88736f;
-  font-size: 10px;
+  font-size: 14px;
   line-height: 1.7;
 }
 .step-arrow {
@@ -566,7 +566,7 @@ img {
   border-radius: 8px;
   background: var(--red);
   color: #fff;
-  font-size: 8px;
+  font-size: 13px;
   font-weight: 700;
 }
 .product-content {
@@ -576,7 +576,7 @@ img {
   display: flex;
   justify-content: space-between;
   color: #9c8983;
-  font-size: 8px;
+  font-size: 13px;
 }
 .product-meta b {
   color: #dc9f25;
@@ -584,7 +584,7 @@ img {
 .product-content h3 {
   min-height: 42px;
   margin: 9px 0 4px;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.45;
 }
 .price {
@@ -607,11 +607,11 @@ img {
   align-items: center;
   gap: 6px;
   color: #8a651c;
-  font-size: 8px;
+  font-size: 13px;
 }
 .commission-badge strong {
   color: #81550c;
-  font-size: 13px;
+  font-size: 16px;
   white-space: nowrap;
 }
 .product-actions {
@@ -630,7 +630,7 @@ img {
   border-radius: 9px;
   background: var(--red);
   color: #fff;
-  font-size: 8px;
+  font-size: 13px;
   font-weight: 600;
 }
 .product-actions > button.copied {
@@ -657,7 +657,7 @@ img {
   gap: 9px;
   margin: 35px auto 0;
   color: var(--red);
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 700;
 }
 .video-grid {
@@ -699,7 +699,7 @@ img {
   border-radius: 20px;
   background: #ffffffec;
   color: #3d2021;
-  font-size: 8px;
+  font-size: 13px;
   font-weight: 600;
 }
 .video-cover > button {
@@ -731,11 +731,11 @@ img {
   display: block;
 }
 .video-overlay strong {
-  font-size: 14px;
+  font-size: 16px;
 }
 .video-overlay span {
   margin-top: 4px;
-  font-size: 8px;
+  font-size: 13px;
   opacity: 0.75;
 }
 .linked-product {
@@ -753,11 +753,11 @@ img {
 }
 .linked-product span {
   color: #9b8781;
-  font-size: 7px;
+  font-size: 12px;
 }
 .linked-product strong {
   margin-top: 4px;
-  font-size: 10px;
+  font-size: 14px;
 }
 .linked-product > div:last-child strong {
   color: #a06c16;
@@ -782,7 +782,7 @@ img {
 }
 .dashboard-intro p {
   color: #d6bfc0;
-  font-size: 11px;
+  font-size: 15px;
   line-height: 1.8;
 }
 .dashboard-intro ul {
@@ -797,7 +797,7 @@ img {
   align-items: center;
   gap: 8px;
   color: #eadfe0;
-  font-size: 10px;
+  font-size: 14px;
 }
 .dashboard-intro li svg {
   color: var(--gold);
@@ -822,11 +822,11 @@ img {
 }
 .dash-head span {
   color: #9a8580;
-  font-size: 8px;
+  font-size: 13px;
 }
 .dash-head strong {
   margin-top: 3px;
-  font-size: 11px;
+  font-size: 15px;
 }
 .dash-avatar {
   width: 33px;
@@ -836,7 +836,7 @@ img {
   border-radius: 50%;
   background: #f7dfae;
   color: #7f5412;
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 700;
 }
 .dash-stats {
@@ -877,7 +877,7 @@ img {
 .dash-stats p {
   margin: 8px 0 3px;
   color: #927f7a;
-  font-size: 7px;
+  font-size: 12px;
 }
 .dash-stats .featured p {
   color: #f1d8d9;
@@ -889,7 +889,7 @@ img {
   display: block;
   margin-top: 4px;
   color: #2c9b68;
-  font-size: 7px;
+  font-size: 12px;
 }
 .dash-stats .featured small {
   color: #f5d77f;
@@ -898,7 +898,7 @@ img {
   display: flex;
   justify-content: space-between;
   margin: 18px 0 5px;
-  font-size: 8px;
+  font-size: 13px;
 }
 .chart-head span {
   color: #25845e;
@@ -926,7 +926,7 @@ img {
   display: flex;
   justify-content: space-between;
   color: #a9948e;
-  font-size: 6px;
+  font-size: 12px;
 }
 .referral-box {
   padding: 11px;
@@ -937,7 +937,7 @@ img {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 8px;
+  font-size: 13px;
   font-weight: 600;
 }
 .referral-box > div {
@@ -954,7 +954,7 @@ img {
   border-radius: 7px;
   background: #fff;
   color: #876e68;
-  font-size: 7px;
+  font-size: 12px;
   white-space: nowrap;
 }
 .referral-box button {
@@ -963,7 +963,7 @@ img {
   border-radius: 7px;
   background: var(--red);
   color: #fff;
-  font-size: 7px;
+  font-size: 12px;
   font-weight: 600;
 }
 .referral-box button.copied {
@@ -995,7 +995,7 @@ img {
   border-radius: 20px;
   background: #f8e0dd;
   color: var(--red);
-  font-size: 7px;
+  font-size: 12px;
   font-weight: 700;
 }
 .tier-icon {
@@ -1030,14 +1030,14 @@ img {
 }
 .tier-rate span {
   color: #9a8580;
-  font-size: 8px;
+  font-size: 13px;
   line-height: 1.5;
 }
 .tier-card > p {
   padding-bottom: 14px;
   border-bottom: 1px solid #eee5de;
   color: #846f6a;
-  font-size: 9px;
+  font-size: 14px;
 }
 .tier-card ul {
   display: grid;
@@ -1049,7 +1049,7 @@ img {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 9px;
+  font-size: 14px;
 }
 .tier-card li svg {
   color: #299066;
@@ -1064,7 +1064,7 @@ img {
   border: 1px solid #ddcec3;
   border-radius: 9px;
   color: var(--red);
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 700;
 }
 .active > a {
@@ -1096,7 +1096,7 @@ img {
   position: relative;
   margin: 0;
   color: #705b58;
-  font-size: 10px;
+  font-size: 14px;
   line-height: 1.8;
 }
 .testimonial-earning {
@@ -1111,7 +1111,7 @@ img {
 }
 .testimonial-earning span {
   color: #8f7553;
-  font-size: 7px;
+  font-size: 12px;
 }
 .testimonial-earning strong {
   margin-top: 3px;
@@ -1135,16 +1135,16 @@ img {
   display: block;
 }
 .person strong {
-  font-size: 10px;
+  font-size: 14px;
 }
 .person span {
   margin-top: 3px;
   color: #9c8882;
-  font-size: 7px;
+  font-size: 12px;
 }
 .stars {
   color: var(--gold);
-  font-size: 8px;
+  font-size: 13px;
   letter-spacing: 1px;
 }
 .faq-section {
@@ -1158,7 +1158,7 @@ img {
 }
 .faq-intro p {
   color: #806b67;
-  font-size: 10px;
+  font-size: 14px;
   line-height: 1.7;
 }
 .faq-intro > a {
@@ -1168,7 +1168,7 @@ img {
   width: max-content;
   margin-top: 20px;
   color: var(--red);
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 700;
 }
 .faq-list {
@@ -1193,7 +1193,7 @@ img {
   background: transparent;
   color: var(--ink);
   text-align: left;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 600;
 }
 .faq-list button svg {
@@ -1215,7 +1215,7 @@ img {
   margin: 0;
   padding: 0 16px;
   color: #806c68;
-  font-size: 9px;
+  font-size: 14px;
   line-height: 1.8;
 }
 .faq-list article.open .faq-answer {
@@ -1248,7 +1248,7 @@ img {
 }
 .final-cta span {
   color: #f0cc73;
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 600;
 }
 .final-cta h2 {
@@ -1258,7 +1258,7 @@ img {
 .final-cta p {
   margin: 0;
   color: #e0cbca;
-  font-size: 10px;
+  font-size: 14px;
 }
 .cta-orb {
   position: absolute;
@@ -1294,7 +1294,7 @@ footer {
   max-width: 280px;
   margin: 12px 0;
   color: #bba3a2;
-  font-size: 9px;
+  font-size: 14px;
   line-height: 1.7;
 }
 .footer-socials {
@@ -1318,13 +1318,13 @@ footer {
 .footer-column > strong {
   margin-bottom: 5px;
   color: #edcc79;
-  font-size: 11px;
+  font-size: 15px;
 }
 .footer-column > a,
 .footer-column p,
 .footer-column small {
   color: #bba3a2;
-  font-size: 8px;
+  font-size: 13px;
 }
 .footer-column p {
   margin: 0;
@@ -1342,7 +1342,7 @@ footer {
   padding: 17px 24px;
   border-top: 1px solid #ffffff10;
   color: #755f5f;
-  font-size: 7px;
+  font-size: 12px;
 }
 
 @media (min-width: 600px) {
@@ -1458,7 +1458,7 @@ footer {
   .site-header nav a {
     padding: 9px 0;
     border: 0;
-    font-size: 10px;
+    font-size: 14px;
     font-weight: 500;
   }
   .site-header nav a:hover {
@@ -1478,7 +1478,7 @@ footer {
   }
   .login-link {
     padding: 0 9px;
-    font-size: 9px;
+    font-size: 14px;
     font-weight: 600;
   }
   .header-signup {
@@ -1486,7 +1486,7 @@ footer {
     border-radius: 9px;
     background: var(--red);
     color: #fff;
-    font-size: 9px;
+    font-size: 14px;
     font-weight: 700;
   }
   .hero {
@@ -1502,7 +1502,7 @@ footer {
     font-size: 57px;
   }
   .hero-copy > p {
-    font-size: 14px;
+    font-size: 16px;
   }
   .phone-wrap {
     margin: 0 auto;
@@ -1513,7 +1513,7 @@ footer {
     font-size: 39px;
   }
   .section-heading p {
-    font-size: 12px;
+    font-size: 15px;
   }
   .steps-grid {
     gap: 20px;
