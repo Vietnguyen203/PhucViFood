@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, Navigate, NavLink, Outlet } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, Navigate, NavLink, Outlet, useLocation } from "react-router";
 import { useAsync } from "../lib/useAsync";
 import { ApiError } from "../lib/api";
 import { AFFILIATE_STATUS_LABEL } from "../lib/admin/types";
@@ -7,6 +7,7 @@ import type { PartnerProfile } from "../lib/partner";
 import { AdminProvider, useAdmin } from "../admin/AdminContext";
 import { ChangePasswordModal } from "../admin/ChangePasswordModal";
 import { IconButton } from "../admin/icons";
+import { formatTitle } from "../lib/pageTitle";
 import { ErrorBox, Loading, Toasts } from "../admin/ui";
 import type { PartnerContext } from "./partnerContext";
 import { ProfileForm } from "./ProfilePage";
@@ -21,6 +22,9 @@ function Shell() {
   const { session, logout, adm } = useAdmin();
   const [open, setOpen] = useState(false);
   const [pw, setPw] = useState(false);
+  const { pathname } = useLocation();
+  const section = NAV.filter(([to]) => pathname === to || pathname.startsWith(to + "/")).sort((a, b) => b[0].length - a[0].length)[0];
+  useEffect(() => { document.title = formatTitle(`${section ? section[1] : "Hồ sơ"} (cộng tác viên)`); }, [section]);
   // Hồ sơ CTV: 404 nghĩa là tài khoản mới đăng ký, chưa điền hồ sơ.
   const state = useAsync(async (signal) => {
     try { return (await adm<PartnerProfile>("/me/affiliate", { signal })).data; } catch (e) {

@@ -7,6 +7,9 @@ export async function fetchCategories(signal?: AbortSignal): Promise<Category[]>
 
 export interface ProductQuery {
   categoryId?: string;
+  /** Lọc theo giá bán (VND), bao gồm hai đầu. */
+  minPrice?: number;
+  maxPrice?: number;
   /** Tìm theo tên hoặc mô tả. */
   q?: string;
   page?: number;
@@ -21,6 +24,8 @@ export interface ProductPage { items: Product[]; pagination: PageMeta }
 export async function fetchProducts(query: ProductQuery = {}, signal?: AbortSignal): Promise<ProductPage> {
   const params = new URLSearchParams();
   if (query.categoryId) params.set('filter[categoryId]', query.categoryId);
+  if (query.minPrice !== undefined) params.set('filter[price][gte]', String(query.minPrice));
+  if (query.maxPrice !== undefined) params.set('filter[price][lte]', String(query.maxPrice));
   if (query.q?.trim()) params.set('q', query.q.trim());
   params.set('page', String(query.page ?? 1));
   params.set('pageSize', String(query.pageSize ?? 8));

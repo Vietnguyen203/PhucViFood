@@ -4,6 +4,7 @@ import { HomeFooter } from "../components/SiteFooter";
 import { HomeHeader } from "../components/SiteHeader";
 import { signedInTo, signIn } from "../lib/account";
 import { api, ApiError, describeError } from "../lib/api";
+import { useDocumentTitle } from "../lib/pageTitle";
 import { passwordIssues } from "../lib/partnerAuth";
 import { safeStorage } from "../lib/storage";
 import "../home.css";
@@ -23,6 +24,7 @@ function Field({ label, error, hint, children }: { label: string; error?: string
 
 /** Đăng nhập (mọi vai trò, tự vào đúng khu) và đăng ký cộng tác viên: cùng một khung, hai chế độ. */
 function AuthForm({ mode }: { mode: "login" | "register" }) {
+  useDocumentTitle(mode === "register" ? "Đăng ký cộng tác viên" : "Đăng nhập");
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

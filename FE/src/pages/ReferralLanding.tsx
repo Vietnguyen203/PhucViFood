@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { safeStorage } from "../lib/storage";
+import { landingTarget } from "../lib/referral";
 import { trackReferralClick } from "../lib/tracking";
 import "../home.css";
 
@@ -24,7 +25,9 @@ export default function ReferralLanding() {
     const run = /^[a-z0-9]{1,32}$/.test(normalized)
       ? trackReferralClick(store, normalized, channel && /^[a-z0-9_-]{1,50}$/.test(channel) ? channel : null, `${pathname}${search}`)
       : Promise.resolve(false);
-    void run.finally(() => navigate("/", { replace: true }));
+    // Chỉ chuyển tới trang sản phẩm trong cửa hàng (không chuyển tới địa chỉ tùy ý, tránh bị lợi dụng làm link chuyển hướng).
+    const target = landingTarget(new URLSearchParams(search).get("to"));
+    void run.finally(() => navigate(target, { replace: true }));
   }, [code, pathname, search, navigate]);
 
   return (

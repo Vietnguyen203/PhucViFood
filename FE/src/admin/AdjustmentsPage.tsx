@@ -3,6 +3,7 @@ import { formatVnd } from "../lib/money";
 import { ADJUSTMENT_STATUS_LABEL, type AdminAdjustment } from "../lib/admin/types";
 import { useAdmin } from "./AdminContext";
 import { useAffiliateNames } from "./AffiliatesPage";
+import { IconButton } from "./icons";
 import { Badge, ConfirmModal, ErrorBox, Field, FilterBar, Loading, Pager, fmtDateTime, useList, useListFilters } from "./ui";
 
 const tone = (s: string) => (s === "PENDING" ? "amber" : s === "APPLIED" ? "gray" : "blue") as "amber" | "gray" | "blue";
@@ -45,7 +46,7 @@ export default function AdjustmentsPage() {
                   <td><b>{a.orderCode}</b></td><td>{names.nameOf(a.affiliateId)}</td><td className="num">{formatVnd(a.amount)}</td><td>{a.reason}</td>
                   <td><Badge tone={tone(a.status)}>{ADJUSTMENT_STATUS_LABEL[a.status]}</Badge>{a.waiveReason && <div className="ad-muted">{a.waiveReason}</div>}</td>
                   <td>{fmtDateTime(a.createdAt)}</td>
-                  <td className="actions">{a.status === "PENDING" && <button className="ad-btn small" onClick={() => setWaive(a)}>Miễn trừ</button>}</td>
+                  <td className="actions">{a.status === "PENDING" && <div className="ad-row-actions"><IconButton icon="ban" label="Miễn trừ" onClick={() => setWaive(a)} /></div>}</td>
                 </tr>
               ))}
             </tbody>

@@ -8,6 +8,7 @@ import { useCart } from "../context/CartContext";
 import { useWishlist } from "../context/WishlistContext";
 import { ApiError, describeError } from "../lib/api";
 import { fetchProductBySlug, fetchRelated } from "../lib/catalog";
+import { useDocumentTitle } from "../lib/pageTitle";
 import { formatDiscount, formatVnd } from "../lib/money";
 import { safeStorage } from "../lib/storage";
 import { trackEvent } from "../lib/tracking";
@@ -25,6 +26,7 @@ export default function ProductPage() {
   const [qty, setQty] = useState(1);
   const product = useAsync((signal) => fetchProductBySlug(slug, signal), [slug]);
   const p = product.data;
+  useDocumentTitle(p?.name);
   const related = useAsync(async (signal) => (p ? fetchRelated(p, 4, signal) : []), [p?.id]);
 
   // Đổi sản phẩm thì về số lượng 1 và lên đầu trang.

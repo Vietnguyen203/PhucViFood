@@ -1,0 +1,20 @@
+# Ngữ cảnh build của web.Dockerfile (gốc repo): giữ FE, bỏ mã BE nặng và mọi thứ không cần để build giao diện.
+**/node_modules
+**/generated
+**/dist
+**/coverage
+**/*.log
+.git
+.idea
+.pnpm-store
+.env
+.env.*
+!.env.example
+_to_delete
+BE/postman
+BE/docs
+BE/services/*/src
+BE/services/*/test
+BE/services/*/prisma
+BE/packages/*/src
+BE/packages/*/test

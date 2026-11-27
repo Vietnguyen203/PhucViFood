@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { Navigate, NavLink, Outlet } from "react-router";
+import { useEffect, useState } from "react";
+import { Navigate, NavLink, Outlet, useLocation } from "react-router";
 import { AdminProvider, useAdmin } from "./AdminContext";
 import { ChangePasswordModal } from "./ChangePasswordModal";
 import { IconButton } from "./icons";
+import { formatTitle } from "../lib/pageTitle";
 import { Toasts } from "./ui";
 import "./admin.css";
 
@@ -18,6 +19,9 @@ function Shell() {
   const { session, logout } = useAdmin();
   const [open, setOpen] = useState(false);
   const [pw, setPw] = useState(false);
+  const { pathname } = useLocation();
+  const section = NAV.flatMap((g) => g.items).filter(([to]) => pathname === to || pathname.startsWith(to + "/")).sort((a, b) => b[0].length - a[0].length)[0];
+  useEffect(() => { document.title = formatTitle(`${section ? section[1] : "Quản trị"} (quản trị)`); }, [section]);
   if (!session) return <Navigate to="/dang-nhap" replace />;
   return (
     <div className="ad-shell">

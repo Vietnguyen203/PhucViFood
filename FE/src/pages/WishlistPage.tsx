@@ -5,12 +5,14 @@ import { HomeHeader } from "../components/SiteHeader";
 import { useWishlist } from "../context/WishlistContext";
 import { ApiError } from "../lib/api";
 import { fetchProductBySlug } from "../lib/catalog";
+import { useDocumentTitle } from "../lib/pageTitle";
 import type { Product } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
 import "../home.css";
 
 /** Sản phẩm đã lưu yêu thích. Tên, giá, tồn kho lấy mới từ catalog; sản phẩm đã ngừng bán (404) bị bỏ khỏi danh sách. */
 export default function WishlistPage() {
+  useDocumentTitle("Sản phẩm yêu thích");
   const { items, remove } = useWishlist();
   const key = items.map((i) => i.slug).join(",");
   const { data, loading } = useAsync(

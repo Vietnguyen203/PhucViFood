@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryStore, safeStorage } from './storage';
-import { clearReferral, loadReferral, saveReferral, toOrderCookie } from './referral';
+import { clearReferral, landingTarget, loadReferral, saveReferral, toOrderCookie } from './referral';
 
 const click = (over: Partial<{ clickedAt: string; maxAgeDays: number; channelCode: string | null }> = {}) => ({
   visitorId: '0191e2c0-aaaa-7bbb-8ccc-123456789abc',
@@ -78,6 +78,17 @@ describe('safeStorage', () => {
       expect(s.getItem('a')).toBeNull();
     } finally {
       vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe('đích của link giới thiệu', () => {
+  it('chỉ nhận trang sản phẩm trong cửa hàng', () => {
+    expect(landingTarget('/san-pham/tom-kho-ca-mau-200g')).toBe('/san-pham/tom-kho-ca-mau-200g');
+  });
+  it('mọi giá trị khác về trang chủ', () => {
+    for (const v of [null, undefined, '', '/', 'https://evil.example/', '//evil.example', '/admin', '/san-pham/../admin', '/san-pham/A', '/san-pham/' + 'a'.repeat(200), 'javascript:alert(1)']) {
+      expect(landingTarget(v as string | null), String(v)).toBe('/');
     }
   });
 });

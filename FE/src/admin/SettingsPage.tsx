@@ -3,6 +3,7 @@ import { formatVnd } from "../lib/money";
 import { useAsync } from "../lib/useAsync";
 import type { CustomerSetting, ExportLog } from "../lib/admin/types";
 import { useAdmin } from "./AdminContext";
+import { IconButton } from "./icons";
 import { ErrorBox, Field, FormModal, Loading, Pager, fmtDateTime, useList } from "./ui";
 
 const LABELS: Record<string, { label: string; money?: boolean }> = {
@@ -53,7 +54,7 @@ export default function SettingsPage() {
                   <td><b>{LABELS[s.key]?.label ?? s.key}</b>{s.description && <div className="ad-muted">{s.description}</div>}</td>
                   <td className="num">{LABELS[s.key]?.money ? formatVnd(s.value) : s.value}</td>
                   <td>{fmtDateTime(s.updatedAt)}</td>
-                  <td className="actions"><button className="ad-btn small" onClick={() => setEdit(s)}>Sửa</button></td>
+                  <td className="actions"><div className="ad-row-actions"><IconButton icon="edit" label="Sửa" onClick={() => setEdit(s)} /></div></td>
                 </tr>
               ))}
             </tbody>

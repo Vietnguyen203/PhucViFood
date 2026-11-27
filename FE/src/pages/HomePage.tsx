@@ -6,6 +6,7 @@ import { HomeFooter } from "../components/SiteFooter";
 import { HomeHeader } from "../components/SiteHeader";
 import { describeError } from "../lib/api";
 import { articles } from "../lib/news";
+import { useDocumentTitle } from "../lib/pageTitle";
 import { fetchCategories, fetchProducts, type ProductPage } from "../lib/catalog";
 import type { Product } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
@@ -324,6 +325,7 @@ function NewsSection() {
 }
 
 export default function HomePage() {
+  useDocumentTitle(undefined);
   return (
     <div className="home-page">
       <HomeHeader />

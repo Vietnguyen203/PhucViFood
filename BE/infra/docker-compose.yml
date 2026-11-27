@@ -210,7 +210,11 @@ services:
   # Cổng ngoài duy nhất. HTTP_PORT/HTTPS_PORT đổi cổng trên máy chủ khi 80/443 đã bận.
   caddy:
     profiles: ["app"]
-    image: caddy:2-alpine
+    # Image tự dựng: Caddy + giao diện web đã build (BE/infra/docker/web.Dockerfile). Ngữ cảnh build là gốc repo.
+    image: phucvi-web
+    build:
+      context: ../..
+      dockerfile: BE/infra/docker/web.Dockerfile
     restart: unless-stopped
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-:80}

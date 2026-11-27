@@ -3,6 +3,7 @@ import { formatVnd } from "../lib/money";
 import type { AdminAdjustment, AdminCommission, AdminPayout } from "../lib/admin/types";
 import { useAdmin } from "./AdminContext";
 import { useAffiliateNames } from "./AffiliatesPage";
+import { IconButton } from "./icons";
 import { Badge, ErrorBox, Field, FormModal, Loading, Modal, Pager, fmtDateTime, useList } from "./ui";
 
 function CreatePayoutModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
@@ -90,7 +91,7 @@ export default function PayoutsPage() {
                   <td className="num"><b>{formatVnd(p.totalAmount)}</b></td>
                   <td className="num">{p.adjustmentAmount > 0 ? <Badge tone="red">−{formatVnd(p.adjustmentAmount)}</Badge> : "—"}</td>
                   <td>{p.paymentReference ?? "—"}</td>
-                  <td className="actions"><button className="ad-btn small" onClick={() => void open(p)}>Chi tiết</button></td>
+                  <td className="actions"><div className="ad-row-actions"><IconButton icon="eye" label="Xem chi tiết" onClick={() => void open(p)} /></div></td>
                 </tr>
               ))}
             </tbody>

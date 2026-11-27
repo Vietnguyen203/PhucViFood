@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AFFILIATE_STATUS_LABEL, type AdminAffiliate } from "../lib/admin/types";
 import { useAdmin } from "./AdminContext";
+import { IconButton } from "./icons";
 import { Badge, ConfirmModal, ErrorBox, Field, FilterBar, FormModal, Loading, Modal, Pager, SortHeader, fmtBps, fmtDate, useList, useListFilters } from "./ui";
 
 const tone = (s: string) => (s === "ACTIVE" ? "green" : s === "PENDING" ? "amber" : s === "SUSPENDED" ? "blue" : "red") as "green" | "amber" | "blue" | "red";
@@ -109,9 +110,9 @@ export default function AffiliatesPage() {
                   <td>{fmtDate(a.createdAt)}</td>
                   <td className="actions">
                     <div className="ad-row-actions">
-                      {a.status === "PENDING" && <><button className="ad-btn small primary" onClick={() => setApprove(a)}>Duyệt</button><button className="ad-btn small danger" onClick={() => setAct({ a, action: "reject" })}>Từ chối</button></>}
-                      {a.status === "ACTIVE" && <><button className="ad-btn small" onClick={() => setEdit(a)}>Sửa</button><button className="ad-btn small danger" onClick={() => setAct({ a, action: "suspend" })}>Tạm ngưng</button></>}
-                      {a.status === "SUSPENDED" && <><button className="ad-btn small" onClick={() => setEdit(a)}>Sửa</button><button className="ad-btn small primary" onClick={() => setAct({ a, action: "reactivate" })}>Kích hoạt lại</button></>}
+                      {a.status === "PENDING" && <><IconButton icon="check" label="Duyệt cộng tác viên" tone="primary" onClick={() => setApprove(a)} /><IconButton icon="close" label="Từ chối" tone="danger" onClick={() => setAct({ a, action: "reject" })} /></>}
+                      {a.status === "ACTIVE" && <><IconButton icon="edit" label="Sửa hợp đồng" onClick={() => setEdit(a)} /><IconButton icon="pause" label="Tạm ngưng" tone="danger" onClick={() => setAct({ a, action: "suspend" })} /></>}
+                      {a.status === "SUSPENDED" && <><IconButton icon="edit" label="Sửa hợp đồng" onClick={() => setEdit(a)} /><IconButton icon="play" label="Kích hoạt lại" tone="primary" onClick={() => setAct({ a, action: "reactivate" })} /></>}
                     </div>
                   </td>
                 </tr>

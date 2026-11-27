@@ -8,12 +8,12 @@ React 19 + Vite + Tailwind (xuất từ Figma Make), gọi backend **chỉ qua g
 |---|---|---|
 | `/` | Trang chủ: danh mục, sản phẩm thật (lọc theo danh mục, "Xem thêm"), thêm vào giỏ | `GET /public/categories`, `GET /public/products` |
 | `/san-pham/:slug` | Chi tiết sản phẩm: giá, giảm giá, còn/hết hàng, chọn số lượng, thêm vào giỏ hoặc "Mua ngay", sản phẩm cùng danh mục; ghi sự kiện `PRODUCT_VIEW` cho CTV | `GET /public/products/:slug` |
-| `/danh-muc/:slug?sort=...` | Sản phẩm theo danh mục, sắp xếp, "Xem thêm"; mở từ đường dẫn danh mục ở trang sản phẩm | `GET /public/categories`, `GET /public/products?filter[categoryId]=` |
+| `/danh-muc/:slug?sort=...&gia=...` | Sản phẩm theo danh mục, sắp xếp, lọc theo khoảng giá, "Xem thêm"; mở từ đường dẫn danh mục ở trang sản phẩm | `GET /public/categories`, `GET /public/products?filter[categoryId]=` |
 | `/tin-tuc`, `/tin-tuc/:slug` | Danh sách và chi tiết bài viết; nội dung mẫu tĩnh trong `src/lib/news.ts` (chưa có CMS), slug lạ hiện trang "Không tìm thấy" | Không gọi API |
 | `/thong-tin/:page` | Trang tĩnh: `gioi-thieu`, `lien-he`, `giao-hang`, `doi-tra`, `thanh-toan` (footer trỏ vào đây); khóa lạ và mọi đường dẫn không khớp hiện trang "Không tìm thấy" | Không gọi API |
 | `/yeu-thich` | Sản phẩm đã bấm tim (thẻ sản phẩm, trang chi tiết); lưu trên thiết bị (`pv.wishlist`: chỉ id và slug), tên/giá/tồn kho lấy mới từ catalog, sản phẩm ngừng bán tự bị bỏ | `GET /public/products/:slug` |
 | `/gio-hang` | Giỏ hàng đầy đủ: đổi số lượng, xóa, tóm tắt phí ship tạm tính, sang thanh toán (ngăn kéo giỏ có link vào đây) | Chỉ localStorage |
-| `/tim-kiem?q=...&sort=...` | Kết quả tìm kiếm (tên, mô tả), sắp xếp, "Xem thêm"; ô tìm kiếm ở header | `GET /public/products?q=` |
+| `/tim-kiem?q=...&sort=...&gia=...` | Kết quả tìm kiếm (tên, mô tả), sắp xếp, "Xem thêm"; ô tìm kiếm ở header | `GET /public/products?q=` |
 | (mọi trang) | Giỏ hàng dạng ngăn kéo, lưu trong trình duyệt, đồng bộ giữa các tab | |
 | `/thanh-toan` | Thanh toán: thông tin giao hàng, COD hoặc chuyển khoản, mã CTV, đồng ý tư vấn | `POST /public/orders` (có `Idempotency-Key`) |
 | `/don-hang/:code?` | Tra cứu đơn bằng mã + SĐT; thông tin chuyển khoản và hạn thanh toán; hủy đơn; xác nhận đã nhận hàng | `GET /public/orders/:code`, `POST .../cancel`, `POST .../confirm-received` |
@@ -77,7 +77,7 @@ Vite chuyển tiếp `/api/*` tới gateway nên trình duyệt chỉ nói chuy�
 | `GATEWAY_URL` | `http://localhost:3000` | Địa chỉ gateway mà Vite chuyển tiếp tới (dev và preview) |
 | `VITE_API_BASE` | `/api` | Địa chỉ API mà mã FE gọi. Đặt thành địa chỉ đầy đủ (vd `https://api.phucvifoods.vn/api`) nếu FE và API khác nguồn; khi đó gateway phải cho phép nguồn FE qua `CORS_ORIGINS` |
 
-Chạy thật: Caddy chuyển `/api/*` vào gateway (`BE/infra/Caddyfile`); FE cần được phục vụ cùng nguồn đó (Caddy chưa phục vụ FE, xem `BE/docs/deploy.md`).
+Chạy thật: Caddy phục vụ FE (đã build vào image `phucvi-web`) và chuyển `/api/*` vào gateway cùng một nguồn (`BE/infra/Caddyfile`, `BE/infra/docker/web.Dockerfile`, xem `BE/docs/deploy.md`).
 
 ## Kiểm thử
 

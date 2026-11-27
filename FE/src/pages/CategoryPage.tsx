@@ -5,7 +5,9 @@ import { HomeFooter } from "../components/SiteFooter";
 import { HomeHeader } from "../components/SiteHeader";
 import { describeError } from "../lib/api";
 import { fetchCategories, fetchProducts, type ProductPage, type ProductQuery } from "../lib/catalog";
+import { useDocumentTitle } from "../lib/pageTitle";
 import type { Product } from "../lib/types";
+import { findPriceRange, PRICE_RANGES } from "../lib/priceRange";
 import { useAsync } from "../lib/useAsync";
 import "../home.css";
 
@@ -20,12 +22,20 @@ export default function CategoryPage() {
   const [params, setParams] = useSearchParams();
   const sortParam = params.get("sort");
   const sort = SORTS.some((s) => s.value === sortParam) ? (sortParam as NonNullable<ProductQuery["sort"]>) : "-createdAt";
+  const range = findPriceRange(params.get("gia"));
+  const priceKey = range?.key ?? "";
+  const setFilter = (next: Record<string, string>) => {
+    const merged = new URLSearchParams(params);
+    for (const [k, v] of Object.entries(next)) { if (v) merged.set(k, v); else merged.delete(k); }
+    setParams(merged, { replace: true });
+  };
   const [pages, setPages] = useState(1);
-  const [lastKey, setLastKey] = useState(`${slug}|${sort}`);
-  if (lastKey !== `${slug}|${sort}`) { setLastKey(`${slug}|${sort}`); setPages(1); }
+  const [lastKey, setLastKey] = useState(`${slug}|${sort}|${priceKey}`);
+  if (lastKey !== `${slug}|${sort}|${priceKey}`) { setLastKey(`${slug}|${sort}|${priceKey}`); setPages(1); }
 
   const categories = useAsync((signal) => fetchCategories(signal), []);
   const category = categories.data?.find((c) => c.slug === slug);
+  useDocumentTitle(category?.name);
 
   const { data, loading, error, reload } = useAsync(
     async (signal) => {
@@ -33,12 +43,12 @@ export default function CategoryPage() {
       const items: Product[] = [];
       let last: ProductPage | undefined;
       for (let page = 1; page <= pages; page++) {
-        last = await fetchProducts({ categoryId: category.id, sort, page, pageSize: PAGE_SIZE }, signal);
+        last = await fetchProducts({ categoryId: category.id, sort, page, pageSize: PAGE_SIZE, minPrice: range?.min, maxPrice: range?.max }, signal);
         items.push(...last.items);
       }
       return { items, pagination: last!.pagination };
     },
-    [category?.id, sort, pages],
+    [category?.id, sort, pages, priceKey],
   );
   const hasMore = data ? data.pagination.page < data.pagination.totalPages : false;
   const missing = !!categories.data && !category;
@@ -66,8 +76,14 @@ export default function CategoryPage() {
             <h1 className="shop-title">{category.name}</h1>
             <div className="shop-search-bar">
               <span className="shop-muted">{data ? `${data.pagination.total} sản phẩm` : ""}</span>
+              <label>Giá
+                <select value={priceKey} onChange={(e) => setFilter({ gia: e.target.value })}>
+                  <option value="">Tất cả</option>
+                  {PRICE_RANGES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
+                </select>
+              </label>
               <label>Sắp xếp
-                <select value={sort} onChange={(e) => setParams({ sort: e.target.value }, { replace: true })}>
+                <select value={sort} onChange={(e) => setFilter({ sort: e.target.value })}>
                   {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
               </label>

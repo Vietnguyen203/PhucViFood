@@ -3,6 +3,7 @@ import { formatVnd } from "../lib/money";
 import { useAsync } from "../lib/useAsync";
 import { bankConfigured, SETTING_LABEL, type ShopSetting } from "../lib/admin/dashboard";
 import { useAdmin } from "./AdminContext";
+import { IconButton } from "./icons";
 import { ErrorBox, Field, FormModal, Loading, fmtBps, fmtDateTime } from "./ui";
 
 type Source = "order" | "affiliate";
@@ -66,7 +67,7 @@ export default function ShopSettingsPage() {
                   <td><b>{SETTING_LABEL[r.key]?.label ?? r.key}</b>{SETTING_LABEL[r.key]?.hint && <div className="ad-muted">{SETTING_LABEL[r.key].hint}</div>}</td>
                   <td>{r.value === null ? <span className="ad-muted">{show(r)}</span> : <b>{show(r)}</b>}</td>
                   <td>{fmtDateTime(r.updatedAt)}</td>
-                  <td className="actions"><button className="ad-btn small" onClick={() => setEdit(r)}>Sửa</button></td>
+                  <td className="actions"><div className="ad-row-actions"><IconButton icon="edit" label="Sửa" onClick={() => setEdit(r)} /></div></td>
                 </tr>
               ))}
             </tbody>

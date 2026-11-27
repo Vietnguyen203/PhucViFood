@@ -5,10 +5,12 @@ import { HomeHeader } from "../components/SiteHeader";
 import { useCart } from "../context/CartContext";
 import { estimateShipping, MAX_QUANTITY, SHIPPING_ESTIMATE } from "../lib/cart";
 import { formatVnd } from "../lib/money";
+import { useDocumentTitle } from "../lib/pageTitle";
 import "../home.css";
 
 /** Trang giỏ hàng đầy đủ: xem, đổi số lượng, xóa rồi sang thanh toán. Cùng dữ liệu với ngăn kéo giỏ hàng. */
 export default function CartPage() {
+  useDocumentTitle("Giỏ hàng");
   const { cart, count, subtotal, setQty, remove, clear } = useCart();
   const navigate = useNavigate();
   const shipping = estimateShipping(subtotal);

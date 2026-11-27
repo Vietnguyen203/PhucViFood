@@ -4,6 +4,7 @@ import { dayEnd, dayStart } from "../lib/admin/query";
 import { COMMISSION_STATUS_LABEL, type AdminCommission } from "../lib/admin/types";
 import { useAdmin } from "./AdminContext";
 import { useAffiliateNames } from "./AffiliatesPage";
+import { IconButton } from "./icons";
 import { Badge, ConfirmModal, ErrorBox, Field, FilterBar, Loading, Pager, SortHeader, fmtBps, fmtDateTime, useAction, useList, useListFilters } from "./ui";
 
 const tone = (s: string) => (s === "PAID" ? "green" : s === "CONFIRMED" ? "blue" : s === "CANCELLED" ? "red" : "amber") as "green" | "blue" | "red" | "amber";
@@ -57,7 +58,7 @@ export default function CommissionsPage() {
                   <td className="num"><b>{formatVnd(c.amount)}</b></td>
                   <td><Badge tone={tone(c.status)}>{COMMISSION_STATUS_LABEL[c.status] ?? c.status}</Badge>{c.adjustment && <div><Badge tone="red">Khoản trừ {formatVnd(c.adjustment.amount)}</Badge></div>}{c.cancelReason && <div className="ad-muted">{c.cancelReason}</div>}</td>
                   <td>{fmtDateTime(c.createdAt)}</td>
-                  <td className="actions">{c.status === "ESTIMATED" && <button className="ad-btn small primary" disabled={act.busy} onClick={() => setConfirm(c)}>Xác nhận</button>}</td>
+                  <td className="actions">{c.status === "ESTIMATED" && <div className="ad-row-actions"><IconButton icon="check" label="Xác nhận hoa hồng" tone="primary" disabled={act.busy} onClick={() => setConfirm(c)} /></div>}</td>
                 </tr>
               ))}
             </tbody>

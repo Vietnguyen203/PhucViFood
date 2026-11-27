@@ -7,6 +7,7 @@ import { formatVnd } from "../lib/money";
 import { cancelOrder, confirmReceived, lookupOrder } from "../lib/orders";
 import type { OrderStatus, PaymentStatus, PublicOrder } from "../lib/types";
 import { LAST_ORDER_KEY } from "./CheckoutPage";
+import { useDocumentTitle } from "../lib/pageTitle";
 import "../home.css";
 
 export const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -140,6 +141,7 @@ function OrderDetail({ order, onChange, phone }: { order: PublicOrder; onChange:
 }
 
 export default function OrderPage() {
+  useDocumentTitle("Tra cứu đơn hàng");
   const { code: codeParam } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -219,3 +221,4 @@ export default function OrderPage() {
     </div>
   );
 }
+

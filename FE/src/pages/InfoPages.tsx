@@ -4,6 +4,7 @@ import { HomeFooter } from "../components/SiteFooter";
 import { HomeHeader } from "../components/SiteHeader";
 import { SHIPPING_ESTIMATE } from "../lib/cart";
 import { formatVnd } from "../lib/money";
+import { useDocumentTitle } from "../lib/pageTitle";
 import "../home.css";
 
 interface Info { title: string; body: ReactNode }
@@ -93,6 +94,7 @@ const PAGES: Record<string, Info> = {
 export function InfoPage() {
   const { page = "" } = useParams();
   const info = Object.prototype.hasOwnProperty.call(PAGES, page) ? PAGES[page] : null;
+  useDocumentTitle(info?.title);
   if (!info) return <NotFoundPage />;
   return (
     <div className="home-page">
@@ -108,6 +110,7 @@ export function InfoPage() {
 }
 
 export function NotFoundPage() {
+  useDocumentTitle("Không tìm thấy trang");
   return (
     <div className="home-page">
       <HomeHeader />

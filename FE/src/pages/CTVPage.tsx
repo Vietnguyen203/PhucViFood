@@ -1,5 +1,12 @@
 import { useState } from "react";
+import { PRODUCT_PLACEHOLDER } from "../components/CartDrawer";
 import { useCart } from "../context/CartContext";
+import { useReferralCode } from "../lib/ctvLink";
+import { useDocumentTitle } from "../lib/pageTitle";
+import { fetchProducts } from "../lib/catalog";
+import { formatVnd } from "../lib/money";
+import type { Product } from "../lib/types";
+import { useAsync } from "../lib/useAsync";
 
 type IconName =
   | "menu"
@@ -160,44 +167,6 @@ function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   );
 }
 
-const products = [
-  {
-    name: "Lạp xưởng tươi cao cấp",
-    price: "189.000₫",
-    commission: "28.350₫",
-    rate: "15%",
-    image:
-      "https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=800&q=88",
-    sold: "1,2k đã bán",
-  },
-  {
-    name: "Khô gà lá chanh thượng hạng",
-    price: "145.000₫",
-    commission: "18.850₫",
-    rate: "13%",
-    image:
-      "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=800&q=88",
-    sold: "936 đã bán",
-  },
-  {
-    name: "Hạt sen sấy giòn nguyên vị",
-    price: "125.000₫",
-    commission: "15.000₫",
-    rate: "12%",
-    image:
-      "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&w=800&q=88",
-    sold: "824 đã bán",
-  },
-  {
-    name: "Set quà Phúc Lộc Viên Mãn",
-    price: "759.000₫",
-    commission: "91.080₫",
-    rate: "12%",
-    image:
-      "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=800&q=88",
-    sold: "512 đã bán",
-  },
-];
 
 const videos = [
   {
@@ -410,7 +379,7 @@ function Hero() {
       <div className="hero-inner">
         <div className="hero-copy">
           <div className="friendly-pill">
-            <Icon name="spark" size={15} /> Cộng đồng hơn 8.000 đối tác
+            <Icon name="spark" size={15} /> Cộng đồng cộng tác viên Phúc Vị
           </div>
           <h1>
             Chia sẻ món ngon,
@@ -530,9 +499,14 @@ function ShareButtons({ url, onCopy }: { url: string; onCopy: () => void }) {
   );
 }
 
-function ProductCard({ product }: { product: (typeof products)[number] }) {
+/** Tỷ lệ hoa hồng mặc định để ước tính (khớp cấu hình mặc định của hệ thống); tỷ lệ thật của từng CTV do Phúc Vị chốt khi duyệt. */
+const ESTIMATE_RATE = 10;
+
+function ProductCard({ product, code }: { product: Product; code: string | null }) {
   const [copied, setCopied] = useState(false);
-  const url = `https://phucvifoods.vn/p/${product.name.toLowerCase().replaceAll(" ", "-")}`;
+  const path = `/san-pham/${product.slug}`;
+  // CTV đã đăng nhập: link giới thiệu kèm mã của mình, khách vào thẳng trang sản phẩm. Khách vãng lai: link sản phẩm thường.
+  const url = `${window.location.origin}${code ? `/r/${code}?c=web&to=${encodeURIComponent(path)}` : path}`;
   const copy = () => {
     navigator.clipboard?.writeText(url);
     setCopied(true);
@@ -541,29 +515,27 @@ function ProductCard({ product }: { product: (typeof products)[number] }) {
   return (
     <article className="product-card">
       <div className="product-image">
-        <img src={product.image} alt={product.name} />
-        <span>{product.rate} hoa hồng</span>
+        <img src={product.imageUrl ?? PRODUCT_PLACEHOLDER} alt={product.name} />
+        <span>~{ESTIMATE_RATE}% hoa hồng</span>
       </div>
       <div className="product-content">
-        <div className="product-meta">
-          <span>
-            <b>★</b> 4.9
-          </span>
-          <span>{product.sold}</span>
-        </div>
-        <h3>{product.name}</h3>
-        <strong className="price">{product.price}</strong>
+        <h3><a href={path} style={{ color: "inherit", textDecoration: "none" }}>{product.name}</a></h3>
+        <strong className="price">{formatVnd(product.price)}</strong>
         <div className="commission-badge">
           <span>
             <Icon name="gift" size={18} /> Hoa hồng dự kiến
           </span>
-          <strong>{product.commission}</strong>
+          <strong>{formatVnd(Math.floor((product.price * ESTIMATE_RATE) / 100))}</strong>
         </div>
         <div className="product-actions">
-          <button className={copied ? "copied" : ""} onClick={copy}>
-            <Icon name={copied ? "check" : "copy"} size={16} />
-            {copied ? "Đã sao chép" : "Sao chép link giới thiệu"}
-          </button>
+          {code ? (
+            <button className={copied ? "copied" : ""} onClick={copy}>
+              <Icon name={copied ? "check" : "copy"} size={16} />
+              {copied ? "Đã sao chép" : "Sao chép link giới thiệu"}
+            </button>
+          ) : (
+            <a className="button secondary-button" href="/dang-ky">Đăng ký để lấy link giới thiệu</a>
+          )}
           <ShareButtons url={url} onCopy={copy} />
         </div>
       </div>
@@ -572,6 +544,8 @@ function ProductCard({ product }: { product: (typeof products)[number] }) {
 }
 
 function Products() {
+  const code = useReferralCode();
+  const { data, loading, error } = useAsync((signal) => fetchProducts({ pageSize: 4, sort: "-createdAt" }, signal), []);
   return (
     <section className="products-section" id="products">
       <div className="section">
@@ -581,11 +555,13 @@ function Products() {
           description="Mỗi sản phẩm đều có nội dung và hình ảnh sẵn để bạn bắt đầu chia sẻ nhanh hơn."
         />
         <div className="product-grid">
-          {products.map((product) => (
-            <ProductCard product={product} key={product.name} />
+          {loading && !data && <p>Đang tải sản phẩm...</p>}
+          {!!error && <p>Không tải được danh sách sản phẩm, vui lòng thử lại sau.</p>}
+          {data?.items.map((product) => (
+            <ProductCard product={product} code={code} key={product.id} />
           ))}
         </div>
-        <a className="inline-link" href="#products">
+        <a className="inline-link" href="/#best-sellers">
           Xem tất cả sản phẩm <Icon name="arrow" size={17} />
         </a>
       </div>
@@ -969,6 +945,7 @@ function Footer() {
 }
 
 export default function App() {
+  useDocumentTitle("Chương trình cộng tác viên");
   return (
     <>
       <Header />

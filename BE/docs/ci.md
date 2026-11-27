@@ -7,6 +7,7 @@ File: `.github/workflows/ci.yml`. Chạy khi push vào `main` và mỗi pull req
 | `check` | `pnpm install --frozen-lockfile`, sinh Prisma client, typecheck toàn bộ (BE và FE), test đơn vị toàn bộ, build FE, kiểm tra `docker compose config` | Không |
 | `integration` | Tạo 6 database (đúng script `BE/infra/postgres/init`), áp migration, chạy `test:integration` lần lượt từng gói | Postgres 17 và RabbitMQ 4 (service container, mở cả cổng quản trị 15672 cho test dead-letter) |
 | `docker` | Build image của 7 service bằng Dockerfile dùng chung (matrix, không push, cache GHA) | Không |
+| `web` | Build image web (Caddy + giao diện FE) bằng `web.Dockerfile` (không push, cache GHA) | Không |
 
 Node 22, pnpm theo `packageManager` trong `package.json`. Cấu hình cho test (khóa JWT, khóa nội bộ) do test tự sinh, workflow không cần secret nào.
 

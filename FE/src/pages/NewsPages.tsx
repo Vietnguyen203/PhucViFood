@@ -3,11 +3,13 @@ import { HomeFooter } from "../components/SiteFooter";
 import { HomeHeader } from "../components/SiteHeader";
 import { HomeIcon } from "../components/Icon";
 import { articles, findArticle } from "../lib/news";
+import { useDocumentTitle } from "../lib/pageTitle";
 import { NotFoundPage } from "./InfoPages";
 import "../home.css";
 
 /** Danh sách bài viết: /tin-tuc */
 export function NewsListPage() {
+  useDocumentTitle("Tin tức");
   return (
     <div className="home-page">
       <HomeHeader />
@@ -37,6 +39,7 @@ export function NewsListPage() {
 export function NewsDetailPage() {
   const { slug = "" } = useParams();
   const article = findArticle(slug);
+  useDocumentTitle(article?.title);
   if (!article) return <NotFoundPage />;
   const others = articles.filter((a) => a.slug !== article.slug);
   return (

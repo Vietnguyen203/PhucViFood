@@ -3,7 +3,7 @@
 Chạy cả hệ thống (7 service, Postgres, RabbitMQ) trong Docker; **chỉ Caddy mở cổng ra ngoài**.
 
 ```
-Internet ──► Caddy (80/443) ──► gateway ──► user · affiliate · tracking · catalog · ordering · customer
+Internet ──► Caddy (80/443, phục vụ FE) ──► gateway ──► user · affiliate · tracking · catalog · ordering · customer
                                                      │
                                           Postgres (6 database) · RabbitMQ
 ```
@@ -74,6 +74,6 @@ Build đủ 7 image; cả stack lên healthy; 6 bộ Postman (gateway, catalog, 
 - Service chạy bằng `tsx` từ mã TypeScript, image gồm cả devDependencies. Production thật nên biên dịch ra JavaScript và chỉ cài dependency chạy để image nhỏ và khởi động nhanh.
 - Migration có thể tách riêng (`pnpm stack:migrate` + `RUN_MIGRATIONS=false`) nhưng chưa có quy trình rollback tự động: Prisma không có migration lùi, sửa lỗi bằng migration mới.
 - Postgres (5433), RabbitMQ (5672, 15672) vẫn mở cổng ra máy chủ để tiện dev. Lên máy thật nên bỏ `ports` của hai dịch vụ này (hoặc đặt sau tường lửa) và dùng mật khẩu mạnh.
-- Giao diện web (`FE/`) chưa đóng gói trong stack; Caddy mới chuyển `/api/*` vào gateway, đường dẫn khác trả 404. FE gọi API bằng đường dẫn cùng nguồn `/api` (khi dev Vite chuyển tiếp tới gateway), nên khi triển khai FE phải được phục vụ cùng nguồn với Caddy hoặc đặt `VITE_API_BASE` và `CORS_ORIGINS` (xem `FE/README.md`).
+- Giao diện web (`FE/`) được build vào image `phucvi-web` (Caddy + tệp tĩnh, `BE/infra/docker/web.Dockerfile`) và Caddy phục vụ cùng nguồn với `/api`, nên không cần CORS. Đường dẫn không phải tệp trả `index.html` (react-router tự xử lý), tệp trong `/assets` cache vĩnh viễn, `index.html` không cache. Đổi mã FE thì build lại image: `docker compose --profile app build caddy`. Đã thử: image build được, Caddy trả FE, đường dẫn SPA, `/api` và `/healthz` đúng, header cache đúng.
 - Trạng thái giới hạn tốc độ và ngắt mạch nằm trong bộ nhớ từng tiến trình (xem `gateway-service.md`, `shared-library.md`).
 - Đã có CI kiểm tra (xem `ci.md`); chưa có CD đẩy image lên registry và tự triển khai.

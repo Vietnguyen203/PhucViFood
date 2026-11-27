@@ -1,4 +1,4 @@
-# Caddy là cổng ngoài duy nhất của hệ thống: nhận yêu cầu từ internet, chuyển /api/* vào gateway.
+# Caddy là cổng ngoài duy nhất của hệ thống: nhận yêu cầu từ internet, chuyển /api/* vào gateway và phục vụ giao diện web (FE).
 # Các service (kể cả gateway) không mở cổng ra máy chủ, chỉ nói chuyện trong mạng Docker.
 #
 # SITE_ADDRESS mặc định ":80" (HTTP, dùng cho dev/demo). Đặt tên miền thật (vd api.phucvifoods.vn) thì Caddy tự lấy và
@@ -37,7 +37,15 @@
 		}
 	}
 
+	# Còn lại là giao diện web (FE) build sẵn trong image. Đường dẫn không phải tệp (vd /san-pham/...) trả index.html để
+	# react-router tự xử lý. Tệp trong /assets có băm nội dung ở tên nên cache vĩnh viễn; index.html thì không cache.
 	handle {
-		respond "Not found" 404
+		root * /srv/www
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@html not path /assets/*
+		header @html Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
 	}
 }

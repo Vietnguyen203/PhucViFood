@@ -14,6 +14,7 @@ import { newIdempotencyKey, placeOrder } from "../lib/orders";
 import { loadReferral } from "../lib/referral";
 import { safeStorage } from "../lib/storage";
 import { trackEvent } from "../lib/tracking";
+import { useDocumentTitle } from "../lib/pageTitle";
 import "../home.css";
 
 const store = safeStorage();
@@ -32,6 +33,7 @@ function Field({ label, error, children, hint }: { label: string; error?: string
 }
 
 export default function CheckoutPage() {
+  useDocumentTitle("Thanh toán");
   const { cart, subtotal, clear } = useCart();
   const navigate = useNavigate();
   const [form, setForm] = useState<CheckoutForm>(EMPTY_CHECKOUT);
