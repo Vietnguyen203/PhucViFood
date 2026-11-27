@@ -1,5 +1,6 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import RootLayout from "./components/RootLayout";
+import { LoginPage, RegisterPage } from "./pages/AuthPages";
 import CartPage from "./pages/CartPage";
 import CategoryPage from "./pages/CategoryPage";
 import CheckoutPage from "./pages/CheckoutPage";
@@ -10,6 +11,7 @@ import OrderPage from "./pages/OrderPage";
 import ProductPage from "./pages/ProductPage";
 import ReferralLanding from "./pages/ReferralLanding";
 import SearchPage from "./pages/SearchPage";
+import WishlistPage from "./pages/WishlistPage";
 
 /** Trang quản trị tải theo yêu cầu: khách mua hàng không phải tải mã của khu quản trị. */
 const admin = <T extends { default: React.ComponentType }>(load: () => Promise<T>) => ({
@@ -30,6 +32,12 @@ const router = createBrowserRouter([
       { path: "/tim-kiem", Component: SearchPage },
       { path: "/danh-muc/:slug", Component: CategoryPage },
       { path: "/gio-hang", Component: CartPage },
+      { path: "/yeu-thich", Component: WishlistPage },
+      { path: "/dang-nhap", Component: LoginPage },
+      { path: "/dang-ky", Component: RegisterPage },
+      // Đường dẫn đăng nhập cũ của từng khu: dùng chung một trang đăng nhập
+      { path: "/ctv/dang-nhap", element: <Navigate to="/dang-nhap" replace /> },
+      { path: "/ctv/dang-ky", element: <Navigate to="/dang-ky" replace /> },
       { path: "/thong-tin/:page", Component: InfoPage },
       { path: "/thanh-toan", Component: CheckoutPage },
       // Tra cứu đơn bằng mã đơn + SĐT; có mã trên đường dẫn thì tự tra cứu khi vừa đặt hàng xong.
@@ -45,7 +53,7 @@ const router = createBrowserRouter([
     path: "/admin",
     ...admin(() => import("./admin/AdminLayout").then((m) => ({ default: m.AdminRoot }))),
     children: [
-      { path: "login", ...admin(() => import("./admin/LoginPage")) },
+      { path: "login", element: <Navigate to="/dang-nhap" replace /> },
       {
         ...admin(() => import("./admin/AdminLayout")),
         children: [
@@ -73,8 +81,6 @@ const router = createBrowserRouter([
     // Cha không có path: /ctv (trang giới thiệu) vẫn thuộc khung cửa hàng, chỉ các đường dẫn con dưới đây dùng khu CTV.
     ...admin(() => import("./partner/PartnerLayout").then((m) => ({ default: m.PartnerRoot }))),
     children: [
-      { path: "/ctv/dang-nhap", ...admin(() => import("./partner/AuthPage").then((m) => ({ default: () => <m.default mode="login" /> }))) },
-      { path: "/ctv/dang-ky", ...admin(() => import("./partner/AuthPage").then((m) => ({ default: () => <m.default mode="register" /> }))) },
       {
         path: "/ctv/tai-khoan",
         ...admin(() => import("./partner/PartnerLayout")),

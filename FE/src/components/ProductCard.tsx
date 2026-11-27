@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
 import { formatDiscount, formatVnd } from "../lib/money";
 import type { Product } from "../lib/types";
 import { PRODUCT_PLACEHOLDER } from "./CartDrawer";
@@ -8,6 +9,8 @@ import { HomeIcon } from "./Icon";
 /** Thẻ sản phẩm dùng ở trang chủ, tìm kiếm và gợi ý. Ảnh và tên dẫn tới trang chi tiết. */
 export function ProductCard({ product }: { product: Product }) {
   const { add } = useCart();
+  const wish = useWishlist();
+  const liked = wish.has(product.id);
   const to = `/san-pham/${encodeURIComponent(product.slug)}`;
   return (
     <article className="home-product-card">
@@ -16,7 +19,7 @@ export function ProductCard({ product }: { product: Product }) {
           <img src={product.imageUrl ?? PRODUCT_PLACEHOLDER} alt={product.name} />
         </Link>
         {!product.inStock ? <span>Hết hàng</span> : product.discountPercent > 0 ? <span>{formatDiscount(product.discountPercent)}</span> : null}
-        <button aria-label="Thêm vào yêu thích">
+        <button className={liked ? "liked" : ""} aria-pressed={liked} aria-label={liked ? "Bỏ khỏi yêu thích" : "Thêm vào yêu thích"} onClick={() => wish.toggle({ productId: product.id, slug: product.slug })}>
           <HomeIcon name="heart" size={17} />
         </button>
       </div>

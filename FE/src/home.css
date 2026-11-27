@@ -1017,3 +1017,14 @@
     height: 270px;
   }
 }
+
+/* ───────── Yêu thích ───────── */
+.home-header-actions > a.home-wish, .home-header-actions > a.home-account {
+  width: 37px; height: 37px; display: grid; place-items: center; position: relative; color: #4e3030; text-decoration: none;
+}
+.home-wish span {
+  width: 15px; height: 15px; display: grid; place-items: center; position: absolute; right: 0; top: 1px;
+  border-radius: 50%; background: var(--home-gold); font-size: 7px; font-weight: 700;
+}
+.home-product-image > button.liked { color: #b3261e; }
+.home-product-image > button.liked svg { fill: currentColor; }

@@ -400,6 +400,10 @@ img {
   color: #68400b;
   font-size: 8px;
   font-weight: 700;
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+  box-sizing: border-box;
 }
 .hero-bubble {
   display: flex;

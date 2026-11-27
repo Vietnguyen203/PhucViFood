@@ -5,6 +5,7 @@ import { ProductCard } from "../components/ProductCard";
 import { HomeFooter } from "../components/SiteFooter";
 import { HomeHeader } from "../components/SiteHeader";
 import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
 import { ApiError, describeError } from "../lib/api";
 import { fetchProductBySlug, fetchRelated } from "../lib/catalog";
 import { formatDiscount, formatVnd } from "../lib/money";
@@ -19,6 +20,7 @@ const MAX_QTY = 99;
 export default function ProductPage() {
   const { slug = "" } = useParams();
   const { add } = useCart();
+  const wish = useWishlist();
   const navigate = useNavigate();
   const [qty, setQty] = useState(1);
   const product = useAsync((signal) => fetchProductBySlug(slug, signal), [slug]);
@@ -93,6 +95,9 @@ export default function ProductPage() {
                     <button className="shop-btn" onClick={() => { add(p, qty); navigate("/thanh-toan"); }}>Mua ngay</button>
                   </div>
                 )}
+                <button className={`shop-wish${wish.has(p.id) ? " liked" : ""}`} aria-pressed={wish.has(p.id)} onClick={() => wish.toggle({ productId: p.id, slug: p.slug })}>
+                  {wish.has(p.id) ? "♥ Đã lưu yêu thích" : "♡ Lưu vào yêu thích"}
+                </button>
 
                 {p.description && <section className="shop-desc"><h2>Mô tả</h2><p>{p.description}</p></section>}
                 <p className="shop-small">Giá và phí giao hàng chính thức được tính lại khi đặt hàng. Số lượng còn lại được kiểm tra lúc đặt.</p>

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router";
 import { CartProvider } from "../context/CartContext";
+import { WishlistProvider } from "../context/WishlistContext";
 import { CartDrawer } from "./CartDrawer";
 import "../shop.css";
 
@@ -27,9 +28,11 @@ export default function RootLayout() {
   }, []);
   return (
     <CartProvider>
-      <ScrollToTop />
-      <Outlet />
-      <CartDrawer />
+      <WishlistProvider>
+        <ScrollToTop />
+        <Outlet />
+        <CartDrawer />
+      </WishlistProvider>
     </CartProvider>
   );
 }

@@ -17,7 +17,7 @@ function Shell() {
   const { session, logout } = useAdmin();
   const [open, setOpen] = useState(false);
   const [pw, setPw] = useState(false);
-  if (!session) return <Navigate to="/admin/login" replace />;
+  if (!session) return <Navigate to="/dang-nhap" replace />;
   return (
     <div className="ad-shell">
       <aside className={`ad-side${open ? " open" : ""}`}>

@@ -261,3 +261,16 @@ body.store-scale .home-page { min-height: calc(100vh / var(--store-zoom)); }
 .shop-info-dl dt { color: var(--shop-muted); }
 .shop-info-dl dd { margin: 0; }
 .shop-empty-page h1 { margin-bottom: 8px; }
+
+.shop-wish { margin: -6px 0 18px; padding: 6px 2px; border: 0; background: none; color: var(--shop-muted); font: inherit; font-size: 14px; cursor: pointer; }
+.shop-wish:hover, .shop-wish.liked { color: #b3261e; }
+
+/* ───────── Đăng nhập, đăng ký ───────── */
+.shop-auth { display: grid; place-items: start center; }
+.shop-auth-card { width: 100%; max-width: 420px; display: grid; gap: 14px; }
+.shop-auth-logo { width: 120px; margin: 0 auto; }
+.shop-auth-card .shop-title { margin: 0; font-size: 28px; text-align: center; }
+.shop-auth-card > .shop-muted { margin: 0; text-align: center; }
+.shop-auth-card .shop-btn { width: 100%; }
+.shop-auth-links { margin: 0; text-align: center; color: var(--shop-muted); font-size: 13px; line-height: 1.9; }
+.shop-auth-links a { color: var(--shop-red); }

@@ -149,7 +149,7 @@ function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) 
   );
 }
 
-function CategorySection({ selected, onSelect }: { selected: string | null; onSelect: (id: string | null) => void }) {
+function CategorySection() {
   const { data: categories, loading, error, reload } = useAsync((signal) => fetchCategories(signal), []);
   return (
     <section className="home-section" id="categories">
@@ -162,22 +162,16 @@ function CategorySection({ selected, onSelect }: { selected: string | null; onSe
         <div className="home-category-grid">
           {loading && !categories && <p className="home-loading">Đang tải danh mục...</p>}
           {categories?.map((category, index) => (
-            <a
-              href="#best-sellers"
-              className={`home-category-card${selected === category.id ? " selected" : ""}`}
-              key={category.id}
-              onClick={() => onSelect(selected === category.id ? null : category.id)}
-              aria-pressed={selected === category.id}
-            >
+            <Link className="home-category-card" to={`/danh-muc/${category.slug}`} key={category.id}>
               <img src={CATEGORY_IMAGES[index % CATEGORY_IMAGES.length]} alt={category.name} />
               <div />
               <span>
                 <strong>{category.name}</strong>
                 <b>
-                  {selected === category.id ? "Bỏ lọc" : "Xem sản phẩm"} <HomeIcon name="arrow" size={14} />
+                  Xem sản phẩm <HomeIcon name="arrow" size={14} />
                 </b>
               </span>
-            </a>
+            </Link>
           ))}
         </div>
       )}
@@ -185,21 +179,19 @@ function CategorySection({ selected, onSelect }: { selected: string | null; onSe
   );
 }
 
-function ProductsSection({ categoryId, onClear }: { categoryId: string | null; onClear: () => void }) {
+function ProductsSection() {
   const [pages, setPages] = useState(1);
-  // Đổi danh mục thì về trang đầu.
-  useEffect(() => setPages(1), [categoryId]);
   const { data, loading, error, reload } = useAsync(
     async (signal) => {
       const items: Product[] = [];
       let last: ProductPage | undefined;
       for (let page = 1; page <= pages; page++) {
-        last = await fetchProducts({ categoryId: categoryId ?? undefined, page, pageSize: PAGE_SIZE }, signal);
+        last = await fetchProducts({ page, pageSize: PAGE_SIZE }, signal);
         items.push(...last.items);
       }
       return { items, pagination: last!.pagination };
     },
-    [categoryId, pages],
+    [pages],
   );
   const hasMore = data ? data.pagination.page < data.pagination.totalPages : false;
 
@@ -211,9 +203,6 @@ function ProductsSection({ categoryId, onClear }: { categoryId: string | null; o
           title="Sản phẩm của Phúc Vị"
           description="Những đặc sản được Phúc Vị tuyển chọn kỹ lưỡng, sẵn sàng giao đến tận nhà bạn."
         />
-        {categoryId && (
-          <p className="home-filter-note">Đang lọc theo danh mục. <button onClick={onClear}>Xem tất cả</button></p>
-        )}
         {error ? <LoadError error={error} onRetry={reload} /> : (
           <>
             {loading && !data && <p className="home-loading">Đang tải sản phẩm...</p>}
@@ -359,14 +348,13 @@ function NewsSection() {
 }
 
 export default function HomePage() {
-  const [categoryId, setCategoryId] = useState<string | null>(null);
   return (
     <div className="home-page">
       <HomeHeader />
       <main>
         <HomeHero />
-        <CategorySection selected={categoryId} onSelect={setCategoryId} />
-        <ProductsSection categoryId={categoryId} onClear={() => setCategoryId(null)} />
+        <CategorySection />
+        <ProductsSection />
         <BrandStory />
         <PartnerCTA />
         <NewsSection />

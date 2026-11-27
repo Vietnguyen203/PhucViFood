@@ -396,7 +396,7 @@ function PhoneMockup() {
             />
           </svg>
         </div>
-        <button className="phone-button">Rút hoa hồng</button>
+        <a className="phone-button" href="/ctv/tai-khoan/chi-tra">Rút hoa hồng</a>
       </div>
     </div>
   );
@@ -514,16 +514,16 @@ function Steps() {
   );
 }
 
-function ShareButtons() {
+function ShareButtons({ url, onCopy }: { url: string; onCopy: () => void }) {
   return (
     <div className="share-buttons">
-      <button title="Facebook">
+      <button title="Chia sẻ lên Facebook" aria-label="Chia sẻ lên Facebook" onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank", "noopener,noreferrer")}>
         <Icon name="facebook" size={15} />
       </button>
-      <button title="Zalo">
+      <button title="Sao chép link để gửi qua Zalo" aria-label="Sao chép link để gửi qua Zalo" onClick={onCopy}>
         <Icon name="zalo" size={15} />
       </button>
-      <button title="TikTok">
+      <button title="Sao chép link để dán vào TikTok" aria-label="Sao chép link để dán vào TikTok" onClick={onCopy}>
         <Icon name="tiktok" size={15} />
       </button>
     </div>
@@ -532,10 +532,9 @@ function ShareButtons() {
 
 function ProductCard({ product }: { product: (typeof products)[number] }) {
   const [copied, setCopied] = useState(false);
+  const url = `https://phucvifoods.vn/p/${product.name.toLowerCase().replaceAll(" ", "-")}`;
   const copy = () => {
-    navigator.clipboard?.writeText(
-      `https://phucvifoods.vn/p/${product.name.toLowerCase().replaceAll(" ", "-")}`,
-    );
+    navigator.clipboard?.writeText(url);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
   };
@@ -565,7 +564,7 @@ function ProductCard({ product }: { product: (typeof products)[number] }) {
             <Icon name={copied ? "check" : "copy"} size={16} />
             {copied ? "Đã sao chép" : "Sao chép link giới thiệu"}
           </button>
-          <ShareButtons />
+          <ShareButtons url={url} onCopy={copy} />
         </div>
       </div>
     </article>

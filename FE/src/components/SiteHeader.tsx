@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
+import { signedInTo } from "../lib/account";
 import { normalizeSearch } from "../lib/catalog";
+import { safeStorage } from "../lib/storage";
 import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
 import { HomeIcon } from "./Icon";
 
 export function HomeHeader() {
@@ -10,6 +13,8 @@ export function HomeHeader() {
   const [term, setTerm] = useState("");
   const navigate = useNavigate();
   const { count, openCart } = useCart();
+  const { count: wishCount } = useWishlist();
+  const account = signedInTo(safeStorage());
 
   function onSearch(ev: FormEvent) {
     ev.preventDefault();
@@ -65,9 +70,13 @@ export function HomeHeader() {
               <HomeIcon name="search" size={18} />
             </button>
           )}
-          <button className="home-account" aria-label="Tài khoản">
+          <Link className="home-wish" to="/yeu-thich" aria-label={`Yêu thích, ${wishCount} sản phẩm`}>
+            <HomeIcon name="heart" size={18} />
+            {wishCount > 0 && <span>{wishCount > 99 ? "99+" : wishCount}</span>}
+          </Link>
+          <Link className="home-account" to={account ?? "/dang-nhap"} aria-label={account ? "Tài khoản của tôi" : "Đăng nhập"} title={account ? "Tài khoản của tôi" : "Đăng nhập"}>
             <HomeIcon name="user" size={18} />
-          </button>
+          </Link>
           <button className="home-cart" onClick={openCart} aria-label={`Giỏ hàng, ${count} sản phẩm`}>
             <HomeIcon name="cart" size={18} />
             {count > 0 && <span>{count > 99 ? "99+" : count}</span>}

@@ -10,6 +10,7 @@ React 19 + Vite + Tailwind (xuất từ Figma Make), gọi backend **chỉ qua g
 | `/san-pham/:slug` | Chi tiết sản phẩm: giá, giảm giá, còn/hết hàng, chọn số lượng, thêm vào giỏ hoặc "Mua ngay", sản phẩm cùng danh mục; ghi sự kiện `PRODUCT_VIEW` cho CTV | `GET /public/products/:slug` |
 | `/danh-muc/:slug?sort=...` | Sản phẩm theo danh mục, sắp xếp, "Xem thêm"; mở từ đường dẫn danh mục ở trang sản phẩm | `GET /public/categories`, `GET /public/products?filter[categoryId]=` |
 | `/thong-tin/:page` | Trang tĩnh: `gioi-thieu`, `lien-he`, `giao-hang`, `doi-tra`, `thanh-toan` (footer trỏ vào đây); khóa lạ và mọi đường dẫn không khớp hiện trang "Không tìm thấy" | Không gọi API |
+| `/yeu-thich` | Sản phẩm đã bấm tim (thẻ sản phẩm, trang chi tiết); lưu trên thiết bị (`pv.wishlist`: chỉ id và slug), tên/giá/tồn kho lấy mới từ catalog, sản phẩm ngừng bán tự bị bỏ | `GET /public/products/:slug` |
 | `/gio-hang` | Giỏ hàng đầy đủ: đổi số lượng, xóa, tóm tắt phí ship tạm tính, sang thanh toán (ngăn kéo giỏ có link vào đây) | Chỉ localStorage |
 | `/tim-kiem?q=...&sort=...` | Kết quả tìm kiếm (tên, mô tả), sắp xếp, "Xem thêm"; ô tìm kiếm ở header | `GET /public/products?q=` |
 | (mọi trang) | Giỏ hàng dạng ngăn kéo, lưu trong trình duyệt, đồng bộ giữa các tab | |
@@ -17,7 +18,7 @@ React 19 + Vite + Tailwind (xuất từ Figma Make), gọi backend **chỉ qua g
 | `/don-hang/:code?` | Tra cứu đơn bằng mã + SĐT; thông tin chuyển khoản và hạn thanh toán; hủy đơn; xác nhận đã nhận hàng | `GET /public/orders/:code`, `POST .../cancel`, `POST .../confirm-received` |
 | `/r/:code?c=kênh` | Link giới thiệu của CTV: ghi nhận lượt bấm, lưu cookie, về trang chủ | `POST /public/referrals/click` |
 | `/ctv` | Trang giới thiệu chương trình CTV (nội dung tĩnh; giỏ hàng dùng chung), nút đăng nhập/đăng ký dẫn vào khu CTV | |
-| `/ctv/dang-ky`, `/ctv/dang-nhap` | Đăng ký, đăng nhập cộng tác viên | `POST /auth/register`, `/auth/login` |
+| `/dang-nhap`, `/dang-ky` | Đăng nhập chung (ADMIN vào `/admin`, CTV vào `/ctv/tai-khoan`, theo vai trò) và đăng ký CTV, thiết kế cùng cửa hàng; `/ctv/dang-nhap`, `/ctv/dang-ky`, `/admin/login` chuyển hướng về đây | `POST /auth/login`, `/auth/register` |
 | `/ctv/tai-khoan/*` | Khu CTV (xem mục dưới) | `/me/*` |
 
 Khi khách vào qua link CTV, FE gửi cookie kèm đơn hàng (backend quyết định hoa hồng) và ghi nhận sự kiện `ADD_TO_CART`, `CHECKOUT_START` cho thống kê của CTV.
@@ -26,7 +27,7 @@ Khi khách vào qua link CTV, FE gửi cookie kèm đơn hàng (backend quyết 
 
 ## Giao diện quản trị (`/admin`)
 
-Chỉ tài khoản ADMIN (đăng nhập `/admin/login`; tài khoản dev nằm trong `BE/services/user/prisma/seed.ts`). Không dùng khung cửa hàng, tải theo yêu cầu (lazy) nên khách mua hàng không tải mã quản trị. Mọi lời gọi đi qua gateway kèm access token; hết hạn (401) thì tự làm mới bằng refresh token rồi thử lại một lần (nhiều yêu cầu cùng hết hạn chỉ làm mới một lần); làm mới bị từ chối thì về trang đăng nhập.
+Chỉ tài khoản ADMIN (đăng nhập ở `/dang-nhap`; tài khoản dev nằm trong `BE/services/user/prisma/seed.ts`). Không dùng khung cửa hàng, tải theo yêu cầu (lazy) nên khách mua hàng không tải mã quản trị. Mọi lời gọi đi qua gateway kèm access token; hết hạn (401) thì tự làm mới bằng refresh token rồi thử lại một lần (nhiều yêu cầu cùng hết hạn chỉ làm mới một lần); làm mới bị từ chối thì về trang đăng nhập.
 
 | Mục | Việc |
 |---|---|

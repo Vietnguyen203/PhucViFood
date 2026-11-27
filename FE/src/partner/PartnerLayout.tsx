@@ -27,7 +27,7 @@ function Shell() {
       throw e;
     }
   }, [session?.user.id]);
-  if (!session) return <Navigate to="/ctv/dang-nhap" replace />;
+  if (!session) return <Navigate to="/dang-nhap" replace />;
 
   const profile = state.data;
   const active = profile?.status === "ACTIVE";
