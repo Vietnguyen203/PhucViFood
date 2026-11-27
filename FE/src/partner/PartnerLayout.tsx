@@ -5,6 +5,7 @@ import { ApiError } from "../lib/api";
 import { AFFILIATE_STATUS_LABEL } from "../lib/admin/types";
 import type { PartnerProfile } from "../lib/partner";
 import { AdminProvider, useAdmin } from "../admin/AdminContext";
+import { ChangePasswordModal } from "../admin/ChangePasswordModal";
 import { ErrorBox, Loading, Toasts } from "../admin/ui";
 import type { PartnerContext } from "./partnerContext";
 import { ProfileForm } from "./ProfilePage";
@@ -18,6 +19,7 @@ const NAV: Array<[string, string]> = [
 function Shell() {
   const { session, logout, adm } = useAdmin();
   const [open, setOpen] = useState(false);
+  const [pw, setPw] = useState(false);
   // Hồ sơ CTV: 404 nghĩa là tài khoản mới đăng ký, chưa điền hồ sơ.
   const state = useAsync(async (signal) => {
     try { return (await adm<PartnerProfile>("/me/affiliate", { signal })).data; } catch (e) {
@@ -42,6 +44,7 @@ function Shell() {
         </nav>
         <div className="ad-user">
           <span title={session.user.email}>{session.user.email}</span>
+          <button className="ad-btn" onClick={() => setPw(true)}>Đổi mật khẩu</button>
           <button className="ad-btn" onClick={() => void logout()}>Đăng xuất</button>
         </div>
       </aside>
@@ -64,6 +67,7 @@ function Shell() {
           {profile && active && <Outlet context={{ profile, reload: state.reload } satisfies PartnerContext} />}
         </main>
       </div>
+      {pw && <ChangePasswordModal onClose={() => setPw(false)} />}
       <Toasts />
     </div>
   );

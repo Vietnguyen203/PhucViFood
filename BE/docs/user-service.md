@@ -17,6 +17,7 @@ Tiền tố `/api`. Mặc định **mọi route đều cần JWT**, trừ route 
 | POST | `/auth/change-password` | Đã đăng nhập | Đổi mật khẩu, thu hồi phiên cũ, cấp token mới |
 | GET | `/users`, `/users/:id` | ADMIN | Danh sách (phân trang, `q`, `filter[role]`, `filter[status]`, `sort`) và chi tiết |
 | POST | `/users` | ADMIN | Tạo tài khoản (kể cả ADMIN) |
+| POST | `/users/:id/reset-password` | ADMIN | Đặt lại mật khẩu người khác (`newPassword` theo chính sách chung): thu hồi mọi phiên, gỡ khóa đăng nhập sai. Không dùng cho chính mình (422, dùng `/auth/change-password`) |
 | PATCH | `/users/:id` | ADMIN | Đổi `role` hoặc `status` (ACTIVE, DISABLED) |
 | GET | `/health` | Công khai | Healthcheck |
 

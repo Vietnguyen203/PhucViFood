@@ -52,6 +52,14 @@ export function createAdminAuth({ api, store, onSessionLost, role = 'ADMIN', ses
     if (s) { try { await api('/auth/logout', { method: 'POST', body: { refreshToken: s.refreshToken }, token: s.accessToken, timeoutMs: 5000 }); } catch { /* đã xóa phiên cục bộ */ } }
   }
 
+  /** Đổi mật khẩu của chính mình: máy chủ thu hồi mọi phiên cũ và cấp cặp token mới cho phiên này. */
+  async function changePassword(currentPassword: string, newPassword: string): Promise<Session> {
+    const { data } = await authed<TokenPayload>('/auth/change-password', { method: 'POST', body: { currentPassword, newPassword } });
+    const s: Session = { accessToken: data.accessToken, refreshToken: data.refreshToken, user: data.user };
+    sessions.save(s);
+    return s;
+  }
+
   /** Một lần làm mới dùng chung cho nhiều yêu cầu cùng hết hạn (refresh token chỉ dùng được một lần). */
   function refresh(stale: Session): Promise<Session | null> {
     refreshing ??= (async () => {
@@ -85,6 +93,6 @@ export function createAdminAuth({ api, store, onSessionLost, role = 'ADMIN', ses
     }
   }
 
-  return { login, register, logout, authed, session: () => sessions.load() };
+  return { login, register, logout, changePassword, authed, session: () => sessions.load() };
 }
 export type AdminAuth = ReturnType<typeof createAdminAuth>;

@@ -43,7 +43,7 @@ Chỉ tài khoản ADMIN (đăng nhập `/admin/login`; tài khoản dev nằm t
 
 Mã: `src/lib/admin/` (phiên và tự làm mới `auth.ts`, dựng truy vấn danh sách `query.ts`, tên file tải về `download.ts`, kiểu dữ liệu `types.ts`; có test), `src/admin/` (khung, trang, thành phần dùng chung `ui.tsx`, `admin.css`).
 
-Trang "Tài khoản" (`/admin/tai-khoan`): tạo tài khoản, đổi vai trò, khóa/mở khóa (không xóa cứng). Tỷ lệ hoa hồng mặc định sửa ở "Cấu hình bán hàng". Chưa làm ở khu quản trị: đổi mật khẩu/đặt lại mật khẩu cho người khác, báo cáo theo khoảng ngày tùy chọn. Màn hình hẹp có menu thu gọn nhưng bảng cuộn ngang.
+Trang "Tài khoản" (`/admin/tai-khoan`): tạo tài khoản, đổi vai trò, khóa/mở khóa (không xóa cứng). Tỷ lệ hoa hồng mặc định sửa ở "Cấu hình bán hàng". Đổi mật khẩu của chính mình (nút ở thanh bên admin và CTV) và admin đặt lại mật khẩu cho người khác (trang Tài khoản). Chưa làm ở khu quản trị: quên mật khẩu qua email, báo cáo theo khoảng ngày tùy chọn. Màn hình hẹp có menu thu gọn nhưng bảng cuộn ngang.
 
 ## Khu cộng tác viên (`/ctv/tai-khoan`)
 

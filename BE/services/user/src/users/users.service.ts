@@ -10,7 +10,7 @@ import { toPublicUser } from '../auth/auth.service';
 import { PasswordService } from '../auth/password';
 import { TokenService } from '../auth/token.service';
 import { PrismaService } from '../prisma/prisma.service';
-import type { CreateUserDto, UpdateUserDto } from './dto';
+import type { CreateUserDto, ResetPasswordDto, UpdateUserDto } from './dto';
 
 export const USERS_SERVICE = Symbol('USERS_SERVICE');
 
@@ -53,6 +53,18 @@ export class UsersService extends PrismaCrudService<User, CreateUserDto, UpdateU
       if ((e as { code?: string }).code === 'P2002') throw AppException.conflict('Email đã được đăng ký');
       throw e;
     }
+  }
+
+  /** Admin đặt lại mật khẩu người khác: thu hồi mọi phiên, gỡ khóa đăng nhập sai. Tài khoản của chính mình dùng /auth/change-password. */
+  async resetPassword(adminId: string, id: string, dto: ResetPasswordDto) {
+    if (adminId === id) throw AppException.businessRule('Hãy dùng chức năng đổi mật khẩu cho tài khoản của chính bạn');
+    await this.findOrThrow(id);
+    const passwordHash = await this.passwords.hash(dto.newPassword);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id }, data: { passwordHash, passwordChangedAt: new Date(), failedLoginAttempts: 0, lockedUntil: null } });
+      await this.tokens.revokeAllForUser(id, tx);
+    });
+    return { reset: true as const };
   }
 
   override async update(id: string, dto: UpdateUserDto) {

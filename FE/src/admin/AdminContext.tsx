@@ -10,6 +10,8 @@ interface AdminContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Đổi mật khẩu của chính mình; phiên hiện tại nhận token mới. */
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   /** Gọi API quản trị kèm token (tự làm mới khi hết hạn). */
   adm: <T>(path: string, req?: ApiRequest) => Promise<ApiResult<T>>;
   auth: AdminAuth;
@@ -32,13 +34,14 @@ export function AdminProvider({ children, role, sessionKey }: { children: ReactN
   const login = useCallback(async (email: string, password: string) => { setSession(await auth.login(email, password)); }, [auth]);
   const register = useCallback(async (email: string, password: string) => { setSession(await auth.register(email, password)); }, [auth]);
   const logout = useCallback(async () => { setSession(null); await auth.logout(); }, [auth]);
+  const changePassword = useCallback(async (cur: string, next: string) => { setSession(await auth.changePassword(cur, next)); }, [auth]);
   const notify = useCallback((text: string, kind: Toast["kind"] = "ok") => {
     const id = ++seq.current;
     setToasts((t) => [...t, { id, kind, text }]);
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), kind === "error" ? 6000 : 3500);
   }, []);
 
-  const value = useMemo<AdminContextValue>(() => ({ session, login, register, logout, adm: auth.authed, auth, toasts, notify }), [session, login, register, logout, auth, toasts, notify]);
+  const value = useMemo<AdminContextValue>(() => ({ session, login, register, logout, changePassword, adm: auth.authed, auth, toasts, notify }), [session, login, register, logout, changePassword, auth, toasts, notify]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

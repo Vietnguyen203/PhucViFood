@@ -118,6 +118,25 @@ describe('gọi API có token', () => {
   });
 });
 
+describe('đổi mật khẩu', () => {
+  it('gọi kèm token và lưu cặp token mới của phiên hiện tại', async () => {
+    const { auth, store, calls } = setup(() => ok({ user, accessToken: 'new-a', refreshToken: 'n'.repeat(30) }));
+    seed(store);
+    const s = await auth.changePassword('cu', 'Moi@12345');
+    expect(calls[0].url).toBe('/api/auth/change-password');
+    expect(bearer(calls[0].init)).toBe('Bearer old');
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({ currentPassword: 'cu', newPassword: 'Moi@12345' });
+    expect(s.accessToken).toBe('new-a');
+    expect(auth.session()?.refreshToken).toBe('n'.repeat(30));
+  });
+  it('sai mật khẩu hiện tại: ném lỗi và giữ nguyên phiên cũ', async () => {
+    const { auth, store } = setup(() => fail(400, 'VALIDATION_ERROR'));
+    seed(store);
+    await expect(auth.changePassword('sai', 'Moi@12345')).rejects.toMatchObject({ status: 400 });
+    expect(auth.session()?.accessToken).toBe('old');
+  });
+});
+
 describe('buildQuery', () => {
   it('rỗng', () => expect(buildQuery()).toBe(''));
   it('trang 1 không ghi, bỏ giá trị rỗng', () => {

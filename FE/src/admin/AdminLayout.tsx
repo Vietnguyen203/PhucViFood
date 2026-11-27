@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Navigate, NavLink, Outlet } from "react-router";
 import { AdminProvider, useAdmin } from "./AdminContext";
+import { ChangePasswordModal } from "./ChangePasswordModal";
 import { Toasts } from "./ui";
 import "./admin.css";
 
@@ -15,6 +16,7 @@ const NAV: Array<{ group: string; items: Array<[string, string]> }> = [
 function Shell() {
   const { session, logout } = useAdmin();
   const [open, setOpen] = useState(false);
+  const [pw, setPw] = useState(false);
   if (!session) return <Navigate to="/admin/login" replace />;
   return (
     <div className="ad-shell">
@@ -30,6 +32,7 @@ function Shell() {
         </nav>
         <div className="ad-user">
           <span title={session.user.email}>{session.user.email}</span>
+          <button className="ad-btn" onClick={() => setPw(true)}>Đổi mật khẩu</button>
           <button className="ad-btn" onClick={() => void logout()}>Đăng xuất</button>
         </div>
       </aside>
@@ -37,6 +40,7 @@ function Shell() {
         <header className="ad-top"><button className="ad-btn ad-menu" onClick={() => setOpen((o) => !o)} aria-label="Mở menu">☰</button><span>Phúc Vị Foods · Quản trị</span></header>
         <main className="ad-content"><Outlet /></main>
       </div>
+      {pw && <ChangePasswordModal onClose={() => setPw(false)} />}
       <Toasts />
     </div>
   );

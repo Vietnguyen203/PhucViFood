@@ -42,6 +42,22 @@ function RoleModal({ u, onClose, onDone }: { u: AdminUser; onClose: () => void; 
   );
 }
 
+function ResetModal({ u, onClose }: { u: AdminUser; onClose: () => void }) {
+  const { adm, notify } = useAdmin();
+  const [password, setPassword] = useState("");
+  return (
+    <FormModal title={`Đặt lại mật khẩu: ${u.email}`} submitLabel="Đặt lại" onClose={onClose}
+      onSubmit={async () => { await adm(`/users/${u.id}/reset-password`, { method: "POST", body: { newPassword: password } }); notify("Đã đặt lại mật khẩu"); }}>
+      {(err) => (
+        <>
+          <p className="ad-info">Mọi phiên đăng nhập của tài khoản này bị đăng xuất. Chuyển mật khẩu mới cho người dùng qua kênh an toàn.</p>
+          <Field label="Mật khẩu mới *" error={err.newPassword}><input type="text" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="off" autoFocus /></Field>
+        </>
+      )}
+    </FormModal>
+  );
+}
+
 /** Quản lý tài khoản đăng nhập: tạo, đổi vai trò, khóa / mở khóa (không xóa cứng để giữ lịch sử). */
 export default function AccountsPage() {
   const { adm, session } = useAdmin();
@@ -50,6 +66,7 @@ export default function AccountsPage() {
   const [creating, setCreating] = useState(false);
   const [roleOf, setRoleOf] = useState<AdminUser | null>(null);
   const [toggle, setToggle] = useState<AdminUser | null>(null);
+  const [resetOf, setResetOf] = useState<AdminUser | null>(null);
 
   return (
     <>
@@ -87,6 +104,7 @@ export default function AccountsPage() {
                       {!self && (
                         <div className="ad-row-actions">
                           <button className="ad-btn small" onClick={() => setRoleOf(u)}>Đổi vai trò</button>
+                          <button className="ad-btn small" onClick={() => setResetOf(u)}>Đặt lại mật khẩu</button>
                           <button className={`ad-btn small ${u.status === "ACTIVE" ? "danger" : "primary"}`} onClick={() => setToggle(u)}>{u.status === "ACTIVE" ? "Khóa" : "Mở khóa"}</button>
                         </div>
                       )}
@@ -101,6 +119,7 @@ export default function AccountsPage() {
       <Pager meta={list.data?.meta} onPage={fl.setPage} />
 
       {creating && <CreateModal onClose={() => setCreating(false)} onDone={list.reload} />}
+      {resetOf && <ResetModal u={resetOf} onClose={() => setResetOf(null)} />}
       {roleOf && <RoleModal u={roleOf} onClose={() => setRoleOf(null)} onDone={list.reload} />}
       {toggle && (
         <ConfirmModal title={`${toggle.status === "ACTIVE" ? "Khóa" : "Mở khóa"}: ${toggle.email}`} danger={toggle.status === "ACTIVE"} confirmLabel={toggle.status === "ACTIVE" ? "Khóa" : "Mở khóa"} onClose={() => setToggle(null)}

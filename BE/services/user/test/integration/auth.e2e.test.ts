@@ -312,6 +312,22 @@ describe.skipIf(!enabled)('service user: đăng nhập JWT (HTTP thật)', () =>
       expect((await login(s.email)).status).toBe(200);
     });
 
+    it('admin đặt lại mật khẩu: đăng nhập được bằng mật khẩu mới, phiên cũ bị thu hồi, không đặt cho chính mình, CTV không được gọi', async () => {
+      const admin = await adminSession();
+      const s = await register();
+      const fresh = 'Moi@Dat1Lai9';
+      const r = await call('POST', `/users/${s.user.id}/reset-password`, { newPassword: fresh }, admin.token);
+      expect(r.status).toBe(200);
+      expect((await call('POST', '/auth/refresh', { refreshToken: s.refreshToken })).status).toBe(401);
+      expect((await login(s.email)).status).toBe(401); // mật khẩu cũ không còn dùng được
+      expect((await call('POST', '/auth/login', { email: s.email, password: fresh })).status).toBe(200);
+
+      expect((await call('POST', `/users/${s.user.id}/reset-password`, { newPassword: '123' }, admin.token)).status).toBe(400);
+      expect((await call('POST', `/users/${(await call('GET', '/auth/me', undefined, admin.token)).body.data.id}/reset-password`, { newPassword: fresh }, admin.token)).status).toBe(422);
+      expect((await call('POST', `/users/${s.user.id}/reset-password`, { newPassword: fresh }, s.accessToken)).status).toBe(403);
+      expect((await call('POST', '/users/khong-phai-uuid/reset-password', { newPassword: fresh }, admin.token)).status).toBe(400);
+    });
+
     it('không có route xóa cứng người dùng', async () => {
       const admin = await adminSession();
       const s = await register();

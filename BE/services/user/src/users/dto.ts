@@ -27,3 +27,9 @@ export class UpdateUserDto {
   @IsOptional() @IsIn(STATUSES)
   status?: (typeof STATUSES)[number];
 }
+
+/** Admin đặt lại mật khẩu cho người khác (quên mật khẩu). Mật khẩu mới theo chính sách chung. */
+export class ResetPasswordDto {
+  @IsString() @IsStrongPassword()
+  newPassword!: string;
+}
