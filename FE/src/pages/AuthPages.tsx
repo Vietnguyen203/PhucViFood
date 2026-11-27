@@ -72,7 +72,7 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
           <img className="shop-auth-logo" src="/images/phuc-vi-logo-official-transparent.png" alt="Phúc Vị Foods" />
           <h1 className="shop-title">{isRegister ? "Đăng ký cộng tác viên" : "Đăng nhập"}</h1>
           <p className="shop-muted">
-            {isRegister ? "Tạo tài khoản để nhận link giới thiệu và hoa hồng cho mỗi đơn." : "Dành cho cộng tác viên và quản trị viên Phúc Vị."}
+            {isRegister ? "Tạo tài khoản để nhận link giới thiệu và hoa hồng cho mỗi đơn." : ""}
           </p>
           <Field label="Email" error={errors.email}>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" autoFocus />

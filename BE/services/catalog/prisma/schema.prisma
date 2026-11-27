@@ -19,6 +19,8 @@ model Category {
   slug      String    @unique
   sortOrder Int       @default(0) @map("sort_order")
   isActive  Boolean   @default(true) @map("is_active")
+  /// Xóa mềm: danh mục đã xóa biến khỏi mọi nơi nhưng giữ dòng để các sản phẩm đã xóa mềm vẫn tham chiếu hợp lệ.
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   products  Product[]

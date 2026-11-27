@@ -69,7 +69,7 @@ export class ProductsService extends PrismaCrudService<ProductWithCategory, Crea
   }
 
   private async assertCategory(categoryId: string): Promise<void> {
-    if (!(await this.prisma.category.count({ where: { id: categoryId } }))) {
+    if (!(await this.prisma.category.count({ where: { id: categoryId, deletedAt: null } }))) {
       throw AppException.validation([{ field: 'categoryId', messages: ['danh mục không tồn tại'] }]);
     }
   }
@@ -158,7 +158,7 @@ export class PublicProductsService extends PrismaCrudService<ProductWithCategory
   }
 
   async listCategories() {
-    const rows = await this.prisma.category.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }, { id: 'asc' }] });
+    const rows = await this.prisma.category.findMany({ where: { isActive: true, deletedAt: null }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }, { id: 'asc' }] });
     return rows.map((c) => ({ id: c.id, name: c.name, slug: c.slug }));
   }
 }

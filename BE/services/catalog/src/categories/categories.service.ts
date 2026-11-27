@@ -24,6 +24,7 @@ export class CategoriesService extends PrismaCrudService<Category, CreateCategor
       defaultSort: 'sortOrder',
       filterableFields: { isActive: 'boolean' },
       searchableFields: ['name', 'slug'],
+      softDeleteField: 'deletedAt',
     });
   }
 
@@ -55,11 +56,14 @@ export class CategoriesService extends PrismaCrudService<Category, CreateCategor
     }
   }
 
-  /** Chỉ xóa được danh mục trống. Danh mục còn sản phẩm (kể cả đã xóa mềm) thì tắt bằng isActive. */
+  /**
+   * Chỉ xóa được danh mục không còn sản phẩm đang tồn tại. Sản phẩm đã xóa mềm không tính (admin đã xóa chúng rồi);
+   * danh mục được xóa mềm để các sản phẩm đó vẫn tham chiếu hợp lệ.
+   */
   override async remove(id: string) {
     await this.findOrThrow(id);
-    const products = await this.prisma.product.count({ where: { categoryId: id } });
-    if (products > 0) throw AppException.conflict('Danh mục còn sản phẩm; hãy chuyển sản phẩm sang danh mục khác hoặc tắt danh mục (isActive=false)');
+    const products = await this.prisma.product.count({ where: { categoryId: id, deletedAt: null } });
+    if (products > 0) throw AppException.conflict(`Danh mục còn ${products} sản phẩm; hãy xóa hoặc chuyển sản phẩm sang danh mục khác, hoặc tắt danh mục (isActive=false)`);
     return super.remove(id);
   }
 }

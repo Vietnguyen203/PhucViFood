@@ -265,7 +265,26 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
       const p = await dbProduct();
       const r = await api('DELETE', `/categories/${p.categoryId}`, { token: admin() });
       expect(r.status).toBe(409);
-      expect(r.body.error.message).toContain('còn sản phẩm');
+      expect(r.body.error.message).toMatch(/còn \d+ sản phẩm/);
+    });
+
+    it('danh mục chỉ còn sản phẩm đã xóa thì xóa được: biến khỏi danh sách, không gán thêm sản phẩm được', async () => {
+      const t = admin();
+      const key = `it-${Math.random().toString(36).slice(2, 8)}`;
+      const cat = (await api('POST', '/categories', { token: t, body: { name: `IT ${key}`, slug: key } })).body.data;
+      const product = await api('POST', '/products', { token: t, body: { categoryId: cat.id, name: `IT SP ${key}`, price: 10_000, stockQuantity: 1 } });
+      expect(product.status).toBe(201);
+      // còn sản phẩm đang tồn tại: bị chặn, thông báo nêu số lượng
+      const blocked = await api('DELETE', `/categories/${cat.id}`, { token: t });
+      expect(blocked.status).toBe(409);
+      expect(blocked.body.error.message).toContain('còn 1 sản phẩm');
+      // xóa sản phẩm (xóa mềm) rồi xóa danh mục
+      expect((await api('DELETE', `/products/${product.body.data.id}`, { token: t })).status).toBe(200);
+      expect((await api('DELETE', `/categories/${cat.id}`, { token: t })).status).toBe(200);
+      expect((await api('GET', `/categories/${cat.id}`, { token: t })).status).toBe(404);
+      expect((await api('GET', '/public/categories')).body.data.some((c: any) => c.id === cat.id)).toBe(false);
+      const again = await api('POST', '/products', { token: t, body: { categoryId: cat.id, name: `IT SP2 ${key}`, price: 10_000, stockQuantity: 1 } });
+      expect(again.status).toBe(400); // danh mục đã xóa không còn để gán
     });
   });
 

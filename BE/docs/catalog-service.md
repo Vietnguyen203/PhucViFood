@@ -20,7 +20,7 @@ Khách chỉ thấy sản phẩm đang hiển thị, chưa xóa, thuộc danh m�
 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
-| GET, POST, PATCH, DELETE | `/categories`, `/categories/:id` | Danh mục. Slug tự sinh từ tên (không dấu). Chỉ xóa được danh mục trống; còn sản phẩm thì tắt bằng `isActive=false` |
+| GET, POST, PATCH, DELETE | `/categories`, `/categories/:id` | Danh mục. Slug tự sinh từ tên (không dấu). Xóa là xóa mềm (`deleted_at`), chỉ khi không còn sản phẩm đang tồn tại (sản phẩm đã xóa mềm không tính; còn sản phẩm thì báo số lượng, hoặc tắt bằng `isActive=false`). Danh mục đã xóa không gán thêm cho sản phẩm được |
 | GET, POST, PATCH, DELETE | `/products`, `/products/:id` | Sản phẩm. Xóa là xóa mềm (đơn cũ vẫn tham chiếu). Thấy cả hàng ẩn và tồn kho chính xác |
 | POST | `/products/:id/stock-adjustments` | Điều chỉnh tồn kho `{delta, note}`; `note` bắt buộc; không cho âm |
 | GET | `/products/:id/stock-movements` | Sổ cái tồn kho của sản phẩm |
