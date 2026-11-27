@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode, type RefObject } from "react";
 import { ApiError, describeError, type PageMeta } from "../lib/api";
 import { buildQuery, type ListQuery } from "../lib/admin/query";
+import { labelTable } from "../lib/admin/tableLabels";
 import { useAsync } from "../lib/useAsync";
 import { useAdmin } from "./AdminContext";
 import { AdIcon } from "./icons";
@@ -203,4 +204,20 @@ export function useAction(reload?: () => void) {
       try { await fn(); notify(okText); reload?.(); return true; } catch (e) { notify(describeError(e), "error"); return false; } finally { setBusy(false); }
     },
   }), [busy, notify, reload]);
+}
+
+/** Gắn nhãn cột cho mọi bảng trong vùng nội dung (kể cả bảng xuất hiện sau khi tải dữ liệu) để trên điện thoại mỗi dòng thành một thẻ. */
+export function useTableLabels(root: RefObject<HTMLElement | null>): void {
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    let frame = 0;
+    const run = () => { frame = 0; el.querySelectorAll<HTMLTableElement>("table.ad-table").forEach(labelTable); };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(run); };
+    run();
+    // Chỉ theo dõi thêm/bớt phần tử (không theo dõi thuộc tính) nên việc gắn nhãn không tự kích hoạt lại vòng lặp.
+    const mo = new MutationObserver(schedule);
+    mo.observe(el, { childList: true, subtree: true });
+    return () => { mo.disconnect(); if (frame) cancelAnimationFrame(frame); };
+  }, [root]);
 }

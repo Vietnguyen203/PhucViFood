@@ -41,6 +41,12 @@ export class CommissionsMeController {
 export class CommissionsActionsController {
   constructor(@Inject(CommissionsService) private readonly commissions: CommissionsService) {}
 
+  /** Báo cáo hoa hồng và chi trả: ?from=yyyy-mm-dd&to=yyyy-mm-dd (tối đa 366 ngày). Khai báo trước ':id' của CRUD. */
+  @Get('report') @ParamTypes(Object)
+  report(@Query() query: Record<string, unknown>) {
+    return this.commissions.report(query.from, query.to);
+  }
+
   @Patch(':id/confirm') @ParamTypes(String)
   confirm(@Param('id') id: string) {
     return this.commissions.confirmByAdmin(id);

@@ -2,11 +2,12 @@ import { useState } from "react";
 import { formatVnd } from "../lib/money";
 import { useAsync } from "../lib/useAsync";
 import { chartBars } from "../lib/admin/dashboard";
-import { dailyCsv, PRESETS, presetRange, productsCsv, rangeError, type DateRange, type SalesReport } from "../lib/admin/report";
-import { ORDER_STATUS_LABEL, PAYMENT_METHOD_LABEL, type OrderStatus } from "../lib/admin/types";
+import { affiliatesCsv, dailyCsv, PRESETS, presetRange, productsCsv, rangeError, type CommissionReport, type DateRange, type SalesReport } from "../lib/admin/report";
+import { COMMISSION_STATUS_LABEL, ORDER_STATUS_LABEL, PAYMENT_METHOD_LABEL, type CommissionStatus, type OrderStatus } from "../lib/admin/types";
 import { useAdmin } from "./AdminContext";
 import { ErrorBox, Field, Loading } from "./ui";
 
+const COMMISSION_ORDER: CommissionStatus[] = ["ESTIMATED", "CONFIRMED", "PAID", "CANCELLED"];
 const STATUS_ORDER: OrderStatus[] = ["PLACED", "CONFIRMED", "SHIPPING", "DELIVERED", "COMPLETED", "CANCELLED", "RETURNED"];
 
 /** Tải một chuỗi CSV về máy. */
@@ -36,7 +37,9 @@ export default function ReportPage() {
   const error = rangeError(draft);
 
   const report = useAsync(async (signal) => (await adm<SalesReport>(`/orders/report?from=${applied.from}&to=${applied.to}`, { signal })).data, [applied.from, applied.to]);
+  const commission = useAsync(async (signal) => (await adm<CommissionReport>(`/commissions/report?from=${applied.from}&to=${applied.to}`, { signal })).data, [applied.from, applied.to]);
   const r = report.data;
+  const cr = commission.data;
   const bars = r ? chartBars(r.daily) : [];
   const step = Math.max(1, Math.ceil(bars.length / 14)); // nhiều ngày thì chỉ ghi nhãn thưa
   const apply = (range: DateRange) => { setDraft(range); if (!rangeError(range)) setApplied(range); };
@@ -120,6 +123,47 @@ export default function ReportPage() {
                 </table>
               </div>
               <p className="ad-muted">Tối đa 10 sản phẩm, xếp theo doanh thu.</p>
+            </div>
+          </div>
+        </>
+      )}
+
+      <h2>Hoa hồng và chi trả</h2>
+      <p className="ad-muted">Hoa hồng tính theo ngày phát sinh (chia theo trạng thái hiện tại); chi trả tính theo ngày chi.</p>
+      <ErrorBox error={commission.error} onRetry={commission.reload} />
+      <Loading loading={commission.loading && !cr} />
+      {cr && (
+        <>
+          <div className="ad-cols ad-stat-grid">
+            <Stat label="Hoa hồng phát sinh" value={formatVnd(cr.commissions.amount)} sub={`${cr.commissions.count} khoản (không gồm đã hủy)`} />
+            <Stat label="Đã chi trả" value={formatVnd(cr.payouts.paidAmount)} sub={`${cr.payouts.count} đợt${cr.payouts.adjustmentAmount > 0 ? `, đã trừ ${formatVnd(cr.payouts.adjustmentAmount)}` : ""}`} />
+            <Stat label="CTV mới đăng ký" value={cr.affiliates.registered} sub={`${cr.affiliates.approved} CTV được duyệt`} />
+          </div>
+          <div className="ad-cols" style={{ marginTop: 14 }}>
+            <div>
+              <h2>Hoa hồng theo trạng thái</h2>
+              <div className="ad-table-wrap">
+                <table className="ad-table">
+                  <thead><tr><th>Trạng thái</th><th className="num">Số khoản</th><th className="num">Số tiền</th></tr></thead>
+                  <tbody>{COMMISSION_ORDER.map((k) => <tr key={k}><td>{COMMISSION_STATUS_LABEL[k] ?? k}</td><td className="num">{cr.commissions.byStatus[k]?.count ?? 0}</td><td className="num">{formatVnd(cr.commissions.byStatus[k]?.amount ?? 0)}</td></tr>)}</tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <div className="ad-head" style={{ marginBottom: 0 }}>
+                <h2>CTV có hoa hồng cao nhất</h2>
+                {cr.topAffiliates.length > 0 && <button className="ad-btn small" onClick={() => saveCsv(`ctv-${cr.range.from}_${cr.range.to}.csv`, affiliatesCsv(cr))}>Xuất CSV</button>}
+              </div>
+              <div className="ad-table-wrap">
+                <table className="ad-table">
+                  <thead><tr><th>Cộng tác viên</th><th className="num">Số khoản</th><th className="num">Hoa hồng</th></tr></thead>
+                  <tbody>
+                    {cr.topAffiliates.length === 0 && <tr><td colSpan={3} className="ad-muted">Chưa có hoa hồng trong khoảng này.</td></tr>}
+                    {cr.topAffiliates.map((a) => <tr key={a.affiliateId}><td><b>{a.fullName ?? a.affiliateId.slice(0, 8)}</b><div className="ad-muted">{a.referralCode ?? ""}</div></td><td className="num">{a.commissions}</td><td className="num">{formatVnd(a.amount)}</td></tr>)}
+                  </tbody>
+                </table>
+              </div>
+              <p className="ad-muted">Tối đa 10 CTV, xếp theo hoa hồng.</p>
             </div>
           </div>
         </>

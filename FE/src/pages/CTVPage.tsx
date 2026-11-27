@@ -899,16 +899,16 @@ function Footer() {
           <img src="/images/phuc-vi-logo-official-transparent.png" alt="Phúc Vị Foods" />
           <p>Chia sẻ món ngon Việt, tạo thêm thu nhập theo cách của bạn.</p>
           <div className="footer-socials">
-            <a href="#facebook">
+            <a href="#facebook" aria-label="Facebook">
               <Icon name="facebook" size={17} />
             </a>
-            <a href="#tiktok">
+            <a href="#tiktok" aria-label="TikTok">
               <Icon name="tiktok" size={17} />
             </a>
-            <a href="#youtube">
+            <a href="#youtube" aria-label="YouTube">
               <Icon name="youtube" size={17} />
             </a>
-            <a href="#zalo">
+            <a href="#zalo" aria-label="Zalo">
               <Icon name="zalo" size={17} />
             </a>
           </div>

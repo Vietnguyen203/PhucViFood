@@ -32,7 +32,7 @@ Chỉ tài khoản ADMIN (đăng nhập ở `/dang-nhap`; tài khoản dev nằm
 
 | Mục | Việc |
 |---|---|
-| Báo cáo (`/admin/bao-cao`) | Chọn khoảng ngày (nhanh: hôm nay, 7, 30 ngày, tháng này, tháng trước; tối đa 366 ngày): doanh thu, số đơn, giá trị đơn trung bình, đơn qua CTV, biểu đồ theo ngày, đơn theo trạng thái và hình thức thanh toán, sản phẩm bán chạy; xuất CSV theo ngày và theo sản phẩm |
+| Báo cáo (`/admin/bao-cao`) | Có cả hoa hồng, đợt chi trả và CTV nổi bật (CSV theo ngày, sản phẩm, CTV). Chọn khoảng ngày (nhanh: hôm nay, 7, 30 ngày, tháng này, tháng trước; tối đa 366 ngày): doanh thu, số đơn, giá trị đơn trung bình, đơn qua CTV, biểu đồ theo ngày, đơn theo trạng thái và hình thức thanh toán, sản phẩm bán chạy; xuất CSV theo ngày và theo sản phẩm |
 | Tổng quan (`/admin`) | Doanh thu hôm nay / 7 / 30 ngày và biểu đồ 14 ngày; đơn theo trạng thái; việc cần xử lý (đơn chờ chuyển khoản, chờ CSKH, CTV chờ duyệt, hoa hồng chờ chi, khoản trừ chờ); hàng sắp hết |
 | Cấu hình bán hàng | Phí ship và mức miễn phí, hạn giữ hàng chuyển khoản, tài khoản nhận tiền, hạn cookie link CTV; cảnh báo khi chưa cấu hình đủ tài khoản nhận tiền |
 | Đơn hàng, chi tiết đơn | Lọc (trạng thái, thanh toán, hình thức, ngày, tìm mã/tên/SĐT); xác nhận, giao, đã giao, hoàn tất, hủy/hoàn (bắt buộc lý do); đánh dấu đã thanh toán/hoàn tiền; ghi nhận CSKH |
@@ -104,3 +104,10 @@ pnpm --filter figma-make-app build
 - **Chống đặt trùng:** mỗi lần thanh toán có một `Idempotency-Key`; giữ nguyên khi lỗi mạng (gửi lại trả đúng đơn cũ), đổi khóa sau lỗi dứt khoát (4xx).
 - **Theo dõi không bao giờ làm hỏng việc mua hàng:** mọi lỗi của lượt bấm và sự kiện CTV đều bị nuốt.
 - **Số điện thoại** được kiểm tra sớm ở trình duyệt theo đúng quy tắc của backend; backend vẫn kiểm tra lại toàn bộ.
+
+## Giao diện điện thoại và tiếp cận
+- Bảng admin và CTV tự thành thẻ ở màn dưới 600px: `useTableLabels` (`src/admin/ui.tsx`) gắn `data-label` từ tiêu đề cột cho mọi `table.ad-table`, CSS ở cuối `admin/admin.css`.
+- Ô tìm kiếm ở header có gợi ý khi gõ (`components/SearchBox.tsx`, mẫu combobox/listbox: mũi tên, Enter, Esc).
+- Có liên kết "Bỏ qua tới nội dung chính", viền focus rõ, ô nhập 16px trên điện thoại. Màu chữ phụ đã chỉnh để đạt tỷ lệ tương phản 4,5:1 (kiểm tra tự động ở cửa hàng, admin; phần hình điện thoại minh họa ở `/ctv` giữ nguyên).
+- Tổng quan CTV có biểu đồ hoa hồng phát sinh theo ngày (7/30/90 ngày).
+

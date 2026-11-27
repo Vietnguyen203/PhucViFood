@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { AppException } from '@phucvi/shared-library/api';
+import { AppException, parseVnDateRange } from '@phucvi/shared-library/api';
 import { CommissionStatusCodec, ConfirmSourceCodec, type CommissionStatus } from '@phucvi/shared-library/contracts';
 import { PrismaCrudService } from '@phucvi/shared-library/crud';
 import { toSafeNumber } from '@phucvi/shared-library/utils';
@@ -88,5 +88,55 @@ export class CommissionsService extends PrismaCrudService<CommissionWithAdjustme
     // Khoản trừ chờ sẽ được trừ vào đợt chi kế tiếp (đơn đã hoàn sau khi hoa hồng đã chi).
     const adj = await this.prisma.adjustment.aggregate({ where: { affiliateId, status: AdjustmentStatusCodec.toCode('PENDING') }, _count: { _all: true }, _sum: { amount: true } });
     return { byStatus, payable: byStatus.CONFIRMED.amount, pendingAdjustments: { count: adj._count._all, amount: toSafeNumber(adj._sum.amount ?? 0n) } };
+  }
+
+  /**
+   * Báo cáo hoa hồng và chi trả theo khoảng ngày [from, to] (hai đầu đều tính, giờ Việt Nam, tối đa 366 ngày).
+   * Hoa hồng tính theo ngày phát sinh (createdAt) và chia theo trạng thái hiện tại; chi trả tính theo ngày chi (paidAt).
+   */
+  async report(fromRaw: unknown, toRaw: unknown) {
+    const { from, to, start, end, days } = parseVnDateRange(fromRaw, toRaw, 366);
+    const created = { createdAt: { gte: start, lt: end } };
+    const notCancelled = { ...created, status: { not: CommissionStatusCodec.toCode('CANCELLED') } };
+
+    const [groups, payouts, topRows, registered, approved] = await Promise.all([
+      this.prisma.commission.groupBy({ by: ['status'], where: created, _count: { _all: true }, _sum: { amount: true } }),
+      this.prisma.payout.aggregate({ where: { paidAt: { gte: start, lt: end } }, _count: { _all: true }, _sum: { totalAmount: true, adjustmentAmount: true } }),
+      this.prisma.commission.groupBy({ by: ['affiliateId'], where: notCancelled, _count: { _all: true }, _sum: { amount: true, baseAmount: true }, orderBy: { _sum: { amount: 'desc' } }, take: 10 }),
+      this.prisma.affiliate.count({ where: { createdAt: { gte: start, lt: end } } }),
+      this.prisma.affiliate.count({ where: { approvedAt: { gte: start, lt: end } } }),
+    ]);
+
+    const names: CommissionStatus[] = ['ESTIMATED', 'CONFIRMED', 'PAID', 'CANCELLED'];
+    const byStatus = Object.fromEntries(names.map((n) => [n, { count: 0, amount: 0 }])) as Record<CommissionStatus, { count: number; amount: number }>;
+    for (const g of groups) byStatus[CommissionStatusCodec.toName(g.status)] = { count: g._count._all, amount: toSafeNumber(g._sum.amount ?? 0n) };
+    const valid = names.filter((n) => n !== 'CANCELLED');
+
+    const owners = await this.prisma.affiliate.findMany({ where: { id: { in: topRows.map((t) => t.affiliateId) } }, select: { id: true, fullName: true, referralCode: true } });
+    const byId = new Map(owners.map((o) => [o.id, o]));
+
+    return {
+      range: { from, to, days },
+      commissions: {
+        count: valid.reduce((n, k) => n + byStatus[k].count, 0),
+        amount: valid.reduce((n, k) => n + byStatus[k].amount, 0),
+        byStatus,
+      },
+      payouts: {
+        count: payouts._count._all,
+        /** Số tiền thực chuyển cho CTV (đã trừ khoản trừ). */
+        paidAmount: toSafeNumber(payouts._sum.totalAmount ?? 0n),
+        adjustmentAmount: toSafeNumber(payouts._sum.adjustmentAmount ?? 0n),
+      },
+      affiliates: { registered, approved },
+      topAffiliates: topRows.map((t) => ({
+        affiliateId: t.affiliateId,
+        fullName: byId.get(t.affiliateId)?.fullName ?? null,
+        referralCode: byId.get(t.affiliateId)?.referralCode ?? null,
+        commissions: t._count._all,
+        baseAmount: toSafeNumber(t._sum.baseAmount ?? 0n),
+        amount: toSafeNumber(t._sum.amount ?? 0n),
+      })),
+    };
   }
 }

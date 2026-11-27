@@ -39,6 +39,7 @@ Tiền tố `/api`. JWT do service `user` ký bằng khóa riêng; service này 
 | POST | `/affiliates/:id/reject`, `suspend`, `reactivate` | Từ chối, tạm khóa, mở lại |
 | GET | `/commissions`, `/commissions/:id` | Mọi hoa hồng (lọc `status`, `affiliateId`, `orderCode`) |
 | PATCH | `/commissions/:id/confirm` | Chuyển ESTIMATED sang CONFIRMED sau khi CSKH xử lý |
+| GET | `/commissions/report?from=yyyy-mm-dd&to=yyyy-mm-dd` | ADMIN. Báo cáo hoa hồng và chi trả theo khoảng ngày (hai đầu đều tính, giờ Việt Nam, tối đa 366 ngày; sai tham số trả 400): hoa hồng phát sinh theo ngày tạo, chia theo trạng thái (không gồm đã hủy trong tổng); đợt chi trả theo ngày chi (số đợt, tiền thực chuyển, khoản trừ đã áp dụng); CTV mới đăng ký và được duyệt; 10 CTV có hoa hồng cao nhất |
 | POST | `/payouts` | Chi trả: gom hoa hồng CONFIRMED của một CTV |
 | GET | `/payouts`, `/payouts/:id` | Các đợt chi trả |
 | GET | `/adjustments`, `/adjustments/:id` | Danh sách và chi tiết khoản trừ (lọc `filter[status]`, `filter[affiliateId]`, tìm theo mã đơn) |

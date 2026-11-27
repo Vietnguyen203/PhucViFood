@@ -770,6 +770,41 @@ describe.skipIf(!enabled)('service affiliate (HTTP + Postgres + RabbitMQ thật)
       expect(Number(sum[0].diff)).toBe(0);
     });
 
+    it('báo cáo theo khoảng ngày: cần ADMIN, kiểm tra tham số, số liệu khớp hoa hồng và đợt chi vừa tạo', async () => {
+      const today = new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
+      const report = (f: string, t: string, token = adminToken()) => api('GET', `/commissions/report?from=${f}&to=${t}`, { token });
+      expect((await api('GET', `/commissions/report?from=${today}&to=${today}`)).status).toBe(401);
+      expect((await report(today, today, tokenFor(uuidv7(), 'AFFILIATE'))).status).toBe(403);
+      for (const [f, t] of [['2026-02-30', today], ['abc', today], [today, '2026-13-01'], ['2026-06-02', '2026-06-01'], ['2024-01-01', '2026-01-01']]) {
+        expect((await report(f, t)).status, `${f}..${t}`).toBe(400);
+      }
+      expect((await api('GET', '/commissions/report', { token: adminToken() })).status).toBe(400);
+
+      const before = (await report(today, today)).body.data;
+      const a = await makeAffiliate();
+      const big = placedEvent({ affiliateId: a.id, rate: 1000, subtotal: 5_000_000_000 }); // 500.000.000 để chắc chắn đứng đầu bảng
+      const cancelledOrder = placedEvent({ affiliateId: a.id, rate: 1000, subtotal: 100_000 });
+      await publish(big, statusEvent(big, 'COMPLETED', 'CUSTOMER'), cancelledOrder);
+      const c = await waitCommission(big.payload.orderId, 'CONFIRMED');
+      await waitCommission(cancelledOrder.payload.orderId, 'ESTIMATED');
+      expect((await api('POST', '/payouts', { token: adminToken(), body: { affiliateId: a.id, commissionIds: [c.id] } })).status).toBe(201);
+
+      const after = (await report(today, today)).body.data;
+      expect(after.range).toEqual({ from: today, to: today, days: 1 });
+      expect(after.commissions.count - before.commissions.count).toBe(2);
+      expect(after.commissions.amount - before.commissions.amount).toBe(500_000_000 + 10_000);
+      expect(after.commissions.byStatus.PAID.amount - before.commissions.byStatus.PAID.amount).toBe(500_000_000);
+      expect(after.commissions.byStatus.ESTIMATED.count - before.commissions.byStatus.ESTIMATED.count).toBe(1);
+      expect(after.payouts.count - before.payouts.count).toBe(1);
+      expect(after.payouts.paidAmount - before.payouts.paidAmount).toBe(500_000_000);
+      expect(after.affiliates.registered - before.affiliates.registered).toBeGreaterThanOrEqual(1);
+      expect(after.topAffiliates.length).toBeLessThanOrEqual(10);
+      expect(after.topAffiliates[0]).toMatchObject({ affiliateId: a.id, commissions: 2, amount: 500_010_000, fullName: expect.any(String), referralCode: expect.any(String) });
+
+      const past = (await report('2020-01-01', '2020-01-31')).body.data; // khoảng không có dữ liệu
+      expect(past).toMatchObject({ commissions: { count: 0, amount: 0 }, payouts: { count: 0, paidAmount: 0 }, topAffiliates: [] });
+    });
+
     it('hai admin chi trả song song: chỉ một đợt được tạo', async () => {
       const a = await makeAffiliate();
       const o = placedEvent({ affiliateId: a.id, rate: 1000, subtotal: 100_000 });

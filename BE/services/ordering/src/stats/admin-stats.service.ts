@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { AppException } from '@phucvi/shared-library/api';
+import { parseVnDateRange } from '@phucvi/shared-library/api';
 import { OrderStatusCodec, PaymentMethodCodec, PaymentStatusCodec } from '@phucvi/shared-library/contracts';
 import { ORDER_STATUSES_EXCLUDED_FROM_STATS, toSafeNumber } from '@phucvi/shared-library/utils';
 import { PrismaService } from '../prisma/prisma.service';
@@ -23,19 +23,6 @@ interface Window { orders: number; revenue: number }
 
 /** Số ngày tối đa của một báo cáo theo khoảng ngày. */
 export const REPORT_MAX_DAYS = 366;
-
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-/** Kiểm tra chuỗi ngày yyyy-mm-dd hợp lệ thật (không nhận 2026-02-30). */
-function parseDateKey(value: unknown, field: string): string {
-  if (typeof value !== 'string' || !DATE_RE.test(value) || Number.isNaN(Date.parse(`${value}T00:00:00Z`)) || new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) !== value) {
-    throw AppException.validation([{ field, messages: [`${field} phải là ngày dạng yyyy-mm-dd`] }]);
-  }
-  return value;
-}
-
-/** 00:00 giờ Việt Nam của một ngày yyyy-mm-dd. */
-const vnDayStart = (key: string): Date => new Date(`${key}T00:00:00+07:00`);
 
 /**
  * Số liệu tổng quan cho admin. "Doanh thu" = tổng tiền (gồm phí ship) các đơn hợp lệ, tức không ở trạng thái CANCELLED hoặc RETURNED
@@ -108,13 +95,7 @@ export class AdminStatsService {
    * đơn hợp lệ (không CANCELLED, RETURNED) theo ngày đặt. `byStatus` đếm mọi đơn đặt trong khoảng, kể cả đơn hủy và hoàn.
    */
   async report(fromRaw: unknown, toRaw: unknown) {
-    const from = parseDateKey(fromRaw, 'from');
-    const to = parseDateKey(toRaw, 'to');
-    const start = vnDayStart(from);
-    const end = new Date(vnDayStart(to).getTime() + DAY_MS); // đầu ngày sau `to` (không gồm)
-    const days = Math.round((end.getTime() - start.getTime()) / DAY_MS);
-    if (days < 1) throw AppException.validation([{ field: 'to', messages: ['to phải từ ngày from trở đi'] }]);
-    if (days > REPORT_MAX_DAYS) throw AppException.validation([{ field: 'to', messages: [`Khoảng ngày tối đa ${REPORT_MAX_DAYS} ngày`] }]);
+    const { from, to, start, end, days } = parseVnDateRange(fromRaw, toRaw, REPORT_MAX_DAYS);
 
     const range = { placedAt: { gte: start, lt: end } };
     const valid = { ...range, status: { notIn: this.excluded } };

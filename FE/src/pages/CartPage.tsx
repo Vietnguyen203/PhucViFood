@@ -32,7 +32,7 @@ export default function CartPage() {
             <ul className="shop-cart-lines shop-card">
               {cart.lines.map((l) => (
                 <li key={l.productId}>
-                  <Link to={`/san-pham/${l.slug}`}><img src={l.imageUrl ?? PRODUCT_PLACEHOLDER} alt="" /></Link>
+                  <Link to={`/san-pham/${l.slug}`} tabIndex={-1} aria-hidden="true"><img src={l.imageUrl ?? PRODUCT_PLACEHOLDER} alt="" /></Link>
                   <div className="shop-cart-info">
                     <Link className="shop-card-link" to={`/san-pham/${l.slug}`}><strong>{l.name}</strong></Link>
                     {l.unit && <small>{l.unit}</small>}

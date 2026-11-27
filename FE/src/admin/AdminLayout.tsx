@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, Outlet, useLocation } from "react-router";
 import { AdminProvider, useAdmin } from "./AdminContext";
 import { ChangePasswordModal } from "./ChangePasswordModal";
 import { IconButton } from "./icons";
 import { formatTitle } from "../lib/pageTitle";
-import { Toasts } from "./ui";
+import { Toasts, useTableLabels } from "./ui";
 import "./admin.css";
 
 const NAV: Array<{ group: string; items: Array<[string, string]> }> = [
@@ -19,6 +19,8 @@ function Shell() {
   const { session, logout } = useAdmin();
   const [open, setOpen] = useState(false);
   const [pw, setPw] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+  useTableLabels(mainRef);
   const { pathname } = useLocation();
   const section = NAV.flatMap((g) => g.items).filter(([to]) => pathname === to || pathname.startsWith(to + "/")).sort((a, b) => b[0].length - a[0].length)[0];
   useEffect(() => { document.title = formatTitle(`${section ? section[1] : "Quản trị"} (quản trị)`); }, [section]);
@@ -43,7 +45,7 @@ function Shell() {
       </aside>
       <div className="ad-main">
         <header className="ad-top"><button className="ad-btn ad-menu" onClick={() => setOpen((o) => !o)} aria-label="Mở menu">☰</button><span>Phúc Vị Foods · Quản trị</span></header>
-        <main className="ad-content"><Outlet /></main>
+        <main className="ad-content" ref={mainRef}><Outlet /></main>
       </div>
       {pw && <ChangePasswordModal onClose={() => setPw(false)} />}
       <Toasts />

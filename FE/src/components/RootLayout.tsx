@@ -29,6 +29,12 @@ export default function RootLayout() {
   return (
     <CartProvider>
       <WishlistProvider>
+        <a
+          className="skip-link" href="#main-content"
+          onClick={(e) => { e.preventDefault(); const m = document.querySelector("main"); if (m) { m.setAttribute("tabindex", "-1"); m.focus(); m.scrollIntoView(); } }}
+        >
+          Bỏ qua tới nội dung chính
+        </a>
         <ScrollToTop />
         <Outlet />
         <CartDrawer />

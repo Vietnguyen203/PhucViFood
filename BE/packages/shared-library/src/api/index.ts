@@ -8,3 +8,4 @@ export * from './response.interceptor';
 export * from './health';
 export * from './setup';
 export * from './valid-body';
+export * from './date-range';

@@ -1,9 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatVnd } from "../lib/money";
 import { STOCK_REASON_LABEL, type AdminCategory, type AdminProduct, type StockMovement } from "../lib/admin/types";
 import { useAdmin } from "./AdminContext";
 import { IconButton } from "./icons";
 import { Badge, ConfirmModal, ErrorBox, Field, FilterBar, FormModal, Loading, Modal, Pager, SortHeader, fmtDateTime, useAction, useList, useListFilters } from "./ui";
+
+/** Xem trước ảnh theo đường dẫn đang nhập; link hỏng thì báo ngay để người nhập biết trước khi lưu. */
+function ImagePreview({ url }: { url: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [url]);
+  return failed
+    ? <p className="ad-error" role="alert">Không tải được ảnh từ đường dẫn này.</p>
+    : <img className="ad-preview" src={url} alt="Xem trước ảnh sản phẩm" onError={() => setFailed(true)} />;
+}
 
 const EMPTY = { categoryId: "", name: "", sku: "", unit: "", price: "", originalPrice: "", imageUrl: "", description: "", stockQuantity: "0", isVisible: true };
 type Form = typeof EMPTY;
@@ -50,7 +59,10 @@ function ProductForm({ product, categories, onClose, onSaved }: { product?: Admi
             <Field label="SKU" error={err.sku}><input value={f.sku} onChange={(e) => set("sku", e.target.value)} maxLength={50} /></Field>
             <Field label="Đơn vị" error={err.unit}><input value={f.unit} onChange={(e) => set("unit", e.target.value)} maxLength={50} placeholder="kg, gói, hộp..." /></Field>
             {!product && <Field label="Tồn kho ban đầu" error={err.stockQuantity}><input value={f.stockQuantity} onChange={(e) => set("stockQuantity", e.target.value)} inputMode="numeric" /></Field>}
-            <Field label="Ảnh (URL)" error={err.imageUrl}><input value={f.imageUrl} onChange={(e) => set("imageUrl", e.target.value)} placeholder="https://..." /></Field>
+            <Field label="Ảnh (đường dẫn)" error={err.imageUrl} hint="Dán link ảnh (http hoặc https). Hệ thống chưa hỗ trợ tải ảnh từ máy lên; hãy dùng link từ nơi lưu ảnh của bạn.">
+              <input value={f.imageUrl} onChange={(e) => set("imageUrl", e.target.value)} placeholder="https://..." />
+            </Field>
+            {/^https?:\/\//i.test(f.imageUrl.trim()) && <ImagePreview url={f.imageUrl.trim()} />}
           </div>
           <Field label="Mô tả" error={err.description}><textarea rows={3} value={f.description} onChange={(e) => set("description", e.target.value)} maxLength={5000} /></Field>
           <label className="ad-check"><input type="checkbox" checked={f.isVisible} onChange={(e) => set("isVisible", e.target.checked)} /> Hiển thị cho khách</label>

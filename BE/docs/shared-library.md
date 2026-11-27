@@ -56,6 +56,8 @@ Ném lỗi nghiệp vụ bằng `AppException`: `throw AppException.businessRule
 ```ts
 create(@ValidBody(CreateUserDto) dto: CreateUserDto) { ... }
 ```
+**Khoảng ngày cho báo cáo**: `parseVnDateRange(from, to, maxDays)` kiểm tra hai ngày `yyyy-mm-dd` (không nhận ngày không có thật như 2026-02-30), `from` ≤ `to`, tối đa `maxDays` ngày, rồi trả `{ from, to, start, end, days }` với `start`/`end` là 00:00 giờ Việt Nam (cận `>= start`, `< end`); sai thì ném lỗi 400 chỉ rõ trường. Dùng cho `GET /orders/report` và `GET /commissions/report`.
+
 Mọi dependency phải khai báo `@Inject(Token)` tường minh (cũng vì lý do trên). Handler có `@Param`/`@Query` thêm `@ParamTypes(String, Object)` (kiểu theo thứ tự tham số) để Nest không cảnh báo thiếu metadata.
 
 ## 1b. Xác thực dùng chung (`/auth`)

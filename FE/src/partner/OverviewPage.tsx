@@ -3,7 +3,9 @@ import { Link } from "react-router";
 import { formatVnd } from "../lib/money";
 import { useAsync } from "../lib/useAsync";
 import { COMMISSION_STATUS_LABEL } from "../lib/admin/types";
-import { EVENT_LABEL, type CommissionSummary, type PartnerStats } from "../lib/partner";
+import { chartBars } from "../lib/admin/dashboard";
+import type { AdminCommission } from "../lib/admin/types";
+import { commissionsByDay, EVENT_LABEL, type CommissionSummary, type PartnerStats } from "../lib/partner";
 import { useAdmin } from "../admin/AdminContext";
 import { ErrorBox, Loading, fmtBps } from "../admin/ui";
 import { usePartner } from "./partnerContext";
@@ -21,6 +23,13 @@ export default function OverviewPage() {
     return (await adm<PartnerStats>(`/me/stats?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`, { signal })).data;
   }, [days]);
 
+  // Hoa hồng phát sinh trong khoảng (tối đa 100 khoản mới nhất trong khoảng; đủ cho biểu đồ của một CTV).
+  const daily = useAsync(async (signal) => {
+    const from = new Date(Date.now() - days * 86_400_000).toISOString();
+    return (await adm<AdminCommission[]>(`/me/commissions?pageSize=100&sort=-createdAt&filter[createdAt][gte]=${encodeURIComponent(from)}`, { signal })).data;
+  }, [days]);
+  const bars = daily.data ? chartBars(commissionsByDay(daily.data, days)) : [];
+  const step = Math.max(1, Math.ceil(bars.length / 14));
   const s = summary.data;
   const ev = (type: string) => stats.data?.events.filter((e) => e.type === type).reduce((n, e) => n + e.count, 0) ?? 0;
 
@@ -42,6 +51,28 @@ export default function OverviewPage() {
           )}
         </div>
       )}
+
+      <div className="ad-card" style={{ marginTop: 14 }}>
+        <div className="ad-head" style={{ marginBottom: 6 }}>
+          <h2 style={{ margin: 0 }}>Hoa hồng phát sinh theo ngày</h2>
+          <div className="ad-row-actions">{RANGES.map((r) => <button key={r.days} className={`ad-btn small${days === r.days ? " primary" : ""}`} onClick={() => setDays(r.days)}>{r.label}</button>)}</div>
+        </div>
+        <ErrorBox error={daily.error} onRetry={daily.reload} />
+        <Loading loading={daily.loading && !daily.data} />
+        {daily.data && (daily.data.length === 0
+          ? <p className="ad-muted">Chưa có hoa hồng phát sinh trong {days} ngày gần nhất.</p>
+          : (
+            <div className="ad-chart" role="img" aria-label={`Biểu đồ hoa hồng phát sinh ${days} ngày gần nhất`}>
+              {bars.map((b, i) => (
+                <div className="ad-bar" key={b.date} title={`${b.label}: ${formatVnd(b.revenue)} · ${b.orders} khoản`}>
+                  <div className="ad-bar-fill" style={{ height: `${b.heightPct}%` }} />
+                  <span style={i % step === 0 ? undefined : { visibility: "hidden" }}>{b.label}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        <small className="ad-muted">Không tính hoa hồng đã hủy.{daily.data && daily.data.length >= 100 ? " Chỉ hiển thị 100 khoản mới nhất." : ""}</small>
+      </div>
 
       <div className="ad-head" style={{ marginTop: 20 }}>
         <h2 style={{ margin: 0 }}>Lượt truy cập link</h2>

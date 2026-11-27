@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { csvCell, dailyCsv, presetRange, productsCsv, rangeError, vnToday, type SalesReport } from './report';
+import { affiliatesCsv, csvCell, dailyCsv, presetRange, productsCsv, rangeError, vnToday, type CommissionReport, type SalesReport } from './report';
 
 // 2026-03-15 22:00 UTC = 2026-03-16 05:00 giờ Việt Nam
 const NOW = new Date('2026-03-15T22:00:00Z');
@@ -59,5 +59,19 @@ describe('xuất CSV', () => {
   });
   it('CSV sản phẩm bao tên có dấu phẩy', () => {
     expect(productsCsv(report).split('\r\n')[1]).toBe('"Khô cá, loại 1",4,400000');
+  });
+});
+
+describe('CSV cộng tác viên', () => {
+  it('có BOM, tiêu đề; tên null dùng id; tên có dấu phẩy được bao', () => {
+    const r = { topAffiliates: [
+      { affiliateId: 'a1', fullName: 'Nguyễn, Linh', referralCode: 'linh01', commissions: 2, baseAmount: 1000, amount: 100 },
+      { affiliateId: 'a2', fullName: null, referralCode: null, commissions: 1, baseAmount: 500, amount: 50 },
+    ] } as unknown as CommissionReport;
+    expect(affiliatesCsv(r).split('\r\n').filter(Boolean)).toEqual([
+      '\uFEFFCộng tác viên,Mã giới thiệu,Số khoản,Doanh số (VND),Hoa hồng (VND)',
+      '"Nguyễn, Linh",linh01,2,1000,100',
+      'a2,,1,500,50',
+    ]);
   });
 });

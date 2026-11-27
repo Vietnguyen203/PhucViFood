@@ -518,7 +518,7 @@ img {
 }
 .step-card p {
   margin: 0;
-  color: #88736f;
+  color: #6d5753;
   font-size: 14px;
   line-height: 1.7;
 }
@@ -752,7 +752,7 @@ img {
   display: block;
 }
 .linked-product span {
-  color: #9b8781;
+  color: #6d5753;
   font-size: 12px;
 }
 .linked-product strong {
@@ -821,7 +821,7 @@ img {
   display: block;
 }
 .dash-head span {
-  color: #9a8580;
+  color: #6d5753;
   font-size: 13px;
 }
 .dash-head strong {
@@ -876,7 +876,7 @@ img {
 }
 .dash-stats p {
   margin: 8px 0 3px;
-  color: #927f7a;
+  color: #6d5753;
   font-size: 12px;
 }
 .dash-stats .featured p {
@@ -1029,7 +1029,7 @@ img {
   font: 400 44px "DM Serif Display";
 }
 .tier-rate span {
-  color: #9a8580;
+  color: #6d5753;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -1139,7 +1139,7 @@ img {
 }
 .person span {
   margin-top: 3px;
-  color: #9c8882;
+  color: #6d5753;
   font-size: 12px;
 }
 .stars {

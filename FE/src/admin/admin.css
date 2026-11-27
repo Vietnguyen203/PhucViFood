@@ -1,5 +1,5 @@
 /* Giao diện quản trị: độc lập với giao diện cửa hàng (mọi lớp bắt đầu bằng ad-). */
-.ad-shell, .ad-login { --ad-bg: #f8f4ec; --ad-card: #fff; --ad-line: #eadfd2; --ad-text: #3b2021; --ad-muted: #826d69; --ad-primary: #9b1c22; --ad-primary-dark: #4a0a0d; --ad-gold: #e3b04b; --ad-danger: #b3261e; font: 15px/1.55 "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ad-text); }
+.ad-shell, .ad-login { --ad-bg: #f8f4ec; --ad-card: #fff; --ad-line: #eadfd2; --ad-text: #3b2021; --ad-muted: #6d5753; --ad-primary: #9b1c22; --ad-primary-dark: #4a0a0d; --ad-gold: #e3b04b; --ad-danger: #b3261e; font: 15px/1.55 "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ad-text); }
 .ad-shell { display: flex; min-height: 100vh; background: var(--ad-bg); }
 .ad-side { width: 250px; background: #4a0a0d; color: #f1e2d6; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-shrink: 0; }
 .ad-brand { font: 400 24px/1.2 "DM Serif Display", serif; padding: 20px 20px 14px; color: #fff; }
@@ -152,3 +152,23 @@
 .ad-table .actions .ad-row-actions { flex-wrap: nowrap; }
 @media (max-width: 600px) { .ad-filter-actions { width: 100%; justify-content: flex-end; } }
 .ad-presets { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex-basis: 100%; }
+
+/* ───────── Bảng dạng thẻ trên điện thoại ───────── */
+@media (max-width: 600px) {
+  .ad-table-wrap { background: transparent; border: 0; box-shadow: none; overflow: visible; }
+  .ad-table, .ad-table tbody, .ad-table tr, .ad-table td { display: block; width: 100%; box-sizing: border-box; }
+  .ad-table thead { display: none; }
+  .ad-table tr { margin-bottom: 12px; padding: 6px 14px; background: var(--ad-card); border: 1px solid var(--ad-line); border-radius: 16px; box-shadow: 0 8px 26px #4a0a0d0d; }
+  .ad-table tbody tr:hover { background: var(--ad-card); }
+  .ad-table td, .ad-table td:first-child { display: block; overflow: hidden; padding: 8px 0; border: 0; border-bottom: 1px dashed var(--ad-line); text-align: right; white-space: normal; }
+  .ad-table td:last-child { border-bottom: 0; }
+  .ad-table td::before { content: attr(data-label); float: left; max-width: 42%; margin-right: 14px; text-align: left; font-size: 13px; font-weight: 600; color: var(--ad-muted); }
+  .ad-table td:not([data-label])::before { content: none; }
+  .ad-table td.num, .ad-table td.actions { text-align: right; }
+  .ad-table td.actions { display: flex; justify-content: flex-end; }
+  .ad-table td.actions::before { content: none; }
+  .ad-table td .ad-row-actions { flex-wrap: wrap; }
+  .ad-table td:not([data-label]):not(.actions) { text-align: left; }
+}
+.ad-preview { width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 1px solid var(--ad-line); margin: 0 0 10px; background: #eee3d6; }
+.ad-shell a:focus-visible, .ad-shell button:focus-visible, .ad-shell select:focus-visible, .ad-login a:focus-visible, .ad-login button:focus-visible { outline: 3px solid var(--ad-gold); outline-offset: 2px; box-shadow: 0 0 0 5px var(--ad-primary-dark); }

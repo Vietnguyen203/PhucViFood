@@ -1,6 +1,6 @@
 // Báo cáo theo khoảng ngày: kiểu dữ liệu, khoảng ngày chọn nhanh và xuất CSV (hàm thuần, dễ test).
 import type { DailyPoint } from './dashboard';
-import type { OrderStatus, PaymentMethod } from './types';
+import type { CommissionStatus, OrderStatus, PaymentMethod } from './types';
 
 export interface SalesReport {
   range: { from: string; to: string; days: number };
@@ -12,6 +12,15 @@ export interface SalesReport {
   byPayment: Array<{ method: PaymentMethod; orders: number; revenue: number }>;
   daily: DailyPoint[];
   topProducts: Array<{ productId: string; name: string; quantity: number; revenue: number }>;
+}
+
+/** Báo cáo hoa hồng và chi trả (service affiliate) cho cùng khoảng ngày. */
+export interface CommissionReport {
+  range: { from: string; to: string; days: number };
+  commissions: { count: number; amount: number; byStatus: Record<CommissionStatus, { count: number; amount: number }> };
+  payouts: { count: number; paidAmount: number; adjustmentAmount: number };
+  affiliates: { registered: number; approved: number };
+  topAffiliates: Array<{ affiliateId: string; fullName: string | null; referralCode: string | null; commissions: number; baseAmount: number; amount: number }>;
 }
 
 export interface DateRange { from: string; to: string }
@@ -76,4 +85,11 @@ export function dailyCsv(report: SalesReport): string {
 export function productsCsv(report: SalesReport): string {
   const rows = [['Sản phẩm', 'Số lượng', 'Doanh thu (VND)'], ...report.topProducts.map((p) => [p.name, p.quantity, p.revenue])];
   return `﻿${rows.map((r) => r.map(csvCell).join(',')).join('\r\n')}\r\n`;
+}
+
+/** CSV cộng tác viên có hoa hồng cao nhất trong khoảng. */
+export function affiliatesCsv(report: CommissionReport): string {
+  const rows = [['Cộng tác viên', 'Mã giới thiệu', 'Số khoản', 'Doanh số (VND)', 'Hoa hồng (VND)'],
+    ...report.topAffiliates.map((a) => [a.fullName ?? a.affiliateId, a.referralCode ?? '', a.commissions, a.baseAmount, a.amount])];
+  return `\uFEFF${rows.map((r) => r.map(csvCell).join(',')).join('\r\n')}\r\n`;
 }

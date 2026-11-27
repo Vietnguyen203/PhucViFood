@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, NavLink, Outlet, useLocation } from "react-router";
 import { useAsync } from "../lib/useAsync";
 import { ApiError } from "../lib/api";
@@ -8,7 +8,7 @@ import { AdminProvider, useAdmin } from "../admin/AdminContext";
 import { ChangePasswordModal } from "../admin/ChangePasswordModal";
 import { IconButton } from "../admin/icons";
 import { formatTitle } from "../lib/pageTitle";
-import { ErrorBox, Loading, Toasts } from "../admin/ui";
+import { ErrorBox, Loading, Toasts, useTableLabels } from "../admin/ui";
 import type { PartnerContext } from "./partnerContext";
 import { ProfileForm } from "./ProfilePage";
 import "../admin/admin.css";
@@ -22,6 +22,8 @@ function Shell() {
   const { session, logout, adm } = useAdmin();
   const [open, setOpen] = useState(false);
   const [pw, setPw] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+  useTableLabels(mainRef);
   const { pathname } = useLocation();
   const section = NAV.filter(([to]) => pathname === to || pathname.startsWith(to + "/")).sort((a, b) => b[0].length - a[0].length)[0];
   useEffect(() => { document.title = formatTitle(`${section ? section[1] : "Hồ sơ"} (cộng tác viên)`); }, [section]);
@@ -55,7 +57,7 @@ function Shell() {
       </aside>
       <div className="ad-main">
         <header className="ad-top"><button className="ad-btn ad-menu" onClick={() => setOpen((o) => !o)} aria-label="Mở menu">☰</button><span>Phúc Vị Foods · Cộng tác viên</span></header>
-        <main className="ad-content">
+        <main className="ad-content" ref={mainRef}>
           <ErrorBox error={state.error} onRetry={state.reload} />
           {state.loading && profile === undefined ? <Loading loading /> : null}
           {profile === null && <ProfileForm onSaved={state.reload} />}
