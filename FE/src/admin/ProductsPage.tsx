@@ -1,20 +1,35 @@
 import { useState } from "react";
-import { formatVnd } from "../lib/money";
+import { formatVnd, parseMoney, parseThousands } from "../lib/money";
+import { discountProblem, originalFromDiscount, parsePercent } from "../lib/admin/pricing";
 import { STOCK_REASON_LABEL, type AdminCategory, type AdminProduct, type StockMovement } from "../lib/admin/types";
+import { ApiError } from "../lib/api";
 import { useAdmin } from "./AdminContext";
 import { IconButton } from "./icons";
 import { ImageField } from "./ImageField";
 import { Badge, ConfirmModal, ErrorBox, Field, FilterBar, FormModal, Loading, Modal, Pager, SortHeader, fmtDateTime, useAction, useList, useListFilters } from "./ui";
 
-const EMPTY = { categoryId: "", name: "", unit: "", price: "", originalPrice: "", imageUrl: "", description: "", stockQuantity: "0", isVisible: true };
+const EMPTY = { categoryId: "", name: "", unit: "", price: "", discount: "", imageUrl: "", description: "", stockQuantity: "0", isVisible: true };
 type Form = typeof EMPTY;
 
 function toForm(p: AdminProduct): Form {
-  return { categoryId: p.categoryId ?? "", name: p.name, unit: p.unit ?? "", price: String(p.price), originalPrice: p.originalPrice ? String(p.originalPrice) : "", imageUrl: p.imageUrl ?? "", description: p.description ?? "", stockQuantity: String(p.stockQuantity), isVisible: p.isVisible };
+  return { categoryId: p.categoryId ?? "", name: p.name, unit: p.unit ?? "", price: formatPriceInput(p.price), discount: (p.discountPercent ?? 0) > 0 ? String(p.discountPercent) : "", imageUrl: p.imageUrl ?? "", description: p.description ?? "", stockQuantity: String(p.stockQuantity), isVisible: p.isVisible };
+}
+
+/** Giá hiển thị trong ô khi sửa: viết đủ dấu chấm nghìn (339.000) để ô hiểu là số đầy đủ, không nhân thêm 1.000. */
+const formatPriceInput = (n: number) => new Intl.NumberFormat("vi-VN").format(n);
+
+/** Ô nhập kèm ghi chú nhỏ ở mép phải (vd số tiền đã hiểu được), giúp biết hệ thống đọc số mình gõ ra sao. */
+function NoteInput({ note, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { note?: string }) {
+  return (
+    <div className="ad-note-input">
+      <input {...props} />
+      {note && <span aria-live="polite">{note}</span>}
+    </div>
+  );
 }
 
 /** Số nguyên không âm từ ô nhập; rỗng → undefined, không hợp lệ → NaN (để backend báo lỗi rõ ràng thay vì gửi sai). */
-const intOrUndef = (v: string) => (v.trim() === "" ? undefined : Number(v.replace(/[.,\s]/g, "")));
+const intOrUndef = parseMoney;
 
 function ProductForm({ product, categories, onClose, onSaved }: { product?: AdminProduct; categories: AdminCategory[]; onClose: () => void; onSaved: () => void }) {
   const { adm, notify } = useAdmin();
@@ -23,16 +38,24 @@ function ProductForm({ product, categories, onClose, onSaved }: { product?: Admi
   return (
     <FormModal title={product ? "Sửa sản phẩm" : "Thêm sản phẩm"} wide onClose={onClose}
       onSubmit={async () => {
+        const price = parseThousands(f.price);
+        const problem = discountProblem(f.discount);
+        if (problem) throw new ApiError(400, "VALIDATION_FAILED", problem, [{ field: "originalPrice", messages: [problem] }]); // hiện ngay dưới ô Giảm giá
+        const pct = parsePercent(f.discount);
+        // Không đổi giá bán và % giảm thì giữ nguyên giá gốc đã lưu (tránh lệch do làm tròn); ngược lại tính lại từ % giảm.
+        const untouched = !!product && f.price === toForm(product).price && f.discount === toForm(product).discount;
+        const originalPrice: number | null | undefined = untouched
+          ? product.originalPrice ?? null
+          : pct > 0 && price !== undefined ? originalFromDiscount(price, pct) : product ? null : undefined;
         const body: Record<string, unknown> = {
           // Danh mục là tùy chọn: để trống khi tạo thì không gửi; khi sửa gửi null để bỏ sản phẩm khỏi danh mục.
-          categoryId: f.categoryId || (product ? null : undefined), name: f.name.trim(), price: intOrUndef(f.price), isVisible: f.isVisible,
+          categoryId: f.categoryId || (product ? null : undefined), name: f.name.trim(), price, isVisible: f.isVisible,
           unit: f.unit.trim() || undefined, description: f.description.trim() || undefined,
-          originalPrice: intOrUndef(f.originalPrice), // Sửa: bỏ trống ảnh nghĩa là gỡ ảnh (gửi null); tạo mới thì bỏ qua trường.
+          originalPrice,
+          // Sửa: bỏ trống ảnh nghĩa là gỡ ảnh (gửi null); tạo mới thì bỏ qua trường.
           imageUrl: f.imageUrl.trim() || (product ? null : undefined),
         };
         if (!product) body.stockQuantity = intOrUndef(f.stockQuantity) ?? 0;
-        // Sửa: để trống giá gốc nghĩa là bỏ giá gốc (gửi null); tạo mới thì bỏ qua trường.
-        if (product && body.originalPrice === undefined) body.originalPrice = null;
         if (product) await adm(`/products/${product.id}`, { method: "PATCH", body });
         else await adm("/products", { method: "POST", body });
         notify(product ? "Đã lưu sản phẩm" : "Đã thêm sản phẩm");
@@ -49,8 +72,14 @@ function ProductForm({ product, categories, onClose, onSaved }: { product?: Admi
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
-            <Field label="Giá bán (VND) *" error={err.price}><input value={f.price} onChange={(e) => set("price", e.target.value)} inputMode="numeric" /></Field>
-            <Field label="Giá gốc (VND)" error={err.originalPrice}><input value={f.originalPrice} onChange={(e) => set("originalPrice", e.target.value)} inputMode="numeric" placeholder="Để trống nếu không giảm giá" /></Field>
+            <Field label="Giá bán (VND) *" error={err.price}>
+              <NoteInput value={f.price} onChange={(e) => set("price", e.target.value)} inputMode="decimal" placeholder="Gõ 339 là 339.000 ₫"
+                note={Number.isFinite(parseThousands(f.price)) && parseThousands(f.price) ? `= ${formatVnd(parseThousands(f.price)!)}` : undefined} />
+            </Field>
+            <Field label="Giảm giá (%)" error={err.originalPrice}>
+              <NoteInput value={f.discount} onChange={(e) => set("discount", e.target.value)} inputMode="decimal" placeholder="Để trống nếu không giảm"
+                note={(() => { const p = parseThousands(f.price); const o = p ? originalFromDiscount(p, parsePercent(f.discount)) : null; return o ? `giá gốc ${formatVnd(o)}` : undefined; })()} />
+            </Field>
             <Field label="Đơn vị" error={err.unit}><input value={f.unit} onChange={(e) => set("unit", e.target.value)} maxLength={50} placeholder="kg, gói, hộp..." /></Field>
             {product
               ? <Field label="Tồn kho hiện tại"><input value={String(product.stockQuantity)} readOnly disabled title='Đổi tồn kho bằng "Điều chỉnh kho" để có ghi chú trong sổ kho' /></Field>

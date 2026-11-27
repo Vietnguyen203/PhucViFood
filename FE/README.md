@@ -42,7 +42,7 @@ Chỉ tài khoản ADMIN (đăng nhập ở `/dang-nhap`; tài khoản dev nằm
 | Cấu hình bán hàng | Phí ship và mức miễn phí, hạn giữ hàng chuyển khoản, tài khoản nhận tiền, hạn cookie link CTV; cảnh báo khi chưa cấu hình đủ tài khoản nhận tiền |
 | Đơn hàng, chi tiết đơn | Lọc (trạng thái, thanh toán, hình thức, ngày, tìm mã/tên/SĐT); xác nhận, giao, đã giao, hoàn tất, hủy/hoàn (bắt buộc lý do); đánh dấu đã thanh toán/hoàn tiền; ghi nhận CSKH |
 | Hàng chờ CSKH | Đơn đã giao chưa hoàn tất, số ngày chờ, lần liên hệ gần nhất |
-| Sản phẩm | Thêm, sửa, ẩn/hiện, xóa (danh mục không bắt buộc, không có SKU); ảnh tải từ máy (tự thu nhỏ và nén trên trình duyệt, tối đa 1 MB) hoặc dán link; điều chỉnh kho kèm lý do; sổ kho (lịch sử thay đổi); lọc hàng sắp hết |
+| Sản phẩm | Thêm, sửa, ẩn/hiện, xóa (danh mục không bắt buộc, không có SKU; giá bán gõ theo nghìn đồng: gõ 339 là 339.000₫, hoặc viết đủ 339.000; thay ô giá gốc bằng ô "Giảm giá (%)" và hệ thống tự tính giá gốc); ảnh tải từ máy (tự thu nhỏ và nén trên trình duyệt, tối đa 1 MB) hoặc dán link; điều chỉnh kho kèm lý do; sổ kho (lịch sử thay đổi); lọc hàng sắp hết |
 | Danh mục | Thêm, sửa, ẩn/hiện, xóa |
 | Banner trang chủ (`/admin/banner`) | Thêm, sửa, bật/tắt, xóa banner; chọn vị trí (khung lớn hoặc ô khuyến mãi bên phải), tải ảnh từ máy, đích bấm, thứ tự và lịch hiển thị; thấy trạng thái đang hiện, đã tắt, chưa tới lịch, đã hết hạn |
 | Cộng tác viên | Duyệt (hợp đồng, tỷ lệ), từ chối, tạm ngưng, kích hoạt lại, sửa hợp đồng/tỷ lệ |

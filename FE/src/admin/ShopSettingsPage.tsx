@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { formatVnd } from "../lib/money";
+import { formatVnd, parseMoney } from "../lib/money";
 import { useAsync } from "../lib/useAsync";
 import { bankConfigured, SETTING_LABEL, type ShopSetting } from "../lib/admin/dashboard";
 import { useAdmin } from "./AdminContext";
@@ -27,7 +27,7 @@ function EditModal({ s, onClose, onSaved }: { s: Row; onClose: () => void; onSav
   return (
     <FormModal title={meta?.label ?? s.key} onClose={onClose}
       onSubmit={async () => {
-        const body = { value: isText ? value : isPercent ? Math.round(Number(value.replace(",", ".")) * 100) : Number(value.replace(/[.,\s]/g, "")) };
+        const body = { value: isText ? value : isPercent ? Math.round(Number(value.replace(",", ".")) * 100) : parseMoney(value) ?? NaN };
         await adm(`/${s.source === "order" ? "order-settings" : "affiliate-settings"}/${encodeURIComponent(s.key)}`, { method: "PATCH", body });
         notify("Đã lưu cấu hình");
         onSaved();

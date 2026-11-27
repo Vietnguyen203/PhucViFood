@@ -188,3 +188,6 @@
 .ad-image-actions .ad-link { justify-self: start; }
 
 .ad-banner-thumb { width: 96px; height: 54px; object-fit: cover; border-radius: 8px; background: #eee3d6; display: block; }
+.ad-note-input { position: relative; }
+.ad-note-input input { padding-right: 150px; }
+.ad-note-input span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--ad-muted); font-size: 13px; pointer-events: none; white-space: nowrap; }
