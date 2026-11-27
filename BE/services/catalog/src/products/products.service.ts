@@ -160,6 +160,6 @@ export class PublicProductsService extends PrismaCrudService<ProductWithCategory
 
   async listCategories() {
     const rows = await this.prisma.category.findMany({ where: { isActive: true, deletedAt: null }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }, { id: 'asc' }] });
-    return rows.map((c) => ({ id: c.id, name: c.name, slug: c.slug }));
+    return rows.map((c) => ({ id: c.id, name: c.name, slug: c.slug, imageUrl: c.imageUrl }));
   }
 }

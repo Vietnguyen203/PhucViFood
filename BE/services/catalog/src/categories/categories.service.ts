@@ -10,7 +10,7 @@ import type { CreateCategoryDto, UpdateCategoryDto } from './dto';
 export const CATEGORIES_SERVICE = Symbol('CATEGORIES_SERVICE');
 
 export const toCategoryView = (c: Category) => ({
-  id: c.id, name: c.name, slug: c.slug, sortOrder: c.sortOrder, isActive: c.isActive, createdAt: c.createdAt,
+  id: c.id, name: c.name, slug: c.slug, imageUrl: c.imageUrl, sortOrder: c.sortOrder, isActive: c.isActive, createdAt: c.createdAt,
 });
 
 const isUnique = (e: unknown) => (e as { code?: string }).code === 'P2002';
@@ -36,7 +36,7 @@ export class CategoriesService extends PrismaCrudService<Category, CreateCategor
     const slug = dto.slug ?? (await makeUniqueSlug(slugify(dto.name), 'danh-muc', async (s) => (await this.prisma.category.count({ where: { slug: s } })) > 0));
     try {
       return toCategoryView(await this.prisma.category.create({
-        data: { name: dto.name, slug, sortOrder: dto.sortOrder ?? 0, isActive: dto.isActive ?? true },
+        data: { name: dto.name, slug, imageUrl: dto.imageUrl || null, sortOrder: dto.sortOrder ?? 0, isActive: dto.isActive ?? true },
       }));
     } catch (e) {
       if (isUnique(e)) throw AppException.conflict('Slug danh mục đã tồn tại');
@@ -48,7 +48,7 @@ export class CategoriesService extends PrismaCrudService<Category, CreateCategor
     await this.findOrThrow(id);
     try {
       return toCategoryView(await this.prisma.category.update({
-        where: { id }, data: { name: dto.name, slug: dto.slug, sortOrder: dto.sortOrder, isActive: dto.isActive },
+        where: { id }, data: { name: dto.name, slug: dto.slug, imageUrl: dto.imageUrl === undefined ? undefined : dto.imageUrl || null, sortOrder: dto.sortOrder, isActive: dto.isActive },
       }));
     } catch (e) {
       if (isUnique(e)) throw AppException.conflict('Slug danh mục đã tồn tại');

@@ -72,6 +72,8 @@ model Category {
   id        String    @id @default(uuid(7)) @db.Uuid
   name      String
   slug      String    @unique
+  /// Ảnh đại diện (tùy chọn) hiện ở hàng danh mục hình tròn trang chủ.
+  imageUrl  String?   @map("image_url")
   sortOrder Int       @default(0) @map("sort_order")
   isActive  Boolean   @default(true) @map("is_active")
   /// Xóa mềm: danh mục đã xóa biến khỏi mọi nơi nhưng giữ dòng để các sản phẩm đã xóa mềm vẫn tham chiếu hợp lệ.

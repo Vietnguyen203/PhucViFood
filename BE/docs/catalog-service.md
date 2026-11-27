@@ -10,7 +10,7 @@ Tiền tố `/api`. JWT do service `user` ký bằng khóa riêng; service này 
 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
-| GET | `/public/categories` | Danh mục đang bật, theo `sortOrder` |
+| GET | `/public/categories` | Danh mục đang bật, theo `sortOrder`: `[{ id, name, slug, imageUrl }]` (`imageUrl` là ảnh đại diện tùy chọn, null nếu chưa có) |
 | GET | `/public/products` | Sản phẩm đang bán: phân trang, `q`, `sort` (createdAt, name, price), `filter[categoryId]`, `filter[price][gte/lte]` |
 | GET | `/public/products/:slug` | Chi tiết theo slug |
 
@@ -20,7 +20,7 @@ Khách chỉ thấy sản phẩm đang hiển thị, chưa xóa, thuộc danh m�
 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
-| GET, POST, PATCH, DELETE | `/categories`, `/categories/:id` | Danh mục. Slug tự sinh từ tên (không dấu). Xóa là xóa mềm (`deleted_at`), chỉ khi không còn sản phẩm đang tồn tại (sản phẩm đã xóa mềm không tính; còn sản phẩm thì báo số lượng, hoặc tắt bằng `isActive=false`). Danh mục đã xóa không gán thêm cho sản phẩm được |
+| GET, POST, PATCH, DELETE | `/categories`, `/categories/:id` | Danh mục. Slug tự sinh từ tên (không dấu). `imageUrl` tùy chọn (link http(s) hoặc ảnh đã tải lên; `null` để gỡ) hiện ở hàng danh mục hình tròn trang chủ. Xóa là xóa mềm (`deleted_at`), chỉ khi không còn sản phẩm đang tồn tại (sản phẩm đã xóa mềm không tính; còn sản phẩm thì báo số lượng, hoặc tắt bằng `isActive=false`). Danh mục đã xóa không gán thêm cho sản phẩm được |
 | GET | `/public/banners` | Công khai. Banner trang chủ đang hiển thị (bật và trong khoảng lịch): `{ main: [...], side: [...] }`, mỗi phần tử `{ id, title, imageUrl, linkUrl }`, xếp theo `sortOrder` rồi ngày tạo |
 | GET, POST, PATCH, DELETE | `/banners`, `/banners/:id` | ADMIN. Quản lý banner: `title`, `imageUrl` (link http(s) hoặc ảnh đã tải lên), `linkUrl` (trang trong cửa hàng bắt đầu bằng một dấu `/` hoặc link http(s); bỏ trống hoặc `null` = chỉ là ảnh), `slot` (`MAIN` khung lớn trượt nhiều ảnh, `SIDE` ô khuyến mãi bên phải), `sortOrder`, `isActive`, `startsAt`/`endsAt` (lịch hiển thị, `endsAt` phải sau `startsAt`). Lọc `slot`, `isActive`. Xóa là xóa hẳn |
 | GET | `/public/creators` | Công khai. KOL/KOC trang chủ đang bật, tối đa 12 thẻ, xếp theo `sortOrder` rồi ngày tạo: `[{ id, name, kind, headline, imageUrl, linkUrl }]` |

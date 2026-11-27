@@ -1,6 +1,6 @@
 // Kiểu dữ liệu trả về từ API công khai của backend (qua gateway). Tiền là số nguyên VND.
 
-export interface Category { id: string; name: string; slug: string }
+export interface Category { id: string; name: string; slug: string; /** Ảnh đại diện (có ở danh sách công khai); chưa có thì null. */ imageUrl?: string | null }
 
 export interface Product {
   id: string;

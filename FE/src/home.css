@@ -310,60 +310,6 @@
   font-size: 14px;
   line-height: 1.7;
 }
-.home-category-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.home-category-card {
-  height: 245px;
-  position: relative;
-  overflow: hidden;
-  border-radius: 16px;
-  color: #fff;
-  box-shadow: 0 10px 28px #4a0a0d15;
-}
-.home-category-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: 0.5s;
-}
-.home-category-card:hover img {
-  transform: scale(1.05);
-}
-.home-category-card > div {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(0deg, #3b070acd, transparent 70%);
-}
-.home-category-card > span {
-  position: absolute;
-  z-index: 2;
-  left: 16px;
-  right: 12px;
-  bottom: 16px;
-}
-.home-category-card small,
-.home-category-card strong,
-.home-category-card b {
-  display: block;
-}
-.home-category-card small {
-  color: #e9cc7d;
-  font-size: 12px;
-}
-.home-category-card strong {
-  margin-top: 4px;
-  font: 400 18px "DM Serif Display";
-}
-.home-category-card b {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 8px;
-  font-size: 12px;
-}
 .home-products-wrap {
   background: #fff;
 }
@@ -815,12 +761,6 @@
     align-items: center;
     flex-direction: row;
   }
-  .home-category-grid {
-    gap: 14px;
-  }
-  .home-category-card {
-    height: 290px;
-  }
   .home-product-grid {
     gap: 28px 15px;
   }
@@ -932,13 +872,6 @@
   .home-section-heading p {
     font-size: 15px;
   }
-  .home-category-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 15px;
-  }
-  .home-category-card {
-    height: 360px;
-  }
   .home-product-grid {
     grid-template-columns: repeat(4, 1fr);
     gap: 18px;
@@ -1014,9 +947,6 @@
   }
   .home-hero {
     height: 680px;
-  }
-  .home-category-card {
-    height: 390px;
   }
   .home-article-image {
     height: 270px;
@@ -1121,3 +1051,25 @@ a.home-video-poster { display: block; }
 .home-banner-link.is-product { position: relative; overflow: hidden; background: #efe1c9; }
 .home-banner-backdrop { position: absolute; inset: -30px; background: var(--bg) center / cover no-repeat; filter: blur(28px) saturate(1.1); opacity: 0.85; }
 .home-banner-main .is-product img { position: relative; object-fit: contain; }
+
+/* ───────── Hàng danh mục hình tròn ───────── */
+.home-circles { max-width: 1200px; margin: 0 auto; padding: 26px 18px 0; }
+.home-circles ul { list-style: none; margin: 0; padding: 0; display: flex; justify-content: center; flex-wrap: wrap; gap: 18px 34px; }
+.home-circles a { display: grid; justify-items: center; gap: 8px; width: 104px; color: #4a0a0d; text-decoration: none; }
+.home-circle { width: 88px; height: 88px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #f4e3bd; border: 2px solid #fff; box-shadow: 0 6px 16px #4a0a0d24; transition: transform 0.2s, box-shadow 0.2s; }
+.home-circle img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.home-circle b { font-family: var(--home-serif, inherit); font-size: 34px; color: #8f1d22; }
+.home-circles a:hover .home-circle { transform: translateY(-3px); box-shadow: 0 10px 22px #4a0a0d33; }
+.home-circles a:focus-visible { outline: 3px solid var(--home-gold); outline-offset: 4px; border-radius: 12px; }
+.home-circle-name { font-size: 14px; font-weight: 600; text-align: center; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 760px) {
+  .home-circles ul { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; gap: 16px; padding-bottom: 8px; margin-right: -18px; scroll-snap-type: x proximity; }
+  .home-circles li { flex: 0 0 auto; scroll-snap-align: start; }
+  .home-circles a { width: 84px; }
+  .home-circle { width: 72px; height: 72px; }
+}
+/* Lọc sản phẩm theo danh mục */
+.home-category-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0 0 22px; }
+.home-category-tabs button { padding: 8px 18px; border: 1px solid #e5d3b3; border-radius: 999px; background: #fff; color: #4a0a0d; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; transition: background 0.2s, color 0.2s; }
+.home-category-tabs button:hover { background: #fbf1dc; }
+.home-category-tabs button.active { background: #8f1d22; border-color: #8f1d22; color: #fff; }

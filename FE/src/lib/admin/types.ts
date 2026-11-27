@@ -1,5 +1,5 @@
 // Kiểu dữ liệu của API quản trị (tiền là số nguyên VND; enum là tên chuỗi).
-export interface AdminCategory { id: string; name: string; slug: string; sortOrder: number; isActive: boolean; createdAt: string }
+export interface AdminCategory { id: string; name: string; slug: string; imageUrl: string | null; sortOrder: number; isActive: boolean; createdAt: string }
 
 export interface AdminProduct {
   id: string; categoryId: string | null; category: { id: string; name: string; slug: string } | null;

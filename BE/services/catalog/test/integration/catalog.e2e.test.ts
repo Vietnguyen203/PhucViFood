@@ -190,6 +190,7 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
       expect(ids).toContain(a.id);
       expect(ids).not.toContain(off.id);
       expect(ids.indexOf(b.id)).toBeLessThan(ids.indexOf(a.id)); // 9050 trước 9100
+      expect(Object.keys(list.find((c: any) => c.id === a.id)!).sort()).toEqual(['id', 'imageUrl', 'name', 'slug']);
     });
 
     it('sản phẩm: chỉ hiển thị, chưa xóa, thuộc danh mục bật; không lộ số tồn kho', async () => {
@@ -286,6 +287,12 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
       expect(blocked.body.error.message).toContain('còn 1 sản phẩm');
       // xóa sản phẩm (xóa mềm) rồi xóa danh mục
       expect((await api('DELETE', `/products/${product.body.data.id}`, { token: t })).status).toBe(200);
+      // ảnh đại diện: đặt, đọc ở phía khách, gỡ; link sai bị chặn
+      const withImg = await api('PATCH', `/categories/${cat.id}`, { token: t, body: { imageUrl: 'https://cdn.example.com/c.jpg' } });
+      expect(withImg.body.data.imageUrl).toBe('https://cdn.example.com/c.jpg');
+      expect((await api('GET', '/public/categories')).body.data.find((c: any) => c.id === cat.id).imageUrl).toBe('https://cdn.example.com/c.jpg');
+      expect((await api('PATCH', `/categories/${cat.id}`, { token: t, body: { imageUrl: 'javascript:alert(1)' } })).status).toBe(400);
+      expect((await api('PATCH', `/categories/${cat.id}`, { token: t, body: { imageUrl: null } })).body.data.imageUrl).toBeNull();
       expect((await api('DELETE', `/categories/${cat.id}`, { token: t })).status).toBe(200);
       expect((await api('GET', `/categories/${cat.id}`, { token: t })).status).toBe(404);
       expect((await api('GET', '/public/categories')).body.data.some((c: any) => c.id === cat.id)).toBe(false);
