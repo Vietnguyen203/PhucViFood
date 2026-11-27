@@ -246,3 +246,13 @@ body.store-scale .home-page { min-height: calc(100vh / var(--store-zoom)); }
   .shop-cart-lines li { grid-template-columns: 64px 1fr auto; gap: 12px; }
   .shop-cart-lines img { width: 64px; height: 64px; }
 }
+
+/* ───────── Trang thông tin ───────── */
+.shop-info-body { max-width: 760px; line-height: 1.7; }
+.shop-info-body p { margin: 0 0 12px; }
+.shop-info-body ul, .shop-info-body ol { margin: 0 0 12px; padding-left: 22px; }
+.shop-info-body a { color: var(--shop-red); }
+.shop-info-dl { display: grid; grid-template-columns: 120px 1fr; gap: 8px 14px; margin: 0 0 14px; }
+.shop-info-dl dt { color: var(--shop-muted); }
+.shop-info-dl dd { margin: 0; }
+.shop-empty-page h1 { margin-bottom: 8px; }

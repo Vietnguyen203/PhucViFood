@@ -1,10 +1,11 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter } from "react-router";
 import RootLayout from "./components/RootLayout";
 import CartPage from "./pages/CartPage";
 import CategoryPage from "./pages/CategoryPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import CTVPage from "./pages/CTVPage";
 import HomePage from "./pages/HomePage";
+import { InfoPage, NotFoundPage } from "./pages/InfoPages";
 import OrderPage from "./pages/OrderPage";
 import ProductPage from "./pages/ProductPage";
 import ReferralLanding from "./pages/ReferralLanding";
@@ -29,11 +30,14 @@ const router = createBrowserRouter([
       { path: "/tim-kiem", Component: SearchPage },
       { path: "/danh-muc/:slug", Component: CategoryPage },
       { path: "/gio-hang", Component: CartPage },
+      { path: "/thong-tin/:page", Component: InfoPage },
       { path: "/thanh-toan", Component: CheckoutPage },
       // Tra cứu đơn bằng mã đơn + SĐT; có mã trên đường dẫn thì tự tra cứu khi vừa đặt hàng xong.
       { path: "/don-hang/:code?", Component: OrderPage },
       // Link giới thiệu của cộng tác viên: /r/{mã}?c={kênh}
       { path: "/r/:code", Component: ReferralLanding },
+      // Đường dẫn lạ: báo không tìm thấy (các khu /admin và /ctv/... khớp cụ thể hơn nên không bị ảnh hưởng).
+      { path: "*", Component: NotFoundPage },
     ],
   },
   // Khu quản trị (ADMIN): không dùng khung cửa hàng (header, giỏ hàng).
@@ -85,7 +89,6 @@ const router = createBrowserRouter([
       },
     ],
   },
-  { path: "*", element: <Navigate to="/" replace /> },
 ]);
 
 export default router;

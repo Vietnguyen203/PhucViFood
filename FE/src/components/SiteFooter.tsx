@@ -32,9 +32,11 @@ export function HomeFooter() {
         </div>
         <div className="home-footer-column">
           <strong>Hỗ trợ khách hàng</strong>
-          <a href="#shipping">Chính sách giao hàng</a>
-          <a href="#returns">Chính sách đổi trả</a>
-          <a href="#payment">Hướng dẫn thanh toán</a>
+          <Link to="/thong-tin/giao-hang">Chính sách giao hàng</Link>
+          <Link to="/thong-tin/doi-tra">Chính sách đổi trả</Link>
+          <Link to="/thong-tin/thanh-toan">Hướng dẫn thanh toán</Link>
+          <Link to="/thong-tin/lien-he">Liên hệ</Link>
+          <Link to="/thong-tin/gioi-thieu">Về Phúc Vị</Link>
           <Link to="/ctv">Chương trình CTV</Link>
         </div>
         <div className="home-footer-column home-contact">

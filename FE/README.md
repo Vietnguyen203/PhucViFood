@@ -9,6 +9,7 @@ React 19 + Vite + Tailwind (xuất từ Figma Make), gọi backend **chỉ qua g
 | `/` | Trang chủ: danh mục, sản phẩm thật (lọc theo danh mục, "Xem thêm"), thêm vào giỏ | `GET /public/categories`, `GET /public/products` |
 | `/san-pham/:slug` | Chi tiết sản phẩm: giá, giảm giá, còn/hết hàng, chọn số lượng, thêm vào giỏ hoặc "Mua ngay", sản phẩm cùng danh mục; ghi sự kiện `PRODUCT_VIEW` cho CTV | `GET /public/products/:slug` |
 | `/danh-muc/:slug?sort=...` | Sản phẩm theo danh mục, sắp xếp, "Xem thêm"; mở từ đường dẫn danh mục ở trang sản phẩm | `GET /public/categories`, `GET /public/products?filter[categoryId]=` |
+| `/thong-tin/:page` | Trang tĩnh: `gioi-thieu`, `lien-he`, `giao-hang`, `doi-tra`, `thanh-toan` (footer trỏ vào đây); khóa lạ và mọi đường dẫn không khớp hiện trang "Không tìm thấy" | Không gọi API |
 | `/gio-hang` | Giỏ hàng đầy đủ: đổi số lượng, xóa, tóm tắt phí ship tạm tính, sang thanh toán (ngăn kéo giỏ có link vào đây) | Chỉ localStorage |
 | `/tim-kiem?q=...&sort=...` | Kết quả tìm kiếm (tên, mô tả), sắp xếp, "Xem thêm"; ô tìm kiếm ở header | `GET /public/products?q=` |
 | (mọi trang) | Giỏ hàng dạng ngăn kéo, lưu trong trình duyệt, đồng bộ giữa các tab | |
