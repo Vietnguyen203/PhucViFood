@@ -16,6 +16,17 @@ x-app-env: &app-env
   JWT_ISSUER: ${JWT_ISSUER:-phucvi}
   RABBITMQ_URL: amqp://${RABBITMQ_USER:-phucvi}:${RABBITMQ_PASSWORD:-phucvi}@rabbitmq:5672
   CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+  # Thư (xác nhận đơn, quên mật khẩu): mặc định gửi vào Mailpit trong Docker (chỉ xem thư, không ra ngoài).
+  # Dùng SMTP thật thì đặt SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE và MAIL_FROM trong .env.
+  MAIL_TRANSPORT: ${MAIL_TRANSPORT:-smtp}
+  SMTP_HOST: ${SMTP_HOST:-mailpit}
+  SMTP_PORT: ${SMTP_PORT:-1025}
+  SMTP_SECURE: ${SMTP_SECURE:-false}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASS: ${SMTP_PASS:-}
+  MAIL_FROM: ${MAIL_FROM:-Phúc Vị Foods <no-reply@phucvifoods.vn>}
+  # Địa chỉ cửa hàng dùng làm link trong thư.
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost}
 
 x-depends-infra: &depends-infra
   postgres:
@@ -49,6 +60,15 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  # Hộp thư thử cho dev: nhận mọi thư SMTP (cổng 1025) và cho xem ở http://localhost:8025. Không gửi thư ra ngoài.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: phucvi-mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
 
   # Message broker cho sự kiện giữa các service (transactional outbox đẩy vào đây).
   # Giao diện quản trị: http://localhost:15672

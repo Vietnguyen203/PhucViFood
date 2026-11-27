@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from "react";
-import { Link, Navigate, useNavigate } from "react-router";
+import { Link, Navigate, useLocation, useNavigate } from "react-router";
 import { HomeFooter } from "../components/SiteFooter";
 import { HomeHeader } from "../components/SiteHeader";
 import { signedInTo, signIn } from "../lib/account";
@@ -32,6 +32,7 @@ function AuthForm({ mode }: { mode: Mode }) {
   const isPartner = mode === "register-partner";
   useDocumentTitle(isPartner ? "Đăng ký cộng tác viên" : mode === "register" ? "Đăng ký tài khoản" : "Đăng nhập");
   const navigate = useNavigate();
+  const passwordReset = Boolean((useLocation().state as { passwordReset?: boolean } | null)?.passwordReset);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -100,9 +101,11 @@ function AuthForm({ mode }: { mode: Mode }) {
               <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
             </Field>
           )}
+          {passwordReset && mode === "login" && <p className="shop-note" role="status">Đã đặt lại mật khẩu. Hãy đăng nhập bằng mật khẩu mới.</p>}
           {error && <p className="shop-error" role="alert">{error}</p>}
           <button className="shop-btn primary" type="submit" disabled={busy}>{busy ? "Đang xử lý..." : isRegister ? "Tạo tài khoản" : "Đăng nhập"}</button>
           <p className="shop-auth-links">
+            {mode === "login" && <><Link to="/quen-mat-khau">Quên mật khẩu?</Link><br /></>}
             {isRegister
               ? <>Đã có tài khoản? <Link to="/dang-nhap">Đăng nhập</Link></>
               : <>Chưa có tài khoản? <Link to="/dang-ky">Đăng ký</Link></>}

@@ -1,4 +1,5 @@
 import { readJwtConfig, type JwtConfig } from '@phucvi/shared-library/auth';
+import { readMailConfig, type MailConfig } from '@phucvi/shared-library/mail';
 
 export const APP_CONFIG = Symbol('APP_CONFIG');
 
@@ -14,6 +15,12 @@ export interface AppConfig {
   lockMinutes: number;
   /** Tắt relay outbox (dùng khi test hoặc chạy relay ở tiến trình riêng). */
   relayEnabled: boolean;
+  /** Gửi thư (đặt lại mật khẩu). */
+  mail: MailConfig;
+  /** Hiệu lực của liên kết đặt lại mật khẩu (phút). */
+  resetTtlMinutes: number;
+  /** Số thư đặt lại tối đa mỗi tài khoản mỗi giờ (chống spam hộp thư). */
+  resetMaxPerHour: number;
 }
 
 type Env = Record<string, string | undefined>;
@@ -47,6 +54,9 @@ export function loadConfig(env: Env = process.env): AppConfig {
     maxFailedLogins: int(env, 'MAX_FAILED_LOGINS', 5, problems, 1, 100),
     lockMinutes: int(env, 'LOGIN_LOCK_MINUTES', 15, problems, 1, 1440),
     relayEnabled: env.OUTBOX_RELAY_ENABLED !== 'false',
+    mail: readMailConfig(env, problems),
+    resetTtlMinutes: int(env, 'PASSWORD_RESET_TTL_MINUTES', 60, problems, 5, 1440),
+    resetMaxPerHour: int(env, 'PASSWORD_RESET_MAX_PER_HOUR', 3, problems, 1, 20),
   };
 
   if (problems.length) throw new Error(`Cấu hình không hợp lệ:\n - ${problems.join('\n - ')}`);

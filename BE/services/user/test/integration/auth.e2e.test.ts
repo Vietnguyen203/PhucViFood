@@ -4,6 +4,7 @@ import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { setupApp } from '@phucvi/shared-library/api';
 import { UserRoleCode, UserStatusCode } from '@phucvi/shared-library/contracts';
+import { MAILER, type MemoryMailer } from '@phucvi/shared-library/mail';
 import { hashSync } from 'bcryptjs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
@@ -52,7 +53,7 @@ describe.skipIf(!enabled)('service user: đăng nhập JWT (HTTP thật)', () =>
       RABBITMQ_URL: process.env.RABBITMQ_URL ?? 'amqp://phucvi:phucvi@localhost:5672',
       JWT_PRIVATE_KEY: generateJwtKeyPair().privateKey,
       JWT_ISSUER: 'phucvi-it', BCRYPT_ROUNDS: '4', MAX_FAILED_LOGINS: '3', LOGIN_LOCK_MINUTES: '15',
-      OUTBOX_RELAY_ENABLED: 'false',
+      OUTBOX_RELAY_ENABLED: 'false', MAIL_TRANSPORT: 'memory', PUBLIC_BASE_URL: 'https://shop.example.vn',
     });
     process.env.USER_DATABASE_URL ??= 'postgresql://postgres:postgres@localhost:5433/user_db';
     app = await NestFactory.create(AppModule.forRoot(config), { logger: false });
@@ -160,6 +161,86 @@ describe.skipIf(!enabled)('service user: đăng nhập JWT (HTTP thật)', () =>
       const created = await call('POST', '/users', { email: uniq(), password: PASSWORD, role: 'CUSTOMER' }, admin.token);
       expect(created.status).toBe(201);
       expect(created.body.data.role).toBe('CUSTOMER');
+    });
+  });
+
+  describe('quên mật khẩu qua email', () => {
+    const mailer = () => app.get<MemoryMailer>(MAILER);
+    const forgot = (email: string) => call('POST', '/auth/forgot-password', { email });
+    const waitMail = async (to: string, count = 1) => {
+      for (let i = 0; i < 40; i++) { const m = mailer().to(to); if (m.length >= count) return m; await new Promise((r) => setTimeout(r, 50)); }
+      return mailer().to(to);
+    };
+    const tokenOf = (mail: { text: string }) => decodeURIComponent(/dat-lai-mat-khau\?token=([^\s]+)/.exec(mail.text)![1]);
+    const NEW = 'MatKhauMoi2027';
+
+    it('email có tài khoản: gửi thư kèm link; đặt lại xong đăng nhập bằng mật khẩu mới, mật khẩu cũ và phiên cũ hết hiệu lực', async () => {
+      const s = await register();
+      const r = await forgot(s.email);
+      expect(r.status).toBe(202);
+      expect(r.body.data).toEqual({ sent: true });
+      const mails = await waitMail(s.email);
+      expect(mails).toHaveLength(1);
+      expect(mails[0].subject).toBe('Phúc Vị Foods: đặt lại mật khẩu');
+      expect(mails[0].text).toContain('https://shop.example.vn/dat-lai-mat-khau?token=');
+      const token = tokenOf(mails[0]);
+
+      expect((await call('POST', '/auth/reset-password', { token, newPassword: NEW })).status).toBe(200);
+      expect((await login(s.email, NEW)).status).toBe(200);
+      expect((await login(s.email)).status).toBe(401); // mật khẩu cũ
+      expect((await call('POST', '/auth/refresh', { refreshToken: s.refreshToken })).status).toBe(401); // phiên cũ bị thu hồi
+      // token dùng một lần
+      expect((await call('POST', '/auth/reset-password', { token, newPassword: 'MatKhauKhac2028' })).status).toBe(400);
+      // DB chỉ lưu băm
+      const row = await prisma.passwordResetToken.findFirstOrThrow({ where: { user: { email: s.email } } });
+      expect(row.tokenHash).toMatch(/^[0-9a-f]{64}$/);
+      expect(row.tokenHash).not.toContain(token);
+      expect(row.usedAt).not.toBeNull();
+    });
+
+    it('không lộ email nào có tài khoản: email lạ, bị khóa, sai định dạng; không gửi thư', async () => {
+      const unknown = uniq();
+      const r = await forgot(unknown);
+      expect(r.status).toBe(202);
+      expect(r.body.data).toEqual({ sent: true });
+      const disabled = await register();
+      await prisma.user.update({ where: { email: disabled.email }, data: { status: UserStatusCode.DISABLED } });
+      expect((await forgot(disabled.email)).status).toBe(202);
+      await new Promise((r) => setTimeout(r, 300));
+      expect(mailer().to(unknown)).toHaveLength(0);
+      expect(mailer().to(disabled.email)).toHaveLength(0);
+      expect((await forgot('khong-phai-email')).status).toBe(400);
+    });
+
+    it('chống spam: tối đa 3 thư mỗi giờ cho một tài khoản (lần thứ 4 vẫn trả 202 nhưng không gửi)', async () => {
+      const s = await register();
+      for (let i = 0; i < 4; i++) expect((await forgot(s.email)).status).toBe(202);
+      await waitMail(s.email, 3);
+      await new Promise((r) => setTimeout(r, 300));
+      expect(mailer().to(s.email)).toHaveLength(3);
+    });
+
+    it('từ chối token sai, hết hạn, mật khẩu yếu; mật khẩu yếu không làm cháy token; yêu cầu mới vô hiệu thư cũ khi đã đặt lại', async () => {
+      const s = await register();
+      await forgot(s.email);
+      const token = tokenOf((await waitMail(s.email))[0]);
+      expect((await call('POST', '/auth/reset-password', { token: 'x'.repeat(43), newPassword: NEW })).status).toBe(400);
+      expect((await call('POST', '/auth/reset-password', { token, newPassword: '123' })).status).toBe(400);
+      expect((await call('POST', '/auth/reset-password', { token: 'ngan', newPassword: NEW })).status).toBe(400);
+      // token vẫn dùng được sau lần thử mật khẩu yếu
+      await prisma.passwordResetToken.updateMany({ where: { user: { email: s.email } }, data: { expiresAt: new Date(Date.now() - 1000) } });
+      expect((await call('POST', '/auth/reset-password', { token, newPassword: NEW })).status).toBe(400); // hết hạn
+      expect((await login(s.email)).status).toBe(200); // mật khẩu cũ chưa đổi
+    });
+
+    it('đặt lại mở khóa tài khoản đang bị khóa vì nhập sai nhiều lần', async () => {
+      const s = await register();
+      for (let i = 0; i < 3; i++) await login(s.email, 'SaiMatKhau1');
+      expect((await login(s.email)).status).toBe(429);
+      await forgot(s.email);
+      const token = tokenOf((await waitMail(s.email))[0]);
+      expect((await call('POST', '/auth/reset-password', { token, newPassword: NEW })).status).toBe(200);
+      expect((await login(s.email, NEW)).status).toBe(200);
     });
   });
 

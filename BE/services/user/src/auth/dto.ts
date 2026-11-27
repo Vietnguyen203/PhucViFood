@@ -41,6 +41,21 @@ export class LoginDto {
   password!: string;
 }
 
+/** Yêu cầu đặt lại mật khẩu: chỉ cần email. */
+export class ForgotPasswordDto {
+  @Transform(normalizeEmail) @IsEmail() @MaxLength(254)
+  email!: string;
+}
+
+/** Đặt mật khẩu mới bằng token trong thư. */
+export class ResetPasswordDto {
+  @IsString() @MinLength(20) @MaxLength(200)
+  token!: string;
+
+  @IsString() @IsStrongPassword()
+  newPassword!: string;
+}
+
 export class RefreshDto {
   @IsString() @MinLength(20) @MaxLength(200)
   refreshToken!: string;

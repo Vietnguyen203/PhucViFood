@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 import RootLayout from "./components/RootLayout";
 import AccountPage from "./pages/AccountPage";
 import { LoginPage, RegisterPage, RegisterPartnerPage } from "./pages/AuthPages";
+import { ForgotPasswordPage, ResetPasswordPage } from "./pages/ForgotPages";
 import { NewsDetailPage, NewsListPage } from "./pages/NewsPages";
 import CartPage from "./pages/CartPage";
 import CategoryPage from "./pages/CategoryPage";
@@ -39,6 +40,8 @@ const router = createBrowserRouter([
       { path: "/tin-tuc/:slug", Component: NewsDetailPage },
       { path: "/dang-nhap", Component: LoginPage },
       { path: "/dang-ky", Component: RegisterPage },
+      { path: "/quen-mat-khau", Component: ForgotPasswordPage },
+      { path: "/dat-lai-mat-khau", Component: ResetPasswordPage },
       // Đường dẫn đăng nhập cũ của từng khu: dùng chung một trang đăng nhập
       { path: "/ctv/dang-nhap", element: <Navigate to="/dang-nhap" replace /> },
       { path: "/ctv/dang-ky", Component: RegisterPartnerPage },

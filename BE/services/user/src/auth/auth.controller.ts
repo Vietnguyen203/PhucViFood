@@ -3,14 +3,18 @@ import { ValidBody } from '@phucvi/shared-library/api';
 import { CurrentUser, Public, type AuthUser } from '@phucvi/shared-library/auth';
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
-import { ChangePasswordDto, LoginDto, RefreshDto, RegisterCustomerDto, RegisterDto, UpdateProfileDto } from './dto';
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RefreshDto, RegisterCustomerDto, RegisterDto, ResetPasswordDto, UpdateProfileDto } from './dto';
+import { PasswordResetService } from './password-reset.service';
 import type { RequestContext } from './token.service';
 
 const contextOf = (req: Request): RequestContext => ({ userAgent: req.headers['user-agent'], ip: req.ip });
 
 @Controller('auth')
 export class AuthController {
-  constructor(@Inject(AuthService) private readonly auth: AuthService) {}
+  constructor(
+    @Inject(AuthService) private readonly auth: AuthService,
+    @Inject(PasswordResetService) private readonly resets: PasswordResetService,
+  ) {}
 
   @Public() @Post('register')
   register(@ValidBody(RegisterDto) dto: RegisterDto, @Req() req: Request) {
@@ -21,6 +25,18 @@ export class AuthController {
   @Public() @Post('register-customer')
   registerCustomer(@ValidBody(RegisterCustomerDto) dto: RegisterCustomerDto, @Req() req: Request) {
     return this.auth.registerCustomer(dto, contextOf(req));
+  }
+
+  /** Quên mật khẩu: luôn trả 202 như nhau dù email có tài khoản hay không. */
+  @Public() @Post('forgot-password') @HttpCode(202)
+  forgotPassword(@ValidBody(ForgotPasswordDto) dto: ForgotPasswordDto) {
+    return this.resets.request(dto.email);
+  }
+
+  /** Đặt mật khẩu mới bằng token trong thư; xong thì mọi phiên đăng nhập cũ bị thu hồi. */
+  @Public() @Post('reset-password') @HttpCode(200)
+  resetPassword(@ValidBody(ResetPasswordDto) dto: ResetPasswordDto) {
+    return this.resets.reset(dto.token, dto.newPassword);
   }
 
   @Public() @Post('login') @HttpCode(200)

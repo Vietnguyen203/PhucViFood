@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { INTERNAL_API_KEY, InternalKeyGuard } from '@phucvi/shared-library/auth';
 import { AffiliateClient, CatalogClient, CustomerClient } from '../clients/clients';
+import { createMailer, MAILER } from '@phucvi/shared-library/mail';
 import { APP_CONFIG, AppConfig } from '../config/app-config';
 import { OrderSettingsController } from '../settings/settings.controller';
 import { SettingsService } from '../settings/settings.service';
@@ -18,6 +19,7 @@ import { AffiliateOrdersService, MyOrdersService, OrdersService } from './orders
     AdminStatsService,
     OrderPlacementService, OrdersService, AffiliateOrdersService, MyOrdersService, SettingsService, OrderStatsService, OrderExpiryService,
     CatalogClient, AffiliateClient, CustomerClient, InternalKeyGuard,
+    { provide: MAILER, useFactory: (config: AppConfig) => createMailer(config.mail), inject: [APP_CONFIG] },
     { provide: INTERNAL_API_KEY, useFactory: (config: AppConfig) => config.internalApiKey, inject: [APP_CONFIG] },
   ],
   exports: [OrdersService, OrderExpiryService],

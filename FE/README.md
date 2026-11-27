@@ -20,6 +20,7 @@ React 19 + Vite + Tailwind (xuất từ Figma Make), gọi backend **chỉ qua g
 | `/r/:code?c=kênh` | Link giới thiệu của CTV: ghi nhận lượt bấm, lưu cookie, về trang chủ | `POST /public/referrals/click` |
 | `/ctv` | Trang giới thiệu chương trình CTV (nội dung tĩnh; giỏ hàng dùng chung), nút đăng nhập/đăng ký dẫn vào khu CTV | |
 | `/dang-nhap` | Đăng nhập chung: tự vào đúng khu theo vai trò (ADMIN `/admin`, CTV `/ctv/tai-khoan`, khách `/tai-khoan`); `/ctv/dang-nhap`, `/admin/login` chuyển hướng về đây | `POST /auth/login` |
+| `/quen-mat-khau`, `/dat-lai-mat-khau?token=` | Quên mật khẩu: nhập email nhận liên kết (luôn báo đã gửi như nhau); trang đặt mật khẩu mới từ liên kết trong thư, xong về đăng nhập | `POST /auth/forgot-password`, `/auth/reset-password` |
 | `/dang-ky` | Khách mua hàng đăng ký tài khoản (họ tên, email, mật khẩu), đăng nhập luôn | `POST /auth/register-customer` |
 | `/ctv/dang-ky` | Đăng ký cộng tác viên | `POST /auth/register` |
 | `/tai-khoan` | Tài khoản của khách: đổi họ tên và mật khẩu, lịch sử đơn (mở rộng xem chi tiết, hướng dẫn chuyển khoản); thanh toán tự điền họ tên, email và gắn đơn với tài khoản (token gửi kèm khi đặt hàng, làm mới trước nếu sắp hết hạn). Phiên lưu ở `pv.customer.session` | `GET /my-orders`, `GET /my-orders/:code`, `PATCH /auth/me` |

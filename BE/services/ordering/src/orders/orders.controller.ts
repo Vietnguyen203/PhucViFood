@@ -1,6 +1,7 @@
-import { Controller, Get, Headers, HttpCode, Inject, Param, Post, Query, Res } from '@nestjs/common';
+import { Controller, Get, Headers, HttpCode, Inject, Logger, Param, Post, Query, Res } from '@nestjs/common';
 import { AppException, ParamTypes, ValidBody } from '@phucvi/shared-library/api';
 import { CurrentUser, Public, Roles, type AuthUser } from '@phucvi/shared-library/auth';
+import { MAILER, sendSafely, type Mailer } from '@phucvi/shared-library/mail';
 import type { Response } from 'express';
 import { AffiliateClient, toClientError } from '../clients/clients';
 import { IDEMPOTENCY_KEY_REGEX } from '../common/validators';
@@ -9,6 +10,7 @@ import { SettingsService } from '../settings/settings.service';
 import { AdminStatsService } from '../stats/admin-stats.service';
 import { AdminReasonDto, CareNoteDto, CustomerCancelDto, PaymentDto, PhoneDto, PlaceOrderDto } from './dto';
 import { OrderPlacementService } from './order-placement.service';
+import { buildOrderConfirmation } from './order-email';
 import { customerUserIdFrom } from './optional-auth';
 import { AffiliateOrdersService, MyOrdersService, OrdersService } from './orders.service';
 import { toPublicView } from './views';
@@ -22,7 +24,10 @@ export class PublicOrdersController {
     @Inject(OrdersService) private readonly orders: OrdersService,
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    @Inject(MAILER) private readonly mailer: Mailer,
   ) {}
+
+  private readonly logger = new Logger('OrderMail');
 
   /**
    * Đặt hàng. Header `Idempotency-Key` (8-100 ký tự chữ, số, . _ -) giúp bấm đúp hoặc thử lại không tạo đơn trùng:
@@ -41,7 +46,12 @@ export class PublicOrdersController {
     // Khách đã đăng nhập (vai trò CUSTOMER): đơn gắn với tài khoản để xem lại ở /my-orders. Không có hoặc token sai: khách vãng lai.
     const { order, replayed } = await this.placement.place(dto, idempotencyKey, customerUserIdFrom(authorization, this.config.jwt));
     res.status(replayed ? 200 : 201);
-    return { ...toPublicView(order, await this.settings.bankAccount()), replayed };
+    const view = toPublicView(order, await this.settings.bankAccount());
+    // Thư xác nhận chỉ cho đơn mới (không gửi lại khi bấm đúp/thử lại) và khi khách có nhập email. Gửi nền: lỗi thư không làm hỏng đơn.
+    if (!replayed && dto.customer.email) {
+      void sendSafely(this.mailer, buildOrderConfirmation(view, dto.customer.email, this.config.mail.publicBaseUrl), (e) => this.logger.warn(`Không gửi được thư xác nhận đơn ${order.code}: ${e instanceof Error ? e.message : e}`));
+    }
+    return { ...view, replayed };
   }
 
   /** Tra cứu đơn bằng mã đơn và SĐT đã dùng khi đặt hàng. */

@@ -6,6 +6,7 @@ import { NestFactory } from '@nestjs/core';
 import { setupApp } from '@phucvi/shared-library/api';
 import { generateJwtKeyPair, signAccessToken } from '@phucvi/shared-library/auth';
 import { OrderStatusCodec, PaymentStatusCodec } from '@phucvi/shared-library/contracts';
+import { MAILER, type MemoryMailer } from '@phucvi/shared-library/mail';
 import { uuidv7 } from '@phucvi/shared-library/utils';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
@@ -85,6 +86,7 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
       // Nhiều test cố ý làm service lỗi liên tiếp: nâng ngưỡng để mạch không ngắt chéo giữa các test. Retry giữ 2 lần, chờ ngắn.
       ORDER_EXPIRY_ENABLED: 'false', // test gọi runOnce() trực tiếp, không để job tự chạy xen vào
       DOWNSTREAM_BREAKER_THRESHOLD: '1000', DOWNSTREAM_RETRY_ATTEMPTS: '2', DOWNSTREAM_RETRY_BASE_MS: '10',
+      MAIL_TRANSPORT: 'memory', PUBLIC_BASE_URL: 'https://shop.example.vn',
       CATALOG_URL: `${fake.url}/catalog/api`, AFFILIATE_URL: `${fake.url}/affiliate/api`, CUSTOMER_URL: `${fake.url}/customer/api`,
     });
     app = await NestFactory.create(AppModule.forRoot(config), { logger: false });
@@ -745,6 +747,44 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
       expect(r.body.data[0]).toMatchObject({ status: 'PLACED', totalAmount: expect.any(Number) });
       expect((await api('GET', `/internal/customers/${customerId}/orders?limit=0`, { headers: { 'x-internal-key': INTERNAL_KEY } })).status).toBe(400);
       expect((await api('GET', '/internal/customers/abc/orders', { headers: { 'x-internal-key': INTERNAL_KEY } })).status).toBe(400);
+    });
+  });
+
+  describe('thư xác nhận đơn', () => {
+    const mailer = () => app.get<MemoryMailer>(MAILER);
+    const waitMail = async (to: string) => {
+      for (let i = 0; i < 40; i++) { const m = mailer().to(to); if (m.length) return m; await new Promise((r) => setTimeout(r, 50)); }
+      return [];
+    };
+
+    it('có email thì gửi thư xác nhận (mã đơn, tiền, link theo dõi); đơn không bị ảnh hưởng', async () => {
+      const email = `khach-${rand(6)}@example.com`;
+      const r = await place({ extra: { customer: { fullName: 'Khách Có Thư', phone: newPhone(), email, province: 'Thành phố Hà Nội', ward: 'Phường Cầu Giấy', addressLine: '12 Trần Thái Tông' } } });
+      expect(r.status).toBe(201);
+      const mails = await waitMail(email);
+      expect(mails).toHaveLength(1);
+      expect(mails[0].subject).toBe(`Phúc Vị Foods: đã nhận đơn ${r.body.data.code}`);
+      expect(mails[0].text).toContain(`https://shop.example.vn/don-hang/${r.body.data.code}`);
+      expect(mails[0].text).toContain('Khách Có Thư');
+    });
+
+    it('không có email thì không gửi; gửi lặp cùng Idempotency-Key không gửi thư thứ hai', async () => {
+      const before = mailer().sent.length;
+      expect((await place()).status).toBe(201);
+      await new Promise((r) => setTimeout(r, 300));
+      expect(mailer().sent.length).toBe(before);
+
+      const email = `lap-${rand(6)}@example.com`;
+      const key = `it-mail-${rand(8)}`;
+      const body = (phone: string) => ({ items: [{ productId: product().id, quantity: 1 }], paymentMethod: 'COD', customer: { fullName: 'Khách Lặp', phone, email, province: 'Thành phố Hà Nội', ward: 'Phường Cầu Giấy', addressLine: '12 Trần Thái Tông' } });
+      const phone = newPhone();
+      const first = await api('POST', '/public/orders', { headers: { 'idempotency-key': key }, body: body(phone) });
+      const again = await api('POST', '/public/orders', { headers: { 'idempotency-key': key }, body: body(phone) });
+      expect(first.status).toBe(201);
+      expect(again.status).toBe(200);
+      await waitMail(email);
+      await new Promise((r) => setTimeout(r, 300));
+      expect(mailer().to(email)).toHaveLength(1);
     });
   });
 

@@ -12,7 +12,7 @@ Tiền tố `/api`. JWT do service `user` ký bằng khóa riêng; service này 
 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
-| POST | `/public/orders` | Đặt hàng. Header `Idempotency-Key` (8-100 ký tự chữ, số, `. _ -`) chống đặt trùng. Có header `Authorization: Bearer` của tài khoản `CUSTOMER` hợp lệ thì đơn gắn `user_id` để khách xem lại ở `/my-orders`; token thiếu, sai, hết hạn hoặc của vai trò khác thì đặt như khách vãng lai (không báo lỗi) |
+| POST | `/public/orders` | Đặt hàng. Header `Idempotency-Key` (8-100 ký tự chữ, số, `. _ -`) chống đặt trùng. Khách nhập email thì gửi thư xác nhận đơn (chỉ đơn mới, gửi nền; lỗi thư chỉ ghi log, không làm hỏng đơn). Có header `Authorization: Bearer` của tài khoản `CUSTOMER` hợp lệ thì đơn gắn `user_id` để khách xem lại ở `/my-orders`; token thiếu, sai, hết hạn hoặc của vai trò khác thì đặt như khách vãng lai (không báo lỗi) |
 | GET | `/public/orders/:code?phone=` | Tra cứu đơn bằng mã đơn và SĐT đã dùng khi đặt |
 | POST | `/public/orders/:code/confirm-received` | Khách xác nhận đã nhận hàng (chỉ khi đơn đã giao) |
 | POST | `/public/orders/:code/cancel` | Khách tự hủy (chỉ khi PLACED hoặc CONFIRMED) |

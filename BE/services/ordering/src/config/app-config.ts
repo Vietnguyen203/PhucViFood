@@ -1,5 +1,6 @@
 import { readJwtConfig, type JwtConfig } from '@phucvi/shared-library/auth';
 import { readResilienceEnv, type ResilienceConfig } from '@phucvi/shared-library/http';
+import { readMailConfig, type MailConfig } from '@phucvi/shared-library/mail';
 
 export const APP_CONFIG = Symbol('APP_CONFIG');
 
@@ -22,6 +23,8 @@ export interface AppConfig {
   /** Job tự hủy đơn chuyển khoản quá hạn thanh toán. */
   orderExpiryEnabled: boolean;
   orderExpiryIntervalMs: number;
+  /** Gửi thư xác nhận đơn (SMTP, link cửa hàng). */
+  mail: MailConfig;
 }
 
 type Env = Record<string, string | undefined>;
@@ -60,6 +63,8 @@ export function loadConfig(env: Env = process.env): AppConfig {
   // Chỉ kiểm tra token nên chỉ cần khóa công khai (khóa riêng nằm ở user service).
   const jwt = readJwtConfig(env, 'verify', ttl, problems);
 
+  const mail = readMailConfig(env, problems);
+
   if (problems.length) throw new Error(`Cấu hình không hợp lệ:\n - ${problems.join('\n - ')}`);
 
   return {
@@ -74,5 +79,6 @@ export function loadConfig(env: Env = process.env): AppConfig {
     relayEnabled: env.OUTBOX_RELAY_ENABLED !== 'false',
     orderExpiryEnabled: env.ORDER_EXPIRY_ENABLED !== 'false',
     orderExpiryIntervalMs: expiryInterval,
+    mail,
   };
 }

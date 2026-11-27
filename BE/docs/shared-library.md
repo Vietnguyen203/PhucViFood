@@ -56,6 +56,8 @@ Ném lỗi nghiệp vụ bằng `AppException`: `throw AppException.businessRule
 ```ts
 create(@ValidBody(CreateUserDto) dto: CreateUserDto) { ... }
 ```
+**Gửi thư (`/mail`)**: `readMailConfig(env, problems)` đọc `MAIL_TRANSPORT` (`smtp` | `log` mặc định | `memory` cho test), `SMTP_HOST/PORT/SECURE/USER/PASS`, `MAIL_FROM`, `PUBLIC_BASE_URL` (địa chỉ cửa hàng dùng làm link trong thư). `createMailer(config)` trả `Mailer` (`SmtpMailer` dùng nodemailer, `LogMailer` chỉ in ra log, `MemoryMailer` giữ trong bộ nhớ để test); service cấp qua token `MAILER`. `sendSafely(mailer, msg, onError)` gửi mà không làm hỏng việc chính (lỗi chỉ ghi log). `escapeHtml`, `formatVnd`, `emailLayout`, `emailButton` để dựng thư: mọi dữ liệu người dùng đưa vào HTML phải qua `escapeHtml`. Dev: Mailpit (`pnpm db:up`) nhận thư ở cổng 1025, xem ở http://localhost:8025.
+
 **Khoảng ngày cho báo cáo**: `parseVnDateRange(from, to, maxDays)` kiểm tra hai ngày `yyyy-mm-dd` (không nhận ngày không có thật như 2026-02-30), `from` ≤ `to`, tối đa `maxDays` ngày, rồi trả `{ from, to, start, end, days }` với `start`/`end` là 00:00 giờ Việt Nam (cận `>= start`, `< end`); sai thì ném lỗi 400 chỉ rõ trường. Dùng cho `GET /orders/report` và `GET /commissions/report`.
 
 Mọi dependency phải khai báo `@Inject(Token)` tường minh (cũng vì lý do trên). Handler có `@Param`/`@Query` thêm `@ParamTypes(String, Object)` (kiểu theo thứ tự tham số) để Nest không cảnh báo thiếu metadata.

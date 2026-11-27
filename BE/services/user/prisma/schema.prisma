@@ -32,6 +32,7 @@ model User {
   createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
   refreshTokens       RefreshToken[]
+  passwordResets      PasswordResetToken[]
 
   @@map("users")
   @@schema("user")
@@ -56,6 +57,21 @@ model RefreshToken {
   @@index([familyId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+  @@schema("user")
+}
+
+// Token đặt lại mật khẩu gửi qua email: dùng một lần, có hạn. Chỉ lưu băm SHA-256, không lưu token gốc.
+model PasswordResetToken {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("password_reset_tokens")
   @@schema("user")
 }
 

@@ -10,6 +10,8 @@ Tiền tố `/api`. Mặc định **mọi route đều cần JWT**, trừ route 
 |---|---|---|---|
 | POST | `/auth/register` | Công khai | Đăng ký tài khoản CTV (vai trò `AFFILIATE`), trả luôn cặp token |
 | POST | `/auth/register-customer` | Công khai | Khách mua hàng đăng ký tài khoản (vai trò `CUSTOMER` cố định; không nhận `role` từ client). Cần `email`, `password` (theo chính sách chung), `fullName` (2-100 ký tự); trả luôn cặp token. Email trùng 409 |
+| POST | `/auth/forgot-password` | Công khai | Quên mật khẩu: nhận `email`, luôn trả 202 `{ sent: true }` dù có tài khoản hay không (không lộ email đã đăng ký). Có tài khoản đang hoạt động thì gửi thư kèm liên kết `{PUBLIC_BASE_URL}/dat-lai-mat-khau?token=...` (token ngẫu nhiên 256 bit, chỉ lưu băm SHA-256, hiệu lực `PASSWORD_RESET_TTL_MINUTES` mặc định 60 phút, dùng một lần). Tối đa `PASSWORD_RESET_MAX_PER_HOUR` (3) thư mỗi tài khoản mỗi giờ, quá thì vẫn trả 202 nhưng không gửi |
+| POST | `/auth/reset-password` | Công khai | Đặt mật khẩu mới bằng `token` trong thư và `newPassword` (theo chính sách chung). Token sai, hết hạn hoặc đã dùng trả 400 chung một lỗi. Thành công: mọi phiên đăng nhập bị thu hồi, các thư cũ vô hiệu, gỡ khóa đăng nhập sai; không tự đăng nhập |
 | PATCH | `/auth/me` | Đã đăng nhập | Đổi họ tên hiển thị (`fullName`) của chính mình |
 | POST | `/auth/login` | Công khai | Đăng nhập bằng email và mật khẩu |
 | POST | `/auth/refresh` | Công khai | Đổi refresh token lấy cặp token mới (xoay vòng) |
