@@ -45,7 +45,6 @@ Chỉ tài khoản ADMIN (đăng nhập ở `/dang-nhap`; tài khoản dev nằm
 | Cộng tác viên | Duyệt (hợp đồng, tỷ lệ), từ chối, tạm ngưng, kích hoạt lại, sửa hợp đồng/tỷ lệ |
 | Hoa hồng, đợt chi trả, khoản trừ | Xác nhận sớm; tạo đợt chi (chọn hoa hồng, thấy khoản trừ chờ); miễn khoản trừ kèm lý do |
 | Khách hàng | Lọc theo phân loại, mức hoạt động, đồng ý tư vấn, tỉnh, ngày; chi tiết, sửa liên hệ, ghi nhận đồng ý; xuất Excel theo đúng bộ lọc |
-| Cài đặt và nhật ký xuất | Ngưỡng phân loại khách; nhật ký các lần xuất dữ liệu |
 
 Mã: `src/lib/admin/` (phiên và tự làm mới `auth.ts`, dựng truy vấn danh sách `query.ts`, tên file tải về `download.ts`, kiểu dữ liệu `types.ts`; có test), `src/admin/` (khung, trang, thành phần dùng chung `ui.tsx`, `admin.css`).
 

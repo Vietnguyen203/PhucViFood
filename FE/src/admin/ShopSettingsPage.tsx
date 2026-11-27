@@ -88,7 +88,7 @@ export default function ShopSettingsPage() {
       {group("Giao hàng", (r) => r.key.startsWith("shipping."))}
       {group("Thanh toán chuyển khoản", (r) => r.key.startsWith("payment."))}
       {group("Chương trình cộng tác viên", (r) => r.source === "affiliate")}
-      <p className="ad-muted">Thay đổi áp dụng cho đơn đặt sau đó; đơn đã đặt giữ phí ship và hạn thanh toán đã chốt. Ngưỡng phân loại khách hàng ở mục "Cài đặt và nhật ký xuất".</p>
+      <p className="ad-muted">Thay đổi áp dụng cho đơn đặt sau đó; đơn đã đặt giữ phí ship và hạn thanh toán đã chốt.</p>
       {edit && <EditModal s={edit} onClose={() => setEdit(null)} onSaved={state.reload} />}
     </>
   );

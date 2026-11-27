@@ -16,7 +16,7 @@
 .ad-user .ad-icon-btn:hover:not(:disabled) { background: rgba(255, 255, 255, .12); border-color: var(--ad-gold); color: var(--ad-gold); }
 .ad-main { flex: 1; min-width: 0; }
 .ad-top { display: none; align-items: center; gap: 12px; padding: 10px 14px; background: #4a0a0d; color: #fff; border-bottom: 1px solid var(--ad-line); }
-.ad-content { padding: 22px 26px 60px; max-width: 1400px; }
+.ad-content { padding: 22px 26px 60px; } /* tràn hết bề ngang khung nội dung, không giới hạn rộng tối đa */
 .ad-content h1 { font-size: 24px; font-weight: 700; line-height: 1.3; letter-spacing: -.01em; color: var(--ad-primary-dark); margin: 0 0 14px; }
 .ad-content h2 { font-size: 17px; font-weight: 700; color: var(--ad-primary-dark); margin: 20px 0 8px; }
 .ad-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }

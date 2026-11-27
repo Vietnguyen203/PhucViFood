@@ -7,13 +7,13 @@ import { Badge, ConfirmModal, ErrorBox, Field, FormModal, Loading, Pager, useAct
 function CategoryForm({ category, onClose, onSaved }: { category?: AdminCategory; onClose: () => void; onSaved: () => void }) {
   const { adm, notify } = useAdmin();
   const [name, setName] = useState(category?.name ?? "");
-  const [slug, setSlug] = useState(category?.slug ?? "");
   const [sortOrder, setSortOrder] = useState(String(category?.sortOrder ?? 0));
   const [isActive, setIsActive] = useState(category?.isActive ?? true);
   return (
     <FormModal title={category ? "Sửa danh mục" : "Thêm danh mục"} onClose={onClose}
       onSubmit={async () => {
-        const body = { name: name.trim(), slug: slug.trim() || undefined, sortOrder: Number(sortOrder || 0), isActive };
+        // Đường dẫn (slug) tự sinh từ tên khi tạo và giữ nguyên khi sửa, nên không có ô nhập.
+        const body = { name: name.trim(), sortOrder: Number(sortOrder || 0), isActive };
         if (category) await adm(`/categories/${category.id}`, { method: "PATCH", body });
         else await adm("/categories", { method: "POST", body });
         notify("Đã lưu danh mục");
@@ -22,7 +22,6 @@ function CategoryForm({ category, onClose, onSaved }: { category?: AdminCategory
       {(err) => (
         <>
           <Field label="Tên danh mục *" error={err.name}><input value={name} onChange={(e) => setName(e.target.value)} maxLength={100} autoFocus /></Field>
-          <Field label="Đường dẫn (slug)" error={err.slug} hint="Để trống để tự sinh từ tên."><input value={slug} onChange={(e) => setSlug(e.target.value)} /></Field>
           <Field label="Thứ tự hiển thị" error={err.sortOrder} hint="Số nhỏ hiện trước."><input value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} inputMode="numeric" /></Field>
           <label className="ad-check"><input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} /> Đang hoạt động (hiện trên cửa hàng)</label>
         </>

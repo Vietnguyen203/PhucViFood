@@ -60,8 +60,6 @@ export interface AdminCustomer {
   statsAvailable?: boolean; orders?: { validOrders: number; totalSpent: number; lastOrderAt: string | null } | null; tier?: string | null; activity?: string | null;
 }
 
-export interface CustomerSetting { key: string; value: number; description: string | null; updatedBy: string | null; updatedAt: string }
-export interface ExportLog { id: string; exportedBy: string; filters: Record<string, unknown>; rowCount: number; format: string; createdAt: string }
 
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   PLACED: "Mới đặt", CONFIRMED: "Đã xác nhận", SHIPPING: "Đang giao", DELIVERED: "Đã giao", COMPLETED: "Hoàn tất", CANCELLED: "Đã hủy", RETURNED: "Hoàn trả",
