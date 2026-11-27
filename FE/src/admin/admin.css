@@ -151,3 +151,4 @@
 .ad-row-actions .ad-icon-btn { width: 32px; height: 32px; }
 .ad-table .actions .ad-row-actions { flex-wrap: nowrap; }
 @media (max-width: 600px) { .ad-filter-actions { width: 100%; justify-content: flex-end; } }
+.ad-presets { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex-basis: 100%; }

@@ -781,6 +781,46 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
       expect(after.daily[13].revenue - (before.daily[13]?.revenue ?? 0)).toBeGreaterThanOrEqual(valid);
     });
 
+    it('báo cáo theo khoảng ngày: cần ADMIN, kiểm tra tham số, số liệu khớp đơn vừa đặt', async () => {
+      const today = new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
+      const report = (from: string, to: string, token = admin()) => api('GET', `/orders/report?from=${from}&to=${to}`, { token });
+      expect((await api('GET', `/orders/report?from=${today}&to=${today}`)).status).toBe(401);
+      expect((await report(today, today, token('AFFILIATE'))).status).toBe(403);
+      for (const [f, t] of [['2026-02-30', today], ['abc', today], [today, '2026-13-01'], ['2026-06-02', '2026-06-01'], ['2024-01-01', '2026-01-01'], ['', '']]) {
+        expect((await report(f, t)).status, `${f}..${t}`).toBe(400);
+      }
+      expect((await api('GET', '/orders/report', { token: admin() })).status).toBe(400);
+
+      const before = (await report(today, today)).body.data;
+      const a = await place({ payment: 'BANK_QR' });
+      const b = await place({ payment: 'COD' });
+      const cancelled = await place({ payment: 'COD' });
+      expect((await api('POST', `/public/orders/${cancelled.body.data.code}/cancel`, { body: { phone: cancelled.phone, reason: 'test báo cáo' } })).status).toBe(200);
+      const after = (await report(today, today)).body.data;
+
+      const valid = a.body.data.totalAmount + b.body.data.totalAmount;
+      expect(after.range).toEqual({ from: today, to: today, days: 1 });
+      expect(after.totals.orders - before.totals.orders).toBe(2);
+      expect(after.totals.revenue - before.totals.revenue).toBe(valid);
+      expect(after.byStatus.PLACED - before.byStatus.PLACED).toBe(2);
+      expect(after.byStatus.CANCELLED - before.byStatus.CANCELLED).toBe(1);
+      expect(after.daily).toEqual([{ date: today, orders: after.totals.orders, revenue: after.totals.revenue }]);
+      expect(after.totals.averageOrderValue).toBe(Math.round(after.totals.revenue / after.totals.orders));
+      const methods = Object.fromEntries(after.byPayment.map((m: any) => [m.method, m]));
+      expect(methods.BANK_QR.orders).toBeGreaterThanOrEqual(1);
+      expect(methods.COD.orders).toBeGreaterThanOrEqual(1);
+      expect(after.topProducts.length).toBeGreaterThan(0);
+      expect(after.topProducts.length).toBeLessThanOrEqual(10);
+      expect(after.topProducts[0]).toMatchObject({ productId: expect.any(String), name: expect.any(String), quantity: expect.any(Number), revenue: expect.any(Number) });
+
+      // khoảng nhiều ngày: đủ ngày liên tiếp, tổng ngày khớp tổng khoảng; khoảng trong quá khứ không có đơn mới
+      const week = (await report('2026-01-01', '2026-01-10')).body.data;
+      expect(week.daily).toHaveLength(10);
+      expect(week.daily.reduce((n: number, d: any) => n + d.revenue, 0)).toBe(week.totals.revenue);
+      const long = (await report('2025-01-01', '2025-12-31')).body.data; // 365 ngày: vẫn trong giới hạn 366
+      expect(long.daily).toHaveLength(365);
+    });
+
     it('cấu hình: liệt kê đủ khóa sửa được, đổi phí ship có hiệu lực ngay và ghi người sửa', async () => {
       const list = (await api('GET', '/order-settings', { token: admin() })).body.data as Array<{ key: string; kind: string }>;
       expect(list.map((x) => x.key).sort()).toEqual(['payment.bank_account_holder', 'payment.bank_account_no', 'payment.bank_name', 'payment.hold_minutes', 'shipping.flat_fee', 'shipping.free_threshold']);

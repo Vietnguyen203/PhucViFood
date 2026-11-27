@@ -71,6 +71,12 @@ export class AdminOrdersController {
     return this.stats.overview();
   }
 
+  /** Báo cáo theo khoảng ngày: ?from=yyyy-mm-dd&to=yyyy-mm-dd (tối đa 366 ngày). Khai báo trước ':id'. */
+  @Get('report') @ParamTypes(Object)
+  report(@Query() query: Record<string, unknown>) {
+    return this.stats.report(query.from, query.to);
+  }
+
   /** Hàng chờ CSKH: đơn đã giao chưa hoàn tất, lâu nhất lên đầu. Khai báo trước ':id'. */
   @Get('cskh-queue') @ParamTypes(Object)
   cskhQueue(@Query() query: Record<string, unknown>) {

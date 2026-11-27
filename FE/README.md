@@ -32,6 +32,7 @@ Chỉ tài khoản ADMIN (đăng nhập ở `/dang-nhap`; tài khoản dev nằm
 
 | Mục | Việc |
 |---|---|
+| Báo cáo (`/admin/bao-cao`) | Chọn khoảng ngày (nhanh: hôm nay, 7, 30 ngày, tháng này, tháng trước; tối đa 366 ngày): doanh thu, số đơn, giá trị đơn trung bình, đơn qua CTV, biểu đồ theo ngày, đơn theo trạng thái và hình thức thanh toán, sản phẩm bán chạy; xuất CSV theo ngày và theo sản phẩm |
 | Tổng quan (`/admin`) | Doanh thu hôm nay / 7 / 30 ngày và biểu đồ 14 ngày; đơn theo trạng thái; việc cần xử lý (đơn chờ chuyển khoản, chờ CSKH, CTV chờ duyệt, hoa hồng chờ chi, khoản trừ chờ); hàng sắp hết |
 | Cấu hình bán hàng | Phí ship và mức miễn phí, hạn giữ hàng chuyển khoản, tài khoản nhận tiền, hạn cookie link CTV; cảnh báo khi chưa cấu hình đủ tài khoản nhận tiền |
 | Đơn hàng, chi tiết đơn | Lọc (trạng thái, thanh toán, hình thức, ngày, tìm mã/tên/SĐT); xác nhận, giao, đã giao, hoàn tất, hủy/hoàn (bắt buộc lý do); đánh dấu đã thanh toán/hoàn tiền; ghi nhận CSKH |

@@ -61,6 +61,7 @@ const router = createBrowserRouter([
         ...admin(() => import("./admin/AdminLayout")),
         children: [
           { index: true, ...admin(() => import("./admin/DashboardPage")) },
+          { path: "bao-cao", ...admin(() => import("./admin/ReportPage")) },
           { path: "cai-dat-cua-hang", ...admin(() => import("./admin/ShopSettingsPage")) },
           { path: "don-hang", ...admin(() => import("./admin/OrdersPage")) },
           { path: "don-hang/:id", ...admin(() => import("./admin/OrderDetailPage")) },
