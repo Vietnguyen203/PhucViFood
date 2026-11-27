@@ -11,7 +11,9 @@ import {
 } from "../lib/checkout";
 import { formatVnd } from "../lib/money";
 import { customerAuth } from "../lib/customerAuth";
-import { newIdempotencyKey, placeOrder } from "../lib/orders";
+import { fetchPaymentOptions, newIdempotencyKey, placeOrder } from "../lib/orders";
+import { isPaymentGatewayUrl } from "../lib/payment";
+import { useAsync } from "../lib/useAsync";
 import { loadReferral } from "../lib/referral";
 import { safeStorage } from "../lib/storage";
 import { trackEvent } from "../lib/tracking";
@@ -41,6 +43,9 @@ export default function CheckoutPage() {
   const account = customerAuth.session()?.user;
   const [form, setForm] = useState<CheckoutForm>(() => ({ ...EMPTY_CHECKOUT, fullName: account?.fullName ?? "", email: account?.email ?? "" }));
   const [errors, setErrors] = useState<CheckoutErrors>({});
+  // VNPay chỉ hiện khi máy chủ đã cấu hình; lỗi tải thì coi như chưa bật.
+  const { data: payOptions } = useAsync((signal) => fetchPaymentOptions(signal), []);
+  const vnpayOn = payOptions?.vnpay === true;
   const [submitting, setSubmitting] = useState(false);
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [stockProblems, setStockProblems] = useState<string[]>([]);
@@ -79,6 +84,8 @@ export default function CheckoutPage() {
       const order = await placeOrder(buildOrderPayload(form, cart, referral), idempotencyKey.current);
       try { sessionStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ code: order.code, phone: form.phone.trim() })); } catch { /* không lưu được thì khách tự nhập SĐT */ }
       clear();
+      // Đơn VNPay: chuyển khách sang cổng thanh toán ngay (rời trang; thanh toán xong cổng đưa về /thanh-toan/vnpay). Link lạ thì ở lại trang đơn để thanh toán lại.
+      if (order.paymentUrl && isPaymentGatewayUrl(order.paymentUrl)) { window.location.assign(order.paymentUrl); return; }
       navigate(`/don-hang/${order.code}`, { replace: true, state: { justPlaced: true } });
     } catch (e) {
       if (e instanceof ApiError) {
@@ -150,6 +157,12 @@ export default function CheckoutPage() {
                   <input type="radio" name="payment" checked={form.paymentMethod === "BANK_QR"} onChange={() => set("paymentMethod", "BANK_QR")} />
                   <span><strong>Chuyển khoản ngân hàng</strong><small>Sau khi đặt, bạn nhận thông tin chuyển khoản. Đơn chưa thanh toán đúng hạn sẽ tự hủy.</small></span>
                 </label>
+                {vnpayOn && (
+                  <label className={form.paymentMethod === "VNPAY" ? "active" : ""}>
+                    <input type="radio" name="payment" checked={form.paymentMethod === "VNPAY"} onChange={() => set("paymentMethod", "VNPAY")} />
+                    <span><strong>Thanh toán online qua VNPay</strong><small>Thẻ ATM nội địa, thẻ quốc tế hoặc quét mã QR qua ứng dụng ngân hàng. Đơn chưa thanh toán đúng hạn sẽ tự hủy.</small></span>
+                  </label>
+                )}
               </div>
 
               <h2>Mã giới thiệu</h2>

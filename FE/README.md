@@ -6,7 +6,7 @@ React 19 + Vite + Tailwind (xuất từ Figma Make), gọi backend **chỉ qua g
 
 | Đường dẫn | Việc | API (qua gateway) |
 |---|---|---|
-| `/` | Trang chủ: hàng danh mục hình tròn dưới banner (ảnh đại diện hoặc chữ cái đầu; ẩn khi chưa có danh mục), sản phẩm thật (nút lọc theo danh mục, "Xem thêm"; ẩn khi chưa có sản phẩm), thêm vào giỏ | `GET /public/categories`, `GET /public/products` |
+| `/` | Trang chủ: hàng ô tròn lối tắt dưới banner (ảnh biểu tượng, tên và trang đích do admin đặt, vd bài viết; ẩn khi chưa có ô nào), sản phẩm thật (nút lọc theo danh mục, "Xem thêm"; ẩn khi chưa có sản phẩm), thêm vào giỏ | `GET /public/shortcuts`, `GET /public/categories`, `GET /public/products` |
 | `/san-pham/:slug` | Chi tiết sản phẩm: giá, giảm giá, còn/hết hàng, chọn số lượng, thêm vào giỏ hoặc "Mua ngay", sản phẩm cùng danh mục; ghi sự kiện `PRODUCT_VIEW` cho CTV | `GET /public/products/:slug` |
 | `/danh-muc/:slug?sort=...&gia=...` | Sản phẩm theo danh mục, sắp xếp, lọc theo khoảng giá, "Xem thêm"; mở từ đường dẫn danh mục ở trang sản phẩm | `GET /public/categories`, `GET /public/products?filter[categoryId]=` |
 | `/tin-tuc`, `/tin-tuc/:slug` | Danh sách và chi tiết bài viết; nội dung mẫu tĩnh trong `src/lib/news.ts` (chưa có CMS), slug lạ hiện trang "Không tìm thấy" | Không gọi API |
@@ -18,8 +18,9 @@ React 19 + Vite + Tailwind (xuất từ Figma Make), gọi backend **chỉ qua g
 | `/` (khung video, dưới KOL/KOC) | Khung rộng: video đang chọn hiện ảnh bìa, bấm mới tải và phát ngay trên trang (YouTube, Vimeo, TikTok, Facebook, tệp .mp4/.webm; link lạ không nhúng được thì mở tab mới); nhiều video thì có hàng ảnh nhỏ để đổi. Thẻ KOL/KOC có link video cũng mở hộp phát video ngay trên trang (link khác vẫn mở như cũ). Chưa có video thì ẩn | `GET /public/videos` |
 | `/tim-kiem?q=...&sort=...&gia=...` | Kết quả tìm kiếm (tên, mô tả), sắp xếp, "Xem thêm"; ô tìm kiếm ở header | `GET /public/products?q=` |
 | (mọi trang) | Giỏ hàng dạng ngăn kéo, lưu trong trình duyệt, đồng bộ giữa các tab | |
-| `/thanh-toan` | Thanh toán: thông tin giao hàng, COD hoặc chuyển khoản, mã CTV, đồng ý tư vấn | `POST /public/orders` (có `Idempotency-Key`) |
-| `/don-hang/:code?` | Tra cứu đơn bằng mã + SĐT; thông tin chuyển khoản và hạn thanh toán; hủy đơn; xác nhận đã nhận hàng | `GET /public/orders/:code`, `POST .../cancel`, `POST .../confirm-received` |
+| `/thanh-toan` | Thanh toán: thông tin giao hàng, COD, chuyển khoản hoặc VNPay (chỉ hiện khi máy chủ bật; chọn VNPay thì chuyển sang cổng thanh toán ngay sau khi đặt), mã CTV, đồng ý tư vấn | `POST /public/orders` (có `Idempotency-Key`) |
+| `/thanh-toan/vnpay` | Cổng VNPay đưa khách về sau khi thanh toán: gửi nguyên kết quả cho máy chủ kiểm tra chữ ký rồi báo thành công hoặc hướng dẫn thanh toán lại | `GET /public/payments/vnpay/return` |
+| `/don-hang/:code?` | Tra cứu đơn bằng mã + SĐT; thông tin chuyển khoản, nút "Thanh toán qua VNPay" cho đơn VNPay chưa trả, hạn thanh toán; hủy đơn; xác nhận đã nhận hàng | `GET /public/orders/:code`, `POST .../cancel`, `POST .../confirm-received` |
 | `/r/:code?c=kênh` | Link giới thiệu của CTV: ghi nhận lượt bấm, lưu cookie, về trang chủ | `POST /public/referrals/click` |
 | `/ctv` | Trang giới thiệu chương trình CTV (nội dung tĩnh; giỏ hàng dùng chung), nút đăng nhập/đăng ký dẫn vào khu CTV | |
 | `/dang-nhap` | Đăng nhập chung: tự vào đúng khu theo vai trò (ADMIN `/admin`, CTV `/ctv/tai-khoan`, khách `/tai-khoan`); `/ctv/dang-nhap`, `/admin/login` chuyển hướng về đây | `POST /auth/login` |
@@ -45,7 +46,8 @@ Chỉ tài khoản ADMIN (đăng nhập ở `/dang-nhap`; tài khoản dev nằm
 | Đơn hàng, chi tiết đơn | Lọc (trạng thái, thanh toán, hình thức, ngày, tìm mã/tên/SĐT); xác nhận, giao, đã giao, hoàn tất, hủy/hoàn (bắt buộc lý do); đánh dấu đã thanh toán/hoàn tiền; ghi nhận CSKH |
 | Hàng chờ CSKH | Đơn đã giao chưa hoàn tất, số ngày chờ, lần liên hệ gần nhất |
 | Sản phẩm | Thêm, sửa, ẩn/hiện, xóa (danh mục không bắt buộc, không có SKU; giá bán gõ theo nghìn đồng: gõ 339 là 339.000₫, hoặc viết đủ 339.000; thay ô giá gốc bằng ô "Giảm giá (%)" và hệ thống tự tính giá gốc); ảnh tải từ máy (tự thu nhỏ và nén trên trình duyệt, tối đa 1 MB) hoặc dán link; điều chỉnh kho kèm lý do; sổ kho (lịch sử thay đổi); lọc hàng sắp hết |
-| Danh mục | Thêm, sửa, ẩn/hiện, xóa; ảnh đại diện tùy chọn (hiện trong vòng tròn ở trang chủ) |
+| Danh mục | Thêm, sửa, ẩn/hiện, xóa |
+| Ô tròn trang chủ (`/admin/o-tron`) | Thêm, sửa, bật/tắt, xóa ô tròn dưới banner: tên, ảnh biểu tượng vuông, trang đích (bài viết, danh mục, link ngoài), thứ tự; khách thấy tối đa 10 ô |
 | Chỉnh ảnh (mọi ô ảnh ở admin) | Chọn ảnh từ máy thì mở trình chỉnh ảnh: chọn tỷ lệ khung (gốc, 1:1, 4:3, 3:4, 16:9, 9:16), kéo để căn, phóng to, xoay 90°; "Dùng nguyên ảnh" để bỏ qua. Ảnh đã có có nút "Chỉnh ảnh" (ảnh từ đường dẫn ngoài thường không mở được do trình duyệt chặn) |
 | Banner trang chủ (`/admin/banner`) | Thêm, sửa, bật/tắt, xóa banner; chọn vị trí (khung lớn hoặc ô khuyến mãi bên phải), tải ảnh từ máy, đích bấm, thứ tự và lịch hiển thị; thấy trạng thái đang hiện, đã tắt, chưa tới lịch, đã hết hạn |
 | KOL / KOC (`/admin/kol-koc`) | Thêm, sửa, bật/tắt, xóa thẻ KOL/KOC; chọn loại, tải ảnh chân dung dọc 3:4, câu giới thiệu, link đích, thứ tự (khách thấy tối đa 12 thẻ) |

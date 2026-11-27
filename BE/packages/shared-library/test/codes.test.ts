@@ -20,7 +20,7 @@ const FROZEN: Array<[string, EnumCodec<string>, Record<string, number>]> = [
   ['ConfirmSource', ConfirmSourceCodec, { CUSTOMER: 1, ADMIN: 2 }],
   ['AdjustmentStatus', AdjustmentStatusCodec, { PENDING: 1, APPLIED: 2, WAIVED: 3 }],
   ['OrderStatus', OrderStatusCodec, { PLACED: 1, CONFIRMED: 2, SHIPPING: 3, DELIVERED: 4, COMPLETED: 5, CANCELLED: 6, RETURNED: 7 }],
-  ['PaymentMethod', PaymentMethodCodec, { COD: 1, BANK_QR: 2 }],
+  ['PaymentMethod', PaymentMethodCodec, { COD: 1, BANK_QR: 2, VNPAY: 3 }],
   ['PaymentStatus', PaymentStatusCodec, { PENDING: 1, UNPAID: 2, PAID: 3, REFUNDED: 4 }],
   ['AttributionSource', AttributionSourceCodec, { LINK: 1, CODE: 2 }],
   ['ReceivedBy', ReceivedByCodec, { CUSTOMER: 1, ADMIN: 2 }],

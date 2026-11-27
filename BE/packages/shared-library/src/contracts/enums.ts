@@ -7,7 +7,7 @@ export const OrderStatus = {
 } as const;
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
 
-export const PaymentMethod = { COD: 'COD', BANK_QR: 'BANK_QR' } as const;
+export const PaymentMethod = { COD: 'COD', BANK_QR: 'BANK_QR', VNPAY: 'VNPAY' } as const;
 export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod];
 
 export const PaymentStatus = { PENDING: 'PENDING', UNPAID: 'UNPAID', PAID: 'PAID', REFUNDED: 'REFUNDED' } as const;

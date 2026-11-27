@@ -9,8 +9,12 @@ export interface OrderMailData {
   totalAmount: number | bigint;
   shipping: { name: string; phone: string; province: string; ward: string; addressLine: string };
   items?: Array<{ name: string; quantity: number; unitPrice: number | bigint; lineTotal: number | bigint }>;
+  /** Đơn VNPay chưa thanh toán: còn hạn đến `dueAt`. */
+  onlinePayment?: { provider: string; dueAt: Date | string | null } | null;
   transferInstructions?: { bankName: string; accountNo: string; accountHolder: string; amount: number | bigint; content: string; dueAt: Date | string | null } | null;
 }
+
+const paymentLabel = (method: string): string => (method === 'COD' ? 'Khi nhận hàng (COD)' : method === 'VNPAY' ? 'Thanh toán online (VNPay)' : 'Chuyển khoản');
 
 const fmtDue = (d: Date | string): string => new Date(d).toLocaleString('vi-VN', { hour12: false, timeZone: 'Asia/Ho_Chi_Minh' });
 
@@ -36,11 +40,16 @@ export function buildOrderConfirmation(o: OrderMailData, to: string, publicBaseU
 <b>Chuyển khoản ${escapeHtml(formatVnd(t.amount))}</b><br>${escapeHtml(t.bankName)} · ${escapeHtml(t.accountNo)} · ${escapeHtml(t.accountHolder)}<br>Nội dung: <b>${escapeHtml(t.content)}</b>${t.dueAt ? `<br>Vui lòng chuyển trước ${escapeHtml(fmtDue(t.dueAt))}, quá hạn đơn sẽ tự hủy.` : ''}</div>`
     : '';
 
+  const online = o.onlinePayment;
+  const onlineHtml = online
+    ? `<p style="margin:4px 0 0;font-size:14px;color:#9b1c22">Đơn chưa thanh toán xong${online.dueAt ? `, vui lòng thanh toán trước ${escapeHtml(fmtDue(online.dueAt))}` : ''}. Mở trang theo dõi đơn để thanh toán.</p>`
+    : '';
+
   const bodyHtml = `<p style="margin:0 0 12px">Chào ${escapeHtml(o.shipping.name)}, Phúc Vị đã nhận được đơn hàng của bạn. Mã đơn: <b>${escapeHtml(o.code)}</b>.</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px">${rows}${totals}</table>
 ${transferHtml}
 <p style="margin:14px 0 4px;font-size:14px"><b>Giao tới:</b> ${escapeHtml(o.shipping.name)}, ${escapeHtml(o.shipping.phone)}<br>${escapeHtml(addr)}</p>
-<p style="margin:4px 0;font-size:14px"><b>Thanh toán:</b> ${o.paymentMethod === 'COD' ? 'Khi nhận hàng (COD)' : 'Chuyển khoản'}</p>
+<p style="margin:4px 0;font-size:14px"><b>Thanh toán:</b> ${paymentLabel(o.paymentMethod)}</p>${onlineHtml}
 ${emailButton(trackUrl, 'Theo dõi đơn hàng')}
 <p style="margin:0;font-size:12px;color:#826d69">Tra cứu đơn bằng mã đơn và số điện thoại đã dùng khi đặt hàng.</p>`;
 
@@ -53,6 +62,8 @@ ${emailButton(trackUrl, 'Theo dõi đơn hàng')}
     `Tổng cộng: ${formatVnd(o.totalAmount)}`,
     '',
     ...(t ? [`Chuyển khoản ${formatVnd(t.amount)} tới ${t.bankName} · ${t.accountNo} · ${t.accountHolder}, nội dung: ${t.content}${t.dueAt ? `, trước ${fmtDue(t.dueAt)}` : ''}.`, ''] : []),
+    `Thanh toán: ${paymentLabel(o.paymentMethod)}`,
+    ...(online ? [`Đơn chưa thanh toán xong${online.dueAt ? `, vui lòng thanh toán trước ${fmtDue(online.dueAt)}` : ''}. Mở trang theo dõi đơn để thanh toán.`] : []),
     `Giao tới: ${o.shipping.name}, ${o.shipping.phone}, ${addr}`,
     `Theo dõi đơn: ${trackUrl}`,
   ].join('\n');

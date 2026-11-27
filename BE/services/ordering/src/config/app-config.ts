@@ -25,7 +25,20 @@ export interface AppConfig {
   orderExpiryIntervalMs: number;
   /** Gửi thư xác nhận đơn (SMTP, link cửa hàng). */
   mail: MailConfig;
+  /** Thanh toán VNPay; null = chưa cấu hình (khách không chọn được VNPay). */
+  vnpay: VnpayConfig | null;
 }
+
+export interface VnpayConfig {
+  tmnCode: string;
+  hashSecret: string;
+  /** Cổng thanh toán (mặc định sandbox). */
+  payUrl: string;
+  /** Trang cửa hàng VNPay đưa khách về sau khi thanh toán. */
+  returnUrl: string;
+}
+
+export const VNPAY_SANDBOX_URL = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
 
 type Env = Record<string, string | undefined>;
 
@@ -65,6 +78,18 @@ export function loadConfig(env: Env = process.env): AppConfig {
 
   const mail = readMailConfig(env, problems);
 
+  // VNPay: cần cả mã TMN và khóa bí mật; thiếu một trong hai là cấu hình dở dang. Không đặt cả hai = tắt VNPay.
+  const tmnCode = (env.VNPAY_TMN_CODE ?? '').trim();
+  const hashSecret = (env.VNPAY_HASH_SECRET ?? '').trim();
+  let vnpay: VnpayConfig | null = null;
+  if (tmnCode || hashSecret) {
+    if (!tmnCode) problems.push('Thiếu VNPAY_TMN_CODE (đã có VNPAY_HASH_SECRET)');
+    if (!hashSecret) problems.push('Thiếu VNPAY_HASH_SECRET (đã có VNPAY_TMN_CODE)');
+    const payUrl = url('VNPAY_URL', VNPAY_SANDBOX_URL);
+    const returnUrl = url('VNPAY_RETURN_URL', `${mail.publicBaseUrl}/thanh-toan/vnpay`);
+    if (tmnCode && hashSecret) vnpay = { tmnCode, hashSecret, payUrl, returnUrl };
+  }
+
   if (problems.length) throw new Error(`Cấu hình không hợp lệ:\n - ${problems.join('\n - ')}`);
 
   return {
@@ -80,5 +105,6 @@ export function loadConfig(env: Env = process.env): AppConfig {
     orderExpiryEnabled: env.ORDER_EXPIRY_ENABLED !== 'false',
     orderExpiryIntervalMs: expiryInterval,
     mail,
+    vnpay,
   };
 }

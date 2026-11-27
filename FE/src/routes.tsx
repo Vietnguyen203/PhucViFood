@@ -11,6 +11,7 @@ import CTVPage from "./pages/CTVPage";
 import HomePage from "./pages/HomePage";
 import { InfoPage, NotFoundPage } from "./pages/InfoPages";
 import OrderPage from "./pages/OrderPage";
+import VnpayResultPage from "./pages/VnpayResultPage";
 import ProductPage from "./pages/ProductPage";
 import ReferralLanding from "./pages/ReferralLanding";
 import SearchPage from "./pages/SearchPage";
@@ -48,6 +49,8 @@ const router = createBrowserRouter([
       { path: "/tai-khoan", Component: AccountPage },
       { path: "/thong-tin/:page", Component: InfoPage },
       { path: "/thanh-toan", Component: CheckoutPage },
+      // Cổng VNPay đưa khách về đây sau khi thanh toán.
+      { path: "/thanh-toan/vnpay", Component: VnpayResultPage },
       // Tra cứu đơn bằng mã đơn + SĐT; có mã trên đường dẫn thì tự tra cứu khi vừa đặt hàng xong.
       { path: "/don-hang/:code?", Component: OrderPage },
       // Link giới thiệu của cộng tác viên: /r/{mã}?c={kênh}
@@ -81,6 +84,7 @@ const router = createBrowserRouter([
           { path: "banner", ...admin(() => import("./admin/BannersPage")) },
           { path: "kol-koc", ...admin(() => import("./admin/CreatorsPage")) },
           { path: "video", ...admin(() => import("./admin/VideosPage")) },
+          { path: "o-tron", ...admin(() => import("./admin/ShortcutsPage")) },
           { path: "san-pham", ...admin(() => import("./admin/ProductsPage")) },
           { path: "danh-muc", ...admin(() => import("./admin/CategoriesPage")) },
         ],

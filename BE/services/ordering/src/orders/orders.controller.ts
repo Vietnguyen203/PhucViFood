@@ -1,11 +1,12 @@
-import { Controller, Get, Headers, HttpCode, Inject, Logger, Param, Post, Query, Res } from '@nestjs/common';
+import { Controller, Get, Headers, HttpCode, Inject, Logger, Param, Post, Query, Req, Res } from '@nestjs/common';
 import { AppException, ParamTypes, ValidBody } from '@phucvi/shared-library/api';
 import { CurrentUser, Public, Roles, type AuthUser } from '@phucvi/shared-library/auth';
 import { MAILER, sendSafely, type Mailer } from '@phucvi/shared-library/mail';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { AffiliateClient, toClientError } from '../clients/clients';
 import { IDEMPOTENCY_KEY_REGEX } from '../common/validators';
 import { APP_CONFIG, AppConfig } from '../config/app-config';
+import { VnpayService } from '../payments/vnpay.service';
 import { SettingsService } from '../settings/settings.service';
 import { AdminStatsService } from '../stats/admin-stats.service';
 import { AdminReasonDto, CareNoteDto, CustomerCancelDto, PaymentDto, PhoneDto, PlaceOrderDto } from './dto';
@@ -25,6 +26,7 @@ export class PublicOrdersController {
     @Inject(SettingsService) private readonly settings: SettingsService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     @Inject(MAILER) private readonly mailer: Mailer,
+    @Inject(VnpayService) private readonly vnpay: VnpayService,
   ) {}
 
   private readonly logger = new Logger('OrderMail');
@@ -33,13 +35,15 @@ export class PublicOrdersController {
    * Đặt hàng. Header `Idempotency-Key` (8-100 ký tự chữ, số, . _ -) giúp bấm đúp hoặc thử lại không tạo đơn trùng:
    * cùng khóa thì trả lại đúng đơn cũ (HTTP 200, replayed=true).
    */
-  @Post() @ParamTypes(Object, String, String, Object)
+  @Post() @ParamTypes(Object, String, String, Object, Object)
   async place(
     @ValidBody(PlaceOrderDto) dto: PlaceOrderDto,
     @Headers('idempotency-key') idempotencyKey: string | undefined,
     @Headers('authorization') authorization: string | undefined,
     @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
   ) {
+    if (dto.paymentMethod === 'VNPAY' && !this.vnpay.enabled) throw AppException.businessRule('Thanh toán VNPay chưa được bật, vui lòng chọn cách thanh toán khác');
     if (idempotencyKey !== undefined && !IDEMPOTENCY_KEY_REGEX.test(idempotencyKey)) {
       throw AppException.validation([{ field: 'Idempotency-Key', messages: ['gồm 8-100 ký tự chữ, số, dấu chấm, gạch dưới hoặc gạch ngang'] }]);
     }
@@ -51,13 +55,21 @@ export class PublicOrdersController {
     if (!replayed && dto.customer.email) {
       void sendSafely(this.mailer, buildOrderConfirmation(view, dto.customer.email, this.config.mail.publicBaseUrl), (e) => this.logger.warn(`Không gửi được thư xác nhận đơn ${order.code}: ${e instanceof Error ? e.message : e}`));
     }
-    return { ...view, replayed };
+    // Đơn VNPay: kèm link sang cổng thanh toán để giao diện chuyển khách đi ngay.
+    const paymentUrl = view.onlinePayment ? this.vnpay.paymentUrl(order, req.ip ?? '') : undefined;
+    return { ...view, paymentUrl, replayed };
   }
 
   /** Tra cứu đơn bằng mã đơn và SĐT đã dùng khi đặt hàng. */
   @Get(':code') @ParamTypes(String, String)
   track(@Param('code') code: string, @Query('phone') phone: string) {
     return this.orders.publicView(code, phone ?? '');
+  }
+
+  /** Khách thanh toán (hoặc thanh toán lại) đơn VNPay chưa trả, còn hạn: trả link sang cổng VNPay. Xác thực bằng SĐT như tra cứu đơn. */
+  @Post(':code/pay-url') @HttpCode(200) @ParamTypes(String, Object, Object)
+  async payUrl(@Param('code') code: string, @ValidBody(PhoneDto) dto: PhoneDto, @Req() req: Request) {
+    return { url: this.vnpay.paymentUrl(await this.orders.findForCustomer(code, dto.phone), req.ip ?? '') };
   }
 
   @Post(':code/confirm-received') @HttpCode(200) @ParamTypes(String, Object)

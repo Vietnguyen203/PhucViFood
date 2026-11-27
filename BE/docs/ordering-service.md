@@ -13,11 +13,15 @@ Tiền tố `/api`. JWT do service `user` ký bằng khóa riêng; service này 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
 | POST | `/public/orders` | Đặt hàng. Header `Idempotency-Key` (8-100 ký tự chữ, số, `. _ -`) chống đặt trùng. Khách nhập email thì gửi thư xác nhận đơn (chỉ đơn mới, gửi nền; lỗi thư chỉ ghi log, không làm hỏng đơn). Có header `Authorization: Bearer` của tài khoản `CUSTOMER` hợp lệ thì đơn gắn `user_id` để khách xem lại ở `/my-orders`; token thiếu, sai, hết hạn hoặc của vai trò khác thì đặt như khách vãng lai (không báo lỗi) |
+| GET | `/public/payments/options` | Cách thanh toán online đang bật: `{ vnpay: boolean }` (VNPay bật khi có `VNPAY_TMN_CODE` và `VNPAY_HASH_SECRET`) |
+| GET | `/public/payments/vnpay/return?vnp_...` | Trang kết quả của cửa hàng chuyển nguyên query VNPay vào đây: kiểm tra chữ ký, đơn, số tiền rồi ghi nhận đã thanh toán (gọi lặp an toàn). Trả `{ success, valid, orderCode, message }` |
+| GET | `/public/payments/vnpay/ipn?vnp_...` | IPN do VNPay gọi máy chủ. Trả JSON thẳng (không bọc `data`) `{ RspCode, Message }`: `00` thành công, `02` đã xác nhận, `01` không có đơn, `04` sai số tiền, `97` sai chữ ký, `99` lỗi. Đăng ký địa chỉ này trong trang quản trị VNPay (cần địa chỉ công khai, chạy local thì dựa vào trang kết quả) |
+| POST | `/public/orders/:code/pay-url` | Body `{ phone }`. Đơn VNPay chưa thanh toán, còn hạn: trả `{ url }` sang cổng VNPay (thanh toán lại). Sai SĐT: 404; đơn không phải VNPay, đã trả, đã hủy hoặc quá hạn: 422 |
 | GET | `/public/orders/:code?phone=` | Tra cứu đơn bằng mã đơn và SĐT đã dùng khi đặt |
 | POST | `/public/orders/:code/confirm-received` | Khách xác nhận đã nhận hàng (chỉ khi đơn đã giao) |
 | POST | `/public/orders/:code/cancel` | Khách tự hủy (chỉ khi PLACED hoặc CONFIRMED) |
 
-Body đặt hàng: `items[{productId, quantity}]`, `customer{fullName, phone, email?, province, ward, addressLine, marketingConsent?}`, `paymentMethod` (`COD` hoặc `BANK_QR`), `referralCode?`, `cookie?` (đúng như API click của affiliate trả về), `note?`. **Giá và tên sản phẩm không nhận từ client**, luôn lấy từ catalog; gửi thêm trường lạ bị từ chối.
+Body đặt hàng: `items[{productId, quantity}]`, `customer{fullName, phone, email?, province, ward, addressLine, marketingConsent?}`, `paymentMethod` (`COD`, `BANK_QR` hoặc `VNPAY`; `VNPAY` bị từ chối nếu chưa cấu hình VNPay), `referralCode?`, `cookie?` (đúng như API click của affiliate trả về), `note?`. **Giá và tên sản phẩm không nhận từ client**, luôn lấy từ catalog; gửi thêm trường lạ bị từ chối.
 
 Phản hồi: mã đơn `PV-yymmdd-XXXX`, trạng thái, tiền (`subtotalAmount`, `shippingFee`, `totalAmount`), `items`, và với `BANK_QR` có `transferInstructions` (ngân hàng, số tài khoản, số tiền, nội dung chuyển khoản là mã đơn). Gửi lại cùng `Idempotency-Key` trả HTTP 200 với `replayed: true`.
 
@@ -73,19 +77,31 @@ Tiền được tính lại ở ordering từ snapshot (không tin `lineTotal` h
 `PLACED → CONFIRMED → SHIPPING → DELIVERED → COMPLETED`; nhánh `CANCELLED` (từ PLACED, CONFIRMED, SHIPPING) và `RETURNED` (từ DELIVERED). Mọi lần đổi ghi lịch sử (`order_status_history`) và phát `ordering.order.status_changed`; cập nhật nguyên tử nên nhiều admin thao tác cùng lúc chỉ một thao tác thành công.
 
 - **Hoàn tất:** khách tự xác nhận (`receivedBy = CUSTOMER`) hoặc admin chuyển sau khi CSKH xử lý (`ADMIN`). Hoa hồng của CTV được xác nhận theo.
-- **Đơn chuyển khoản** (`BANK_QR`) phải được admin ghi nhận **đã thanh toán** mới giao được.
+- **Đơn trả trước** (chuyển khoản `BANK_QR`, VNPay `VNPAY`) phải **đã thanh toán** mới giao được (chuyển khoản do admin ghi nhận, VNPay tự ghi nhận khi cổng báo thành công).
 - **Thanh toán:** COD `PENDING → PAID` (admin ghi nhận đã thu), chuyển khoản `UNPAID → PAID` (đối soát tay), `PAID → REFUNDED`. Mỗi lần đổi ghi vào lịch sử đơn (dòng có `fromStatus = toStatus` và ghi chú). Không ghi nhận thanh toán cho đơn đã hủy hoặc đã trả.
 - **Hủy đơn** phát sự kiện nên catalog tự trả hàng và affiliate tự hủy hoa hồng.
 
 ## 3b. Hạn thanh toán và tự hủy đơn quá hạn
 
-Đơn chuyển khoản (`BANK_QR`) khi tạo được gắn `payment_due_at` = lúc đặt + `payment.hold_minutes` (mặc định 24 giờ); khách thấy hạn này ở `transferInstructions.dueAt`, admin thấy ở `paymentDueAt`. Đơn COD không có hạn.
+Đơn chuyển khoản (`BANK_QR`) và VNPay (`VNPAY`) khi tạo được gắn `payment_due_at` = lúc đặt + `payment.hold_minutes` (mặc định 24 giờ); khách thấy hạn này ở `transferInstructions.dueAt`, admin thấy ở `paymentDueAt`. Đơn COD không có hạn.
 
-Job `OrderExpiryService` (mỗi `ORDER_EXPIRY_INTERVAL_MS`, mặc định 60 giây) hủy các đơn **chuyển khoản, chưa thanh toán (`UNPAID`), còn `PLACED` hoặc `CONFIRMED`, đã qua hạn**:
+Job `OrderExpiryService` (mỗi `ORDER_EXPIRY_INTERVAL_MS`, mặc định 60 giây) hủy các đơn **chuyển khoản hoặc VNPay, chưa thanh toán (`UNPAID`), còn `PLACED` hoặc `CONFIRMED`, đã qua hạn**:
 - Chuyển trạng thái `CANCELLED` với người thực hiện là **SYSTEM**, lý do "Quá hạn thanh toán, hệ thống tự hủy đơn", phát `order.status_changed` như mọi lần hủy khác. Catalog trả hàng về kho và affiliate hủy hoa hồng dự kiến qua sự kiện.
 - Không đụng tới: đơn đã thanh toán (dù quá hạn), COD, đơn đã giao vận chuyển, đơn chưa tới hạn.
 - An toàn khi chạy nhiều bản sao hoặc khi admin vừa ghi nhận thanh toán: mỗi lần hủy là một lần chuyển trạng thái có điều kiện; đơn vừa đổi trạng thái thì bị bỏ qua, không hủy hai lần.
 - Đơn chuyển khoản tạo trước khi có tính năng này không có hạn (`NULL`) nên không bị hủy hàng loạt.
+
+## 3c. Thanh toán online VNPay
+
+Bật khi đặt `VNPAY_TMN_CODE` và `VNPAY_HASH_SECRET` (xem `.env.example`); thiếu một trong hai thì service không khởi động, không đặt cả hai thì tắt VNPay (`GET /public/payments/options` trả `vnpay: false`).
+
+1. Khách chọn `VNPAY` khi đặt hàng: đơn `UNPAID`, có hạn như chuyển khoản; phản hồi kèm `paymentUrl` (link sang cổng VNPay đã ký HMAC-SHA512) và `onlinePayment`. Giao diện chuyển khách sang cổng ngay.
+2. Thanh toán xong VNPay đưa khách về `VNPAY_RETURN_URL` (mặc định `${PUBLIC_BASE_URL}/thanh-toan/vnpay`); trang này gọi `GET /public/payments/vnpay/return` với nguyên query. VNPay cũng có thể gọi IPN. Cả hai đi qua cùng một xử lý: **chỉ tin dữ liệu có chữ ký hợp lệ**, kiểm tra mã đơn (`vnp_TxnRef`) và số tiền (`vnp_Amount` = tổng × 100), thành công (`vnp_ResponseCode` và `vnp_TransactionStatus` đều `00`) thì chuyển `UNPAID -> PAID` bằng cập nhật có điều kiện (IPN và trang kết quả đến cùng lúc chỉ ghi một lần), ghi lịch sử do SYSTEM kèm mã giao dịch. Gọi lặp an toàn.
+3. Thất bại hoặc khách hủy: đơn giữ nguyên `UNPAID`, khách thanh toán lại qua `POST /public/orders/:code/pay-url` đến hết hạn. Quá hạn thì job tự hủy như chuyển khoản.
+4. Khách trả tiền **sau khi đơn đã hủy**: vẫn ghi nhận `PAID` kèm ghi chú "cần hoàn tiền" trong lịch sử; admin hoàn tiền qua `PAID -> REFUNDED` (hoàn tiền thật tại cổng VNPay làm tay, hệ thống chưa gọi API hoàn tiền).
+5. Chưa `PAID` thì không giao hàng được (như chuyển khoản).
+
+Chưa làm: gọi API truy vấn/hoàn tiền của VNPay; đối soát tự động cuối ngày.
 
 ## 4. Hợp đồng với các service khác
 
@@ -115,7 +131,10 @@ Sự kiện ordering phát ra: `ordering.order.placed` (kèm `commissionRateBps`
 | `DOWNSTREAM_RETRY_ATTEMPTS`, `DOWNSTREAM_RETRY_BASE_MS`, `DOWNSTREAM_BREAKER_THRESHOLD`, `DOWNSTREAM_BREAKER_OPEN_MS` | 3, 100, 5, 10000 | Retry và ngắt mạch khi gọi service khác (xem `shared-library.md` mục 3b) |
 | `PORT` | 3004 | |
 | `OUTBOX_RELAY_ENABLED` | `true` | |
-| `ORDER_EXPIRY_ENABLED` | `true` | Bật job tự hủy đơn chuyển khoản quá hạn thanh toán |
+| `ORDER_EXPIRY_ENABLED` | `true` | Bật job tự hủy đơn chuyển khoản và VNPay quá hạn thanh toán |
+| `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET` | (trống = tắt VNPay) | Mã website và khóa bí mật VNPay; phải đặt cả hai |
+| `VNPAY_URL` | sandbox VNPay | Cổng thanh toán |
+| `VNPAY_RETURN_URL` | `${PUBLIC_BASE_URL}/thanh-toan/vnpay` | Trang cửa hàng VNPay đưa khách về |
 | `ORDER_EXPIRY_INTERVAL_MS` | 60000 | Khoảng giữa hai lượt chạy của job |
 
 Cấu hình trong DB (`ordering.settings`): `shipping.flat_fee`, `shipping.free_threshold`, `payment.hold_minutes` (số phút giữ hàng cho đơn chuyển khoản chưa trả, mặc định 1440 = 24 giờ), `payment.bank_name`, `payment.bank_account_no`, `payment.bank_account_holder` (giá trị mẫu, cần thay bằng tài khoản thật của công ty).

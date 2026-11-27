@@ -11,7 +11,7 @@ const NAV: Array<{ group: string; items: Array<[string, string]> }> = [
   { group: "Tổng quan", items: [["/admin", "Tổng quan"], ["/admin/bao-cao", "Báo cáo"]] },
   { group: "Bán hàng", items: [["/admin/don-hang", "Đơn hàng"], ["/admin/cskh", "Hàng chờ CSKH"], ["/admin/khach-hang", "Khách hàng"]] },
   { group: "Sản phẩm", items: [["/admin/san-pham", "Sản phẩm"], ["/admin/danh-muc", "Danh mục"]] },
-  { group: "Nội dung", items: [["/admin/banner", "Banner trang chủ"], ["/admin/kol-koc", "KOL / KOC"], ["/admin/video", "Video trang chủ"]] },
+  { group: "Nội dung", items: [["/admin/banner", "Banner trang chủ"], ["/admin/o-tron", "Ô tròn trang chủ"], ["/admin/kol-koc", "KOL / KOC"], ["/admin/video", "Video trang chủ"]] },
   { group: "Cộng tác viên", items: [["/admin/ctv", "Cộng tác viên"], ["/admin/hoa-hong", "Hoa hồng"], ["/admin/chi-tra", "Đợt chi trả"], ["/admin/khoan-tru", "Khoản trừ"]] },
   { group: "Hệ thống", items: [["/admin/tai-khoan", "Tài khoản"], ["/admin/cai-dat-cua-hang", "Cấu hình bán hàng"]] },
 ];

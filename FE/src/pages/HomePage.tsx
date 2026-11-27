@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { CategoryCircles } from "../components/CategoryCircles";
 import { CreatorSection } from "../components/CreatorSection";
+import { ShortcutCircles } from "../components/ShortcutCircles";
 import { HomeBanner } from "../components/HomeBanner";
 import { VideoSection } from "../components/VideoSection";
 import { HomeIcon } from "../components/Icon";
@@ -70,7 +70,7 @@ function ProductsSection() {
           description="Những đặc sản được Phúc Vị tuyển chọn kỹ lưỡng, sẵn sàng giao đến tận nhà bạn."
         />
         {categories && categories.length > 1 && (
-          <div className="home-category-tabs" role="group" aria-label="Lọc theo danh mục">
+          <div className="home-category-tabs" id="categories" role="group" aria-label="Lọc theo danh mục">
             <button className={categoryId === null ? "active" : ""} aria-pressed={categoryId === null} onClick={() => pick(null)}>Tất cả</button>
             {categories.map((c) => (
               <button key={c.id} className={categoryId === c.id ? "active" : ""} aria-pressed={categoryId === c.id} onClick={() => pick(c.id)}>{c.name}</button>
@@ -133,7 +133,7 @@ export default function HomePage() {
       <HomeHeader />
       <main>
         <HomeBanner />
-        <CategoryCircles />
+        <ShortcutCircles />
         <CreatorSection />
         <VideoSection />
         <ProductsSection />

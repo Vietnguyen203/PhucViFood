@@ -140,4 +140,21 @@ describe('ngày theo giờ Việt Nam (thống kê tổng quan)', () => {
     expect(vnDateKey(new Date('2026-11-25T17:00:00Z'))).toBe('2026-11-26');
     expect(vnDateKey(new Date('2026-11-25T16:59:59Z'))).toBe('2026-11-25');
   });
+
+  describe('VNPay', () => {
+    it('không đặt biến nào thì tắt', () => {
+      expect(loadConfig(env).vnpay).toBeNull();
+    });
+    it('đủ mã TMN và khóa thì bật, mặc định cổng sandbox và trang kết quả của cửa hàng', () => {
+      const c = loadConfig({ ...env, VNPAY_TMN_CODE: 'ABC123', VNPAY_HASH_SECRET: 'secret', PUBLIC_BASE_URL: 'https://shop.example.vn' });
+      expect(c.vnpay).toEqual({ tmnCode: 'ABC123', hashSecret: 'secret', payUrl: 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html', returnUrl: 'https://shop.example.vn/thanh-toan/vnpay' });
+    });
+    it('chỉ có một trong hai thì báo lỗi cấu hình dở dang', () => {
+      expect(() => loadConfig({ ...env, VNPAY_TMN_CODE: 'ABC123' })).toThrow(/VNPAY_HASH_SECRET/);
+      expect(() => loadConfig({ ...env, VNPAY_HASH_SECRET: 'secret' })).toThrow(/VNPAY_TMN_CODE/);
+    });
+    it('địa chỉ không phải http(s) bị từ chối', () => {
+      expect(() => loadConfig({ ...env, VNPAY_TMN_CODE: 'A', VNPAY_HASH_SECRET: 's', VNPAY_URL: 'ftp://x' })).toThrow(/VNPAY_URL/);
+    });
+  });
 });

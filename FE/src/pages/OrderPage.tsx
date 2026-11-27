@@ -4,7 +4,8 @@ import { HomeFooter } from "../components/SiteFooter";
 import { HomeHeader } from "../components/SiteHeader";
 import { ApiError, describeError } from "../lib/api";
 import { formatVnd } from "../lib/money";
-import { cancelOrder, confirmReceived, lookupOrder } from "../lib/orders";
+import { cancelOrder, confirmReceived, lookupOrder, requestPayUrl } from "../lib/orders";
+import { isPaymentGatewayUrl, paymentStatusLabel } from "../lib/payment";
 import type { OrderStatus, PaymentStatus, PublicOrder } from "../lib/types";
 import { LAST_ORDER_KEY } from "./CheckoutPage";
 import { useDocumentTitle } from "../lib/pageTitle";
@@ -46,6 +47,21 @@ function OrderDetail({ order, onChange, phone }: { order: PublicOrder; onChange:
   const canCancel = order.status === "PLACED" || order.status === "CONFIRMED";
   const canConfirm = order.status === "DELIVERED";
   const stepIndex = STEPS.indexOf(order.status);
+  const online = order.onlinePayment && canCancel ? order.onlinePayment : null; // đơn VNPay chưa trả và còn giữ hàng
+
+  /** Lấy link mới (có chữ ký, hết hạn theo đơn) rồi đưa khách sang cổng thanh toán. */
+  async function payNow() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const url = await requestPayUrl(order.code, phone);
+      if (!isPaymentGatewayUrl(url)) throw new Error("Không mở được cổng thanh toán, vui lòng thử lại sau.");
+      window.location.assign(url);
+    } catch (e) {
+      setMessage(describeError(e));
+      setBusy(false);
+    }
+  }
 
   async function act(fn: () => Promise<PublicOrder>) {
     setBusy(true);
@@ -63,7 +79,7 @@ function OrderDetail({ order, onChange, phone }: { order: PublicOrder; onChange:
         </div>
         <div className="shop-badges">
           <b className={`status ${order.status.toLowerCase()}`}>{STATUS_LABEL[order.status]}</b>
-          <b className="pay">{PAYMENT_LABEL[order.paymentStatus]}</b>
+          <b className="pay">{paymentStatusLabel(order)}</b>
         </div>
       </header>
 
@@ -73,6 +89,15 @@ function OrderDetail({ order, onChange, phone }: { order: PublicOrder; onChange:
         </ol>
       ) : (
         <p className="shop-note">{order.status === "CANCELLED" ? `Đơn hàng đã bị hủy${order.cancelledAt ? ` lúc ${fmtDate(order.cancelledAt)}` : ""}.` : "Đơn hàng đã được hoàn trả."}</p>
+      )}
+
+      {online && (
+        <section className="shop-transfer">
+          <h3>Thanh toán online qua VNPay</h3>
+          <p>Đơn của bạn đang chờ thanh toán {formatVnd(order.totalAmount)}.{online.dueAt && <> Đơn sẽ <b>tự động hủy</b> nếu chưa thanh toán trước <b>{fmtDate(online.dueAt)}</b>.</>}</p>
+          <button className="shop-btn primary" disabled={busy} onClick={() => void payNow()}>{busy ? "Đang chuyển tới VNPay..." : "Thanh toán qua VNPay"}</button>
+          {message && <p className="shop-error" role="alert">{message}</p>}
+        </section>
       )}
 
       {t && (

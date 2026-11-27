@@ -23,8 +23,8 @@ Chuyển tiếp theo kiểu stream: file `.xlsx` xuất khách hàng đi thẳng
 | user | `/auth`, `/users` |
 | affiliate | `/me/affiliate`, `/me/links`, `/me/commissions`, `/me/payouts`, `/me/adjustments`, `/affiliates`, `/commissions`, `/payouts`, `/adjustments`, `/affiliate-settings`, `/public/referrals` |
 | tracking | `/public/tracking`, `/me/stats`, và riêng `POST /public/referrals/click` |
-| catalog | `/public/categories`, `/public/products`, `/public/uploads`, `/public/banners`, `/public/creators`, `/public/videos`, `/categories`, `/products`, `/banners`, `/creators`, `/videos` |
-| ordering | `/public/orders`, `/orders`, `/me/orders`, `/my-orders`, `/order-settings` |
+| catalog | `/public/categories`, `/public/products`, `/public/uploads`, `/public/banners`, `/public/creators`, `/public/videos`, `/public/shortcuts`, `/categories`, `/products`, `/banners`, `/creators`, `/videos`, `/shortcuts` |
+| ordering | `/public/orders`, `/public/payments`, `/orders`, `/me/orders`, `/my-orders`, `/order-settings` |
 | customer | `/customers`, `/customer-settings` |
 
 Khớp theo từng đoạn, tiền tố dài nhất thắng; tuyến khớp cả phương thức và đường dẫn (`EXACT_ROUTES`) được ưu tiên hơn tiền tố, vì `/public/referrals` có hai chủ (POST `click` là tracking, `GET /public/referrals/:code` là affiliate) (`/orders` khớp `/orders/1`, không khớp `/orders-x`). Đường dẫn không có trong bảng trả `404 NOT_FOUND` chuẩn. Đường dẫn dùng `..`, `//`, `%2e`, `%2f`, `\` trả `400` (chống lách bảng định tuyến). **Thêm endpoint mới ở service thì phải thêm tiền tố vào `src/proxy/routes.ts`**, nếu không gateway trả 404.

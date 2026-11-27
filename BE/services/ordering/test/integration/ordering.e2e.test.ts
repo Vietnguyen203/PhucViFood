@@ -13,6 +13,7 @@ import { AppModule } from '../../src/app.module';
 import { EXPIRED_PAYMENT_REASON, OrderExpiryService } from '../../src/orders/order-expiry.service';
 import { ORDER_CODE_REGEX } from '../../src/common/validators';
 import { loadConfig, type AppConfig } from '../../src/config/app-config';
+import { hmacSha512, signingString, verifySignature } from '../../src/payments/vnpay';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { SettingsService } from '../../src/settings/settings.service';
 import { FakeDownstream, type FakeProduct } from './fake-downstream';
@@ -24,6 +25,7 @@ const enabled = process.env.RUN_INTEGRATION === '1';
 const DB_URL = process.env.ORDERING_DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5433/ordering_db';
 const RABBIT_URL = process.env.RABBITMQ_URL ?? 'amqp://phucvi:phucvi@localhost:5672';
 const INTERNAL_KEY = 'integration-internal-key-1234567890';
+const VNPAY_SECRET = 'integration-vnpay-secret-0123456789';
 const rand = (n = 6) => Math.random().toString(36).slice(2, 2 + n).padEnd(n, '0');
 const digits = (n: number) => Array.from({ length: n }, () => Math.floor(Math.random() * 10)).join('');
 
@@ -47,11 +49,12 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
     return { status: res.status, body: (await res.json()) as any };
   }
 
+  const toE164Phone = (e164: string) => `0${e164.replace(/^\+84/, '')}`;
   const newPhone = () => `09${digits(8)}`;
   const toE164 = (p: string) => `+84${p.slice(1)}`;
   const product = (over: Partial<FakeProduct> & { price?: number; stock?: number } = {}) => fake.addProduct({ price: 100_000, stock: 50, ...over });
 
-  interface PlaceOpts { items?: Array<{ productId: string; quantity: number }>; phone?: string; payment?: 'COD' | 'BANK_QR'; referralCode?: string; cookie?: object; key?: string; extra?: object; marketingConsent?: boolean; token?: string }
+  interface PlaceOpts { items?: Array<{ productId: string; quantity: number }>; phone?: string; payment?: 'COD' | 'BANK_QR' | 'VNPAY'; referralCode?: string; cookie?: object; key?: string; extra?: object; marketingConsent?: boolean; token?: string }
   async function place(o: PlaceOpts = {}) {
     const p = o.items ?? [{ productId: product().id, quantity: 1 }];
     const phone = o.phone ?? newPhone();
@@ -87,6 +90,7 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
       ORDER_EXPIRY_ENABLED: 'false', // test gọi runOnce() trực tiếp, không để job tự chạy xen vào
       DOWNSTREAM_BREAKER_THRESHOLD: '1000', DOWNSTREAM_RETRY_ATTEMPTS: '2', DOWNSTREAM_RETRY_BASE_MS: '10',
       MAIL_TRANSPORT: 'memory', PUBLIC_BASE_URL: 'https://shop.example.vn',
+      VNPAY_TMN_CODE: 'ITTMN001', VNPAY_HASH_SECRET: VNPAY_SECRET,
       CATALOG_URL: `${fake.url}/catalog/api`, AFFILIATE_URL: `${fake.url}/affiliate/api`, CUSTOMER_URL: `${fake.url}/customer/api`,
     });
     app = await NestFactory.create(AppModule.forRoot(config), { logger: false });
@@ -953,5 +957,157 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
     );
     expect(raw[0]).toEqual({ status: OrderStatusCodec.toCode('PLACED'), payment_method: 2, payment_status: PaymentStatusCodec.toCode('UNPAID') });
     expect(r.body.data).toMatchObject({ status: 'PLACED', paymentMethod: 'BANK_QR', paymentStatus: 'UNPAID' });
+  });
+  // ═════════════════════════ Thanh toán VNPay ═════════════════════════
+  describe('thanh toán VNPay', () => {
+    /** Dữ liệu VNPay gửi về (trang kết quả hoặc IPN), đã ký như VNPay làm. */
+    const vnpQuery = (code: string, totalAmount: number, over: Record<string, string> = {}, secret = VNPAY_SECRET) => {
+      const p: Record<string, string> = {
+        vnp_TmnCode: 'ITTMN001', vnp_Amount: String(totalAmount * 100), vnp_BankCode: 'NCB', vnp_TxnRef: code, vnp_TransactionNo: '14012345',
+        vnp_ResponseCode: '00', vnp_TransactionStatus: '00', vnp_PayDate: '20261127090000', ...over,
+      };
+      const q = new URLSearchParams({ ...p, vnp_SecureHash: hmacSha512(secret, signingString(p)) });
+      return `?${q.toString()}`;
+    };
+    const placeVnpay = async () => {
+      const r = await place({ payment: 'VNPAY', items: [{ productId: product({ price: 200_000 }).id, quantity: 1 }] });
+      expect(r.status).toBe(201);
+      const o = await dbOrder(r.body.data.code);
+      return { r, o, total: Number(o.totalAmount) };
+    };
+    const payStatus = async (code: string) => PaymentStatusCodec.toName((await dbOrder(code)).paymentStatus);
+
+    it('đặt hàng: đơn chờ thanh toán có hạn, kèm link VNPay đã ký đúng mã đơn và số tiền', async () => {
+      const { r, o, total } = await placeVnpay();
+      expect(r.body.data).toMatchObject({ paymentMethod: 'VNPAY', paymentStatus: 'UNPAID', onlinePayment: { provider: 'VNPAY' } });
+      expect(r.body.data.transferInstructions).toBeUndefined();
+      expect(o.paymentDueAt!.getTime() - o.placedAt.getTime()).toBe(24 * 60 * 60_000);
+      const url = new URL(r.body.data.paymentUrl);
+      const p = Object.fromEntries(url.searchParams.entries());
+      expect(`${url.origin}${url.pathname}`).toBe('https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
+      expect(p).toMatchObject({ vnp_TmnCode: 'ITTMN001', vnp_TxnRef: o.code, vnp_Amount: String(total * 100), vnp_ReturnUrl: 'https://shop.example.vn/thanh-toan/vnpay' });
+      expect(verifySignature(p, VNPAY_SECRET)).toBe(true);
+      // COD và chuyển khoản không có link thanh toán online
+      expect((await place()).body.data.paymentUrl).toBeUndefined();
+    });
+
+    it('khách bấm lại (cùng Idempotency-Key) vẫn nhận lại đúng đơn và link', async () => {
+      const key = `it-vnp-${rand(8)}`;
+      const items = [{ productId: product().id, quantity: 1 }];
+      const a = await place({ payment: 'VNPAY', items, key, phone: newPhone() });
+      const b = await place({ payment: 'VNPAY', items, key, phone: a.phone });
+      expect(b.status).toBe(200);
+      expect(b.body.data.replayed).toBe(true);
+      expect(b.body.data.code).toBe(a.body.data.code);
+      expect(b.body.data.paymentUrl).toBeTruthy();
+    });
+
+    it('trang kết quả: chữ ký đúng và thành công thì ghi nhận đã thanh toán, lịch sử do HỆ THỐNG; gọi lặp không ghi lại', async () => {
+      const { o, total } = await placeVnpay();
+      const ok = await api('GET', `/public/payments/vnpay/return${vnpQuery(o.code, total)}`);
+      expect(ok.status).toBe(200);
+      expect(ok.body.data).toMatchObject({ success: true, valid: true, orderCode: o.code });
+      expect(await payStatus(o.code)).toBe('PAID');
+      const hist = (await dbOrder(o.code)).history!.filter((h) => h.note?.includes('VNPay'));
+      expect(hist).toHaveLength(1);
+      expect(hist[0]).toMatchObject({ actorType: 1 }); // SYSTEM
+      expect(hist[0].note).toContain('14012345');
+
+      const again = await api('GET', `/public/payments/vnpay/return${vnpQuery(o.code, total)}`);
+      expect(again.body.data).toMatchObject({ success: true, valid: true });
+      expect((await dbOrder(o.code)).history!.filter((h) => h.note?.includes('VNPay'))).toHaveLength(1);
+    });
+
+    it('IPN: trả mã theo tài liệu VNPay (00 thành công, 02 đã xác nhận, 97 sai chữ ký, 04 sai số tiền, 01 không có đơn)', async () => {
+      const { o, total } = await placeVnpay();
+      const ipn = (q: string) => api('GET', `/public/payments/vnpay/ipn${q}`);
+      expect((await ipn(vnpQuery(o.code, total, {}, 'khoa-sai-khoa-sai-khoa-sai-1'))).body).toEqual({ RspCode: '97', Message: 'Invalid signature' });
+      expect(await payStatus(o.code)).toBe('UNPAID');
+      expect((await ipn(vnpQuery(o.code, total + 1))).body.RspCode).toBe('04');
+      expect((await ipn(vnpQuery('PV-000000-ZZZZ', total))).body.RspCode).toBe('01');
+      expect(await payStatus(o.code)).toBe('UNPAID');
+      expect((await ipn(vnpQuery(o.code, total))).body).toEqual({ RspCode: '00', Message: 'Confirm Success' });
+      expect(await payStatus(o.code)).toBe('PAID');
+      expect((await ipn(vnpQuery(o.code, total))).body).toEqual({ RspCode: '02', Message: 'Order already confirmed' });
+      expect((await ipn('')).body.RspCode).toBe('97'); // không có dữ liệu
+    });
+
+    it('chữ ký sai hoặc sửa số tiền ở trang kết quả: không ghi nhận, báo không hợp lệ', async () => {
+      const { o, total } = await placeVnpay();
+      const forged = await api('GET', `/public/payments/vnpay/return${vnpQuery(o.code, total, {}, 'khoa-sai-khoa-sai-khoa-sai-1')}`);
+      expect(forged.body.data).toMatchObject({ success: false, valid: false });
+      const cheap = await api('GET', `/public/payments/vnpay/return${vnpQuery(o.code, 1)}`); // ký đúng nhưng số tiền không khớp đơn
+      expect(cheap.body.data).toMatchObject({ success: false });
+      expect(await payStatus(o.code)).toBe('UNPAID');
+    });
+
+    it('khách hủy hoặc thanh toán lỗi: đơn vẫn chờ thanh toán, thông báo rõ lý do', async () => {
+      const { o, total } = await placeVnpay();
+      const res = await api('GET', `/public/payments/vnpay/return${vnpQuery(o.code, total, { vnp_ResponseCode: '24', vnp_TransactionStatus: '02' })}`);
+      expect(res.body.data).toMatchObject({ success: false, valid: true, orderCode: o.code });
+      expect(res.body.data.message).toContain('hủy');
+      expect(await payStatus(o.code)).toBe('UNPAID');
+      const ipn = await api('GET', `/public/payments/vnpay/ipn${vnpQuery(o.code, total, { vnp_ResponseCode: '24', vnp_TransactionStatus: '02' })}`);
+      expect(ipn.body.RspCode).toBe('00');
+      expect(await payStatus(o.code)).toBe('UNPAID');
+    });
+
+    it('chưa thanh toán thì không giao hàng được; thanh toán xong thì giao bình thường', async () => {
+      const { o, total } = await placeVnpay();
+      await advance(o.id, ['confirm']);
+      const blocked = await api('POST', `/orders/${o.id}/ship`, { token: admin() });
+      expect(blocked.status).toBe(422);
+      expect(blocked.body.error.message).toContain('chưa được xác nhận đã thanh toán');
+      await api('GET', `/public/payments/vnpay/return${vnpQuery(o.code, total)}`);
+      await advance(o.id, ['ship']);
+      expect(OrderStatusCodec.toName((await dbOrder(o.code)).status)).toBe('SHIPPING');
+    });
+
+    it('quá hạn chưa thanh toán: tự hủy như chuyển khoản; đã thanh toán thì không hủy', async () => {
+      const expiry = app.get(OrderExpiryService);
+      const a = await placeVnpay();
+      const b = await placeVnpay();
+      await api('GET', `/public/payments/vnpay/return${vnpQuery(b.o.code, b.total)}`);
+      for (const x of [a, b]) await prisma.order.update({ where: { id: x.o.id }, data: { paymentDueAt: new Date(Date.now() - 5 * 60_000) } });
+      await expiry.runOnce();
+      expect(OrderStatusCodec.toName((await dbOrder(a.o.code)).status)).toBe('CANCELLED');
+      expect(OrderStatusCodec.toName((await dbOrder(b.o.code)).status)).toBe('PLACED');
+    });
+
+    it('khách trả tiền sau khi đơn đã hủy: ghi nhận PAID kèm ghi chú cần hoàn tiền, admin hoàn tiền được', async () => {
+      const { o, total } = await placeVnpay();
+      expect((await api('POST', `/public/orders/${o.code}/cancel`, { body: { phone: toE164Phone(o.shipPhone) } })).status).toBe(200);
+      await api('GET', `/public/payments/vnpay/return${vnpQuery(o.code, total)}`);
+      const after = await dbOrder(o.code);
+      expect(PaymentStatusCodec.toName(after.paymentStatus)).toBe('PAID');
+      expect(after.history!.some((h) => h.note?.includes('cần hoàn tiền'))).toBe(true);
+      expect((await api('POST', `/orders/${o.id}/payment`, { token: admin(), body: { status: 'REFUNDED' } })).status).toBe(200);
+    });
+
+    it('thanh toán lại: cần đúng SĐT, chỉ khi còn chờ thanh toán và còn hạn', async () => {
+      const { r, o, total } = await placeVnpay();
+      const phone = r.phone;
+      expect((await api('POST', `/public/orders/${o.code}/pay-url`, { body: { phone: newPhone() } })).status).toBe(404); // sai SĐT: như không có đơn
+      const ok = await api('POST', `/public/orders/${o.code}/pay-url`, { body: { phone } });
+      expect(ok.status).toBe(200);
+      expect(verifySignature(Object.fromEntries(new URL(ok.body.data.url).searchParams.entries()), VNPAY_SECRET)).toBe(true);
+      // tra cứu cho thấy đơn đang chờ thanh toán online
+      expect((await api('GET', `/public/orders/${o.code}?phone=${phone}`)).body.data.onlinePayment).toMatchObject({ provider: 'VNPAY' });
+      // quá hạn
+      await prisma.order.update({ where: { id: o.id }, data: { paymentDueAt: new Date(Date.now() - 60_000) } });
+      expect((await api('POST', `/public/orders/${o.code}/pay-url`, { body: { phone } })).status).toBe(422);
+      await prisma.order.update({ where: { id: o.id }, data: { paymentDueAt: new Date(Date.now() + 3_600_000) } });
+      // đã thanh toán
+      await api('GET', `/public/payments/vnpay/return${vnpQuery(o.code, total)}`);
+      expect((await api('POST', `/public/orders/${o.code}/pay-url`, { body: { phone } })).status).toBe(422);
+      expect((await api('GET', `/public/orders/${o.code}?phone=${phone}`)).body.data.onlinePayment).toBeUndefined();
+      // đơn COD không có link
+      const cod = await place();
+      expect((await api('POST', `/public/orders/${cod.body.data.code}/pay-url`, { body: { phone: cod.phone } })).status).toBe(422);
+    });
+
+    it('tùy chọn thanh toán cho giao diện: VNPay đang bật', async () => {
+      expect((await api('GET', '/public/payments/options')).body.data).toEqual({ vnpay: true });
+    });
   });
 });

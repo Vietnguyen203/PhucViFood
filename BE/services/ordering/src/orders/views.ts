@@ -54,6 +54,13 @@ export function transferInstructions(o: Order, bank: BankAccount | null) {
   return { ...bank, amount: o.totalAmount, content: o.code, dueAt: o.paymentDueAt };
 }
 
+/** Đơn VNPay chưa thanh toán: cho phép khách thanh toán (hoặc thanh toán lại) đến hết hạn. */
+export function onlinePayment(o: Order) {
+  const unpaid = PaymentStatusCodec.toName(o.paymentStatus) === 'UNPAID';
+  if (PaymentMethodCodec.toName(o.paymentMethod) !== 'VNPAY' || !unpaid) return undefined;
+  return { provider: 'VNPAY' as const, dueAt: o.paymentDueAt };
+}
+
 /** Dữ liệu cho khách tra cứu bằng mã đơn + SĐT: chỉ những gì khách đã biết, không có ghi nhận CTV hay ghi chú nội bộ. */
 export function toPublicView(o: OrderFull, bank: BankAccount | null) {
   return {
@@ -69,6 +76,7 @@ export function toPublicView(o: OrderFull, bank: BankAccount | null) {
       ? { history: [...o.history].filter((h) => h.fromStatus !== h.toStatus).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()).map((h) => ({ status: OrderStatusCodec.toName(h.toStatus), at: h.createdAt })) }
       : {}),
     transferInstructions: transferInstructions(o, bank),
+    onlinePayment: onlinePayment(o),
   };
 }
 

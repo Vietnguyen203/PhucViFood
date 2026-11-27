@@ -32,6 +32,22 @@ model Banner {
   @@schema("catalog")
 }
 
+/// Ô tròn lối tắt dưới banner trang chủ (admin tự đặt: ảnh biểu tượng, tên, trang đích như bài viết).
+model Shortcut {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  title     String
+  imageUrl  String   @map("image_url") // ảnh biểu tượng (nên vuông)
+  linkUrl   String?  @map("link_url") // trang đích khi bấm (bài viết, danh mục, link ngoài...)
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([isActive, sortOrder])
+  @@map("shortcuts")
+  @@schema("catalog")
+}
+
 /// Video hiển thị ở khung video trang chủ.
 model Video {
   id        String   @id @default(uuid(7)) @db.Uuid

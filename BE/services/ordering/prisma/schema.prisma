@@ -18,7 +18,7 @@ datasource db {
 // Enum lưu dạng SMALLINT. Mã số định nghĩa ở shared-library (contracts/codes.ts), CHECK trong migration.
 //   orders.status / order_status_history.from_status, to_status:
 //       1 PLACED, 2 CONFIRMED, 3 SHIPPING, 4 DELIVERED, 5 COMPLETED, 6 CANCELLED, 7 RETURNED
-//   orders.payment_method:   1 COD, 2 BANK_QR
+//   orders.payment_method:   1 COD, 2 BANK_QR, 3 VNPAY
 //   orders.payment_status:   1 PENDING, 2 UNPAID, 3 PAID, 4 REFUNDED
 //       COD: PENDING -> PAID (khi shipper nộp tiền). BANK_QR: UNPAID -> PAID (admin đối soát tay).
 //   orders.attribution_source: 1 LINK, 2 CODE

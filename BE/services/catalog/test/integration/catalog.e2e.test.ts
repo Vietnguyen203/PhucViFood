@@ -302,6 +302,52 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
   });
 
   // ═════════════════════════ Admin: sản phẩm ═════════════════════════
+  describe('Ô tròn lối tắt trang chủ', () => {
+    const mk = (over: Record<string, unknown> = {}) => ({ title: `IT tắt ${rand(5)}`, imageUrl: 'https://cdn.example.com/i.png', ...over });
+    const cleanup = async () => { await prisma.$executeRawUnsafe(`DELETE FROM catalog.shortcuts WHERE title LIKE 'IT tắt %'`); };
+
+    it('admin tạo, sửa, xóa; khách chỉ thấy ô đang bật, đúng thứ tự, không lộ trường quản trị', async () => {
+      await cleanup();
+      const t = admin();
+      const key = rand(4);
+      const a = await api('POST', '/shortcuts', { token: t, body: mk({ title: `IT tắt ${key} B`, sortOrder: 2, linkUrl: '/tin-tuc/bai-viet-1' }) });
+      const b = await api('POST', '/shortcuts', { token: t, body: mk({ title: `IT tắt ${key} A`, sortOrder: 1, linkUrl: 'https://example.com/bai' }) });
+      const off = await api('POST', '/shortcuts', { token: t, body: mk({ title: `IT tắt ${key} tắt`, isActive: false }) });
+      for (const r of [a, b, off]) expect(r.status).toBe(201);
+      const mine = (list: any[]) => list.filter((c) => c.title.startsWith(`IT tắt ${key}`));
+      let pub = (await api('GET', '/public/shortcuts')).body.data;
+      expect(mine(pub).map((c: any) => c.title)).toEqual([`IT tắt ${key} A`, `IT tắt ${key} B`]);
+      expect(Object.keys(pub[0]).sort()).toEqual(['id', 'imageUrl', 'linkUrl', 'title']);
+      expect((await api('PATCH', `/shortcuts/${off.body.data.id}`, { token: t, body: { isActive: true } })).body.data.isActive).toBe(true);
+      expect((await api('PATCH', `/shortcuts/${a.body.data.id}`, { token: t, body: { linkUrl: null } })).body.data.linkUrl).toBeNull();
+      pub = (await api('GET', '/public/shortcuts')).body.data;
+      expect(mine(pub)).toHaveLength(3);
+      expect((await api('DELETE', `/shortcuts/${b.body.data.id}`, { token: t })).status).toBe(200);
+      expect((await api('GET', `/shortcuts/${b.body.data.id}`, { token: t })).status).toBe(404);
+      await cleanup();
+    });
+
+    it('chặn: không đăng nhập, không phải ADMIN, dữ liệu sai', async () => {
+      expect((await api('POST', '/shortcuts', { body: mk() })).status).toBe(401);
+      expect((await api('POST', '/shortcuts', { token: token('AFFILIATE'), body: mk() })).status).toBe(403);
+      const t = admin();
+      const bad: Array<Record<string, unknown>> = [
+        { title: '' }, { title: 'x'.repeat(41) }, { imageUrl: 'javascript:alert(1)' }, { imageUrl: undefined }, { linkUrl: 'javascript:alert(1)' }, { linkUrl: '//evil.example' }, { sortOrder: -1 },
+      ];
+      for (const patch of bad) expect((await api('POST', '/shortcuts', { token: t, body: mk(patch) })).status, JSON.stringify(patch)).toBe(400);
+      await cleanup();
+    });
+
+    it('khách chỉ nhận tối đa 10 ô', async () => {
+      await cleanup();
+      const t = admin();
+      for (let i = 0; i < 12; i++) expect((await api('POST', '/shortcuts', { token: t, body: mk({ sortOrder: 9000 + i }) })).status).toBe(201);
+      const pub = (await api('GET', '/public/shortcuts')).body.data;
+      expect(pub.length).toBeLessThanOrEqual(10);
+      await cleanup();
+    });
+  });
+
   describe('Video trang chủ', () => {
     const mk = (over: Record<string, unknown> = {}) => ({ title: `IT video ${rand(5)}`, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', ...over });
     const cleanup = async () => { await prisma.$executeRawUnsafe(`DELETE FROM catalog.videos WHERE title LIKE 'IT video %'`); };

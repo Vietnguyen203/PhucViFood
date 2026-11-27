@@ -8,20 +8,22 @@ import { SettingsService } from '../settings/settings.service';
 import { AdminStatsService } from '../stats/admin-stats.service';
 import { OrderStatsService } from '../stats/order-stats.service';
 import { CustomerStatsController, InternalOrdersController } from '../stats/stats.controller';
+import { PaymentOptionsController, VnpayController } from '../payments/payments.controller';
+import { VnpayService } from '../payments/vnpay.service';
 import { AdminOrdersController, AffiliateOrdersController, MyOrdersController, PublicOrdersController } from './orders.controller';
 import { OrderExpiryService } from './order-expiry.service';
 import { OrderPlacementService } from './order-placement.service';
 import { AffiliateOrdersService, MyOrdersService, OrdersService } from './orders.service';
 
 @Module({
-  controllers: [PublicOrdersController, AdminOrdersController, AffiliateOrdersController, MyOrdersController, CustomerStatsController, InternalOrdersController, OrderSettingsController],
+  controllers: [PaymentOptionsController, VnpayController, PublicOrdersController, AdminOrdersController, AffiliateOrdersController, MyOrdersController, CustomerStatsController, InternalOrdersController, OrderSettingsController],
   providers: [
-    AdminStatsService,
+    AdminStatsService, VnpayService,
     OrderPlacementService, OrdersService, AffiliateOrdersService, MyOrdersService, SettingsService, OrderStatsService, OrderExpiryService,
     CatalogClient, AffiliateClient, CustomerClient, InternalKeyGuard,
     { provide: MAILER, useFactory: (config: AppConfig) => createMailer(config.mail), inject: [APP_CONFIG] },
     { provide: INTERNAL_API_KEY, useFactory: (config: AppConfig) => config.internalApiKey, inject: [APP_CONFIG] },
   ],
-  exports: [OrdersService, OrderExpiryService],
+  exports: [OrdersService, OrderExpiryService, VnpayService],
 })
 export class OrdersModule {}

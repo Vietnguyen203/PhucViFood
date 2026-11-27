@@ -14,7 +14,7 @@ export interface StockMovement {
 
 export type OrderStatus = "PLACED" | "CONFIRMED" | "SHIPPING" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "RETURNED";
 export type PaymentStatus = "PENDING" | "UNPAID" | "PAID" | "REFUNDED";
-export type PaymentMethod = "COD" | "BANK_QR";
+export type PaymentMethod = "COD" | "BANK_QR" | "VNPAY";
 
 export interface AdminOrder {
   id: string; code: string; customerId: string | null; status: OrderStatus; paymentMethod: PaymentMethod; paymentStatus: PaymentStatus;
@@ -65,7 +65,7 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   PLACED: "Mới đặt", CONFIRMED: "Đã xác nhận", SHIPPING: "Đang giao", DELIVERED: "Đã giao", COMPLETED: "Hoàn tất", CANCELLED: "Đã hủy", RETURNED: "Hoàn trả",
 };
 export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = { PENDING: "Thu khi giao (COD)", UNPAID: "Chờ chuyển khoản", PAID: "Đã thanh toán", REFUNDED: "Đã hoàn tiền" };
-export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = { COD: "COD", BANK_QR: "Chuyển khoản" };
+export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = { COD: "COD", BANK_QR: "Chuyển khoản", VNPAY: "VNPay" };
 export const AFFILIATE_STATUS_LABEL: Record<string, string> = { PENDING: "Chờ duyệt", ACTIVE: "Đang hoạt động", REJECTED: "Từ chối", SUSPENDED: "Tạm ngưng" };
 export const COMMISSION_STATUS_LABEL: Record<string, string> = { ESTIMATED: "Tạm tính", CONFIRMED: "Đã xác nhận", PAID: "Đã chi trả", CANCELLED: "Đã hủy" };
 export const ADJUSTMENT_STATUS_LABEL: Record<string, string> = { PENDING: "Chờ trừ", APPLIED: "Đã trừ", WAIVED: "Đã miễn" };
@@ -101,3 +101,5 @@ export interface AdminCreator { id: string; name: string; kind: CreatorKind; hea
 export const CREATOR_KIND_OPTIONS: Record<CreatorKind, string> = { KOL: "KOL (người có tầm ảnh hưởng)", KOC: "KOC (khách hàng chia sẻ)" };
 
 export interface AdminVideo { id: string; title: string; videoUrl: string; thumbnailUrl: string | null; sortOrder: number; isActive: boolean; createdAt: string }
+
+export interface AdminShortcut { id: string; title: string; imageUrl: string; linkUrl: string | null; sortOrder: number; isActive: boolean; createdAt: string }

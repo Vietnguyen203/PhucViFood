@@ -139,10 +139,10 @@ export class OrderPlacementService {
     const subtotal = items.reduce((s, i) => s + i.lineTotal, 0n);
     const shippingFee = BigInt(calculateShippingFee(toSafeNumber(subtotal), await this.settings.shippingRule()));
     const method = a.dto.paymentMethod as PaymentMethod;
-    const paymentStatus = method === 'COD' ? 'PENDING' : 'UNPAID'; // COD thu khi giao; chuyển khoản chờ admin đối soát
+    const paymentStatus = method === 'COD' ? 'PENDING' : 'UNPAID'; // COD thu khi giao; chuyển khoản chờ admin đối soát; VNPay chờ cổng báo về
     const c = a.dto.customer;
-    // Đơn chuyển khoản chưa trả chỉ được giữ hàng đến hạn này; COD không hết hạn.
-    const paymentDueAt = method === 'BANK_QR' ? new Date(a.placedAt.getTime() + (await this.settings.paymentHoldMinutes()) * 60_000) : null;
+    // Đơn trả trước (chuyển khoản, VNPay) chưa trả chỉ được giữ hàng đến hạn này; COD không hết hạn.
+    const paymentDueAt = method !== 'COD' ? new Date(a.placedAt.getTime() + (await this.settings.paymentHoldMinutes()) * 60_000) : null;
 
     for (let attempt = 1; ; attempt++) {
       const code = generateOrderCode(a.placedAt);

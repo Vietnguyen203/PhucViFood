@@ -45,7 +45,7 @@ export class OrderExpiryService implements OnApplicationBootstrap, OnModuleDestr
     this.running = true;
     try {
       const n = await this.runOnce();
-      if (n > 0) this.logger.log(`Đã hủy ${n} đơn chuyển khoản quá hạn thanh toán`);
+      if (n > 0) this.logger.log(`Đã hủy ${n} đơn trả trước (chuyển khoản, VNPay) quá hạn thanh toán`);
     } catch (e) {
       this.logger.error(`Lượt hủy đơn quá hạn lỗi: ${e instanceof Error ? e.message : e}`);
     } finally {
@@ -54,13 +54,13 @@ export class OrderExpiryService implements OnApplicationBootstrap, OnModuleDestr
   }
 
   /**
-   * Hủy các đơn: chuyển khoản, chưa thanh toán, còn PLACED hoặc CONFIRMED (chưa giao vận chuyển), đã qua `payment_due_at`.
+   * Hủy các đơn: chuyển khoản hoặc VNPay, chưa thanh toán, còn PLACED hoặc CONFIRMED (chưa giao vận chuyển), đã qua `payment_due_at`.
    * Trả số đơn đã hủy.
    */
   async runOnce(now: Date = new Date()): Promise<number> {
     const due = await this.prisma.order.findMany({
       where: {
-        paymentMethod: PaymentMethodCodec.toCode('BANK_QR'),
+        paymentMethod: { in: [PaymentMethodCodec.toCode('BANK_QR'), PaymentMethodCodec.toCode('VNPAY')] },
         paymentStatus: PaymentStatusCodec.toCode('UNPAID'),
         status: { in: [OrderStatusCodec.toCode('PLACED'), OrderStatusCodec.toCode('CONFIRMED')] },
         paymentDueAt: { lt: now },

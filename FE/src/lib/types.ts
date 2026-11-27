@@ -19,7 +19,7 @@ export interface Product {
   category?: Category;
 }
 
-export type PaymentMethod = 'COD' | 'BANK_QR';
+export type PaymentMethod = 'COD' | 'BANK_QR' | 'VNPAY';
 export type OrderStatus = 'PLACED' | 'CONFIRMED' | 'SHIPPING' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'RETURNED';
 export type PaymentStatus = 'PENDING' | 'UNPAID' | 'PAID' | 'REFUNDED';
 
@@ -53,6 +53,10 @@ export interface PublicOrder {
   items?: OrderItem[];
   history?: Array<{ status: OrderStatus; at: string }>;
   transferInstructions?: TransferInstructions;
+  /** Đơn thanh toán VNPay chưa trả: khách thanh toán (lại) đến hết hạn. */
+  onlinePayment?: { provider: 'VNPAY'; dueAt: string | null };
+  /** Chỉ có ở phản hồi đặt hàng đơn VNPay: link sang cổng thanh toán. */
+  paymentUrl?: string;
   /** Chỉ có ở phản hồi đặt hàng: true nếu là đơn cũ được trả lại do gửi lặp cùng Idempotency-Key. */
   replayed?: boolean;
 }

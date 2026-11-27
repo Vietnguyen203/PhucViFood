@@ -28,3 +28,21 @@ export async function cancelOrder(code: string, phone: string, reason?: string):
 export async function confirmReceived(code: string, phone: string): Promise<PublicOrder> {
   return (await api<PublicOrder>(`/public/orders/${encodeURIComponent(code)}/confirm-received`, { method: 'POST', body: { phone: phone.trim() } })).data;
 }
+
+/** Cách thanh toán online cửa hàng đang bật (VNPay chỉ bật khi có cấu hình ở máy chủ). */
+export async function fetchPaymentOptions(signal?: AbortSignal): Promise<{ vnpay: boolean }> {
+  return (await api<{ vnpay: boolean }>('/public/payments/options', { signal })).data;
+}
+
+/** Khách thanh toán (lại) đơn VNPay chưa trả: lấy link sang cổng thanh toán. */
+export async function requestPayUrl(code: string, phone: string): Promise<string> {
+  return (await api<{ url: string }>(`/public/orders/${encodeURIComponent(code)}/pay-url`, { method: 'POST', body: { phone: phone.trim() } })).data.url;
+}
+
+export interface VnpayResult { success: boolean; valid: boolean; orderCode: string | null; message: string }
+
+/** Trang kết quả gửi nguyên query VNPay đưa về để máy chủ kiểm tra chữ ký và ghi nhận thanh toán. */
+export async function confirmVnpay(search: string, signal?: AbortSignal): Promise<VnpayResult> {
+  return (await api<VnpayResult>(`/public/payments/vnpay/return${search.startsWith('?') ? search : `?${search}`}`, { signal })).data;
+}
+

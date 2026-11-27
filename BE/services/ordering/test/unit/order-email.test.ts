@@ -37,4 +37,15 @@ describe('thư xác nhận đơn', () => {
     expect(cod.html).toContain('Miễn phí');
     expect(cod.html).toContain('Khi nhận hàng (COD)');
   });
+
+  it('đơn VNPay chưa thanh toán: ghi rõ cách thanh toán, hạn và hướng dẫn mở trang theo dõi; không có phần chuyển khoản', () => {
+    const v = buildOrderConfirmation({ ...base, paymentMethod: 'VNPAY', transferInstructions: undefined, onlinePayment: { provider: 'VNPAY', dueAt: '2026-11-28T10:00:00Z' } }, 'khach@example.com', 'https://phucvifoods.vn');
+    for (const part of ['Thanh toán online (VNPay)', 'chưa thanh toán xong', 'trang theo dõi']) {
+      expect(v.html).toContain(part);
+      expect(v.text).toContain(part);
+    }
+    expect(v.html).not.toContain('Vietcombank');
+    const paid = buildOrderConfirmation({ ...base, paymentMethod: 'VNPAY', transferInstructions: undefined, onlinePayment: undefined }, 'khach@example.com', 'https://phucvifoods.vn');
+    expect(paid.html).not.toContain('chưa thanh toán xong');
+  });
 });

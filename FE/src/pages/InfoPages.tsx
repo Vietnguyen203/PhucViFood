@@ -85,7 +85,14 @@ const PAGES: Record<string, Info> = {
           <li>Trang đơn hàng hiển thị ngân hàng, số tài khoản, chủ tài khoản và nội dung chuyển khoản.</li>
           <li>Chuyển đúng số tiền và đúng nội dung chuyển khoản.</li>
         </ol>
-        <p>Đơn chuyển khoản được giữ hàng trong một thời hạn nhất định (hiện tại 24 giờ). Quá hạn mà chưa nhận được tiền, đơn tự hủy và hàng được trả về kho. <Link to="/don-hang">Tra cứu đơn hàng</Link> để xem hạn thanh toán.</p>
+        <h2>Thanh toán online qua VNPay</h2>
+        <ol>
+          <li>Chọn "Thanh toán online qua VNPay" ở bước thanh toán và đặt hàng.</li>
+          <li>Bạn được chuyển sang cổng VNPay để trả bằng thẻ ATM nội địa, thẻ quốc tế hoặc quét mã QR qua ứng dụng ngân hàng.</li>
+          <li>Thanh toán xong, bạn được đưa về Phúc Vị và đơn hàng tự cập nhật là đã thanh toán.</li>
+        </ol>
+        <p>Chưa thanh toán xong hoặc thoát giữa chừng thì vào <Link to="/don-hang">Tra cứu đơn hàng</Link> và bấm "Thanh toán qua VNPay" để thanh toán lại, trước khi đơn hết hạn.</p>
+        <p>Đơn chuyển khoản và đơn VNPay được giữ hàng trong một thời hạn nhất định (hiện tại 24 giờ). Quá hạn mà chưa nhận được tiền, đơn tự hủy và hàng được trả về kho. <Link to="/don-hang">Tra cứu đơn hàng</Link> để xem hạn thanh toán.</p>
       </>
     ),
   },

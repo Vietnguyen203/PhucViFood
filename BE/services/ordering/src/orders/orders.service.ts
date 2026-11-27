@@ -62,8 +62,8 @@ export class OrdersService extends PrismaCrudService<OrderFull> {
   async transition(order: Order, to: OrderStatus, actor: Actor, extra: TransitionExtra = {}): Promise<OrderFull> {
     const from = OrderStatusCodec.toName(order.status);
     if (!canTransitionOrder(from, to)) throw AppException.businessRule(`Không thể chuyển đơn từ ${from} sang ${to}`);
-    if (to === 'SHIPPING' && PaymentMethodCodec.toName(order.paymentMethod) === 'BANK_QR' && PaymentStatusCodec.toName(order.paymentStatus) !== 'PAID') {
-      throw AppException.businessRule('Đơn chuyển khoản chưa được xác nhận đã thanh toán, chưa thể giao hàng');
+    if (to === 'SHIPPING' && PaymentMethodCodec.toName(order.paymentMethod) !== 'COD' && PaymentStatusCodec.toName(order.paymentStatus) !== 'PAID') {
+      throw AppException.businessRule('Đơn trả trước (chuyển khoản, VNPay) chưa được xác nhận đã thanh toán, chưa thể giao hàng');
     }
 
     const now = new Date();
