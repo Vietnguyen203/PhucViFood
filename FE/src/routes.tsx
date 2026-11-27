@@ -80,6 +80,7 @@ const router = createBrowserRouter([
           { path: "tai-khoan", ...admin(() => import("./admin/AccountsPage")) },
           { path: "banner", ...admin(() => import("./admin/BannersPage")) },
           { path: "kol-koc", ...admin(() => import("./admin/CreatorsPage")) },
+          { path: "video", ...admin(() => import("./admin/VideosPage")) },
           { path: "san-pham", ...admin(() => import("./admin/ProductsPage")) },
           { path: "danh-muc", ...admin(() => import("./admin/CategoriesPage")) },
         ],

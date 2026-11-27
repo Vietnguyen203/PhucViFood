@@ -15,6 +15,7 @@ React 19 + Vite + Tailwind (xuất từ Figma Make), gọi backend **chỉ qua g
 | `/gio-hang` | Giỏ hàng đầy đủ: đổi số lượng, xóa, tóm tắt phí ship tạm tính, sang thanh toán (ngăn kéo giỏ có link vào đây) | Chỉ localStorage |
 | `/` (banner đầu trang) | Chỉ ảnh, không chữ: khung lớn bên trái (nhiều ảnh tự trượt, dừng khi rê chuột) và tối đa 2 ô khuyến mãi bên phải; bấm vào ra trang đích. Nội dung cài ở admin "Banner trang chủ"; chưa có banner thì dùng ảnh mặc định bấm ra khu sản phẩm | `GET /public/banners` |
 | `/` (mục KOL & KOC, dưới banner) | Hàng thẻ chân dung dọc (6 thẻ/hàng màn rộng, vuốt ngang trên điện thoại), nhãn KOL/KOC, tên và câu giới thiệu; bấm ra link đã cài. Chưa có thẻ nào đang bật thì ẩn cả mục | `GET /public/creators` |
+| `/` (khung video, dưới KOL/KOC) | Khung rộng: video đang chọn hiện ảnh bìa, bấm mới tải và phát YouTube ngay trên trang; nhiều video thì có hàng ảnh nhỏ để đổi. Thẻ KOL/KOC có link YouTube cũng mở hộp phát video ngay trên trang (link khác vẫn mở như cũ). Chưa có video thì ẩn | `GET /public/videos` |
 | `/tim-kiem?q=...&sort=...&gia=...` | Kết quả tìm kiếm (tên, mô tả), sắp xếp, "Xem thêm"; ô tìm kiếm ở header | `GET /public/products?q=` |
 | (mọi trang) | Giỏ hàng dạng ngăn kéo, lưu trong trình duyệt, đồng bộ giữa các tab | |
 | `/thanh-toan` | Thanh toán: thông tin giao hàng, COD hoặc chuyển khoản, mã CTV, đồng ý tư vấn | `POST /public/orders` (có `Idempotency-Key`) |
@@ -47,6 +48,7 @@ Chỉ tài khoản ADMIN (đăng nhập ở `/dang-nhap`; tài khoản dev nằm
 | Danh mục | Thêm, sửa, ẩn/hiện, xóa |
 | Banner trang chủ (`/admin/banner`) | Thêm, sửa, bật/tắt, xóa banner; chọn vị trí (khung lớn hoặc ô khuyến mãi bên phải), tải ảnh từ máy, đích bấm, thứ tự và lịch hiển thị; thấy trạng thái đang hiện, đã tắt, chưa tới lịch, đã hết hạn |
 | KOL / KOC (`/admin/kol-koc`) | Thêm, sửa, bật/tắt, xóa thẻ KOL/KOC; chọn loại, tải ảnh chân dung dọc 3:4, câu giới thiệu, link đích, thứ tự (khách thấy tối đa 12 thẻ) |
+| Video trang chủ (`/admin/video`) | Thêm, sửa, bật/tắt, xóa video YouTube (dán link, xem trước ảnh bìa), thứ tự; khách thấy tối đa 6 video |
 | Cộng tác viên | Duyệt (hợp đồng, tỷ lệ), từ chối, tạm ngưng, kích hoạt lại, sửa hợp đồng/tỷ lệ |
 | Hoa hồng, đợt chi trả, khoản trừ | Xác nhận sớm; tạo đợt chi (chọn hoa hồng, thấy khoản trừ chờ); miễn khoản trừ kèm lý do |
 | Khách hàng | Lọc theo phân loại, mức hoạt động, đồng ý tư vấn, tỉnh, ngày; chi tiết, sửa liên hệ, ghi nhận đồng ý; xuất Excel theo đúng bộ lọc |

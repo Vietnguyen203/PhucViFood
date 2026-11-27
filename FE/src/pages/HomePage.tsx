@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { CreatorSection } from "../components/CreatorSection";
 import { HomeBanner } from "../components/HomeBanner";
+import { VideoSection } from "../components/VideoSection";
 import { HomeIcon } from "../components/Icon";
 import { ProductCard } from "../components/ProductCard";
 import { HomeFooter } from "../components/SiteFooter";
@@ -162,6 +163,7 @@ export default function HomePage() {
         <HomeBanner />
         <CategorySection />
         <CreatorSection />
+        <VideoSection />
         <ProductsSection />
         <PartnerCTA />
       </main>

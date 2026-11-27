@@ -295,6 +295,43 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
   });
 
   // ═════════════════════════ Admin: sản phẩm ═════════════════════════
+  describe('Video trang chủ', () => {
+    const mk = (over: Record<string, unknown> = {}) => ({ title: `IT video ${rand(5)}`, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', ...over });
+    const cleanup = async () => { await prisma.$executeRawUnsafe(`DELETE FROM catalog.videos WHERE title LIKE 'IT video %'`); };
+
+    it('admin tạo, sửa, xóa; khách chỉ thấy video đang bật, đúng thứ tự', async () => {
+      await cleanup();
+      const t = admin();
+      const key = rand(4);
+      const a = await api('POST', '/videos', { token: t, body: mk({ title: `IT video ${key} B`, sortOrder: 2, videoUrl: 'https://youtu.be/dQw4w9WgXcQ?t=5' }) });
+      const b = await api('POST', '/videos', { token: t, body: mk({ title: `IT video ${key} A`, sortOrder: 1, videoUrl: 'https://youtube.com/shorts/abcdefghijk' }) });
+      const off = await api('POST', '/videos', { token: t, body: mk({ title: `IT video ${key} tắt`, isActive: false }) });
+      for (const r of [a, b, off]) expect(r.status).toBe(201);
+      const mine = (list: any[]) => list.filter((v) => v.title.startsWith(`IT video ${key}`));
+      let pub = (await api('GET', '/public/videos')).body.data;
+      expect(mine(pub).map((v: any) => v.title)).toEqual([`IT video ${key} A`, `IT video ${key} B`]);
+      expect(Object.keys(pub[0]).sort()).toEqual(['id', 'title', 'videoUrl']);
+      expect((await api('PATCH', `/videos/${off.body.data.id}`, { token: t, body: { isActive: true } })).body.data.isActive).toBe(true);
+      pub = (await api('GET', '/public/videos')).body.data;
+      expect(mine(pub)).toHaveLength(3);
+      expect((await api('DELETE', `/videos/${b.body.data.id}`, { token: t })).status).toBe(200);
+      expect((await api('GET', `/videos/${b.body.data.id}`, { token: t })).status).toBe(404);
+      await cleanup();
+    });
+
+    it('chặn: không đăng nhập, không phải ADMIN, link không phải YouTube', async () => {
+      expect((await api('POST', '/videos', { body: mk() })).status).toBe(401);
+      expect((await api('POST', '/videos', { token: token('AFFILIATE'), body: mk() })).status).toBe(403);
+      const t = admin();
+      const bad: Array<Record<string, unknown>> = [
+        { title: '' }, { title: 'x'.repeat(101) }, { videoUrl: 'https://vimeo.com/123456789' }, { videoUrl: 'https://youtube.com.evil.example/watch?v=dQw4w9WgXcQ' },
+        { videoUrl: 'javascript:alert(1)' }, { videoUrl: 'https://youtu.be/short' }, { videoUrl: undefined }, { sortOrder: -1 },
+      ];
+      for (const patch of bad) expect((await api('POST', '/videos', { token: t, body: mk(patch) })).status, JSON.stringify(patch)).toBe(400);
+      await cleanup();
+    });
+  });
+
   describe('KOL/KOC trang chủ', () => {
     const mk = (over: Record<string, unknown> = {}) => ({ name: `IT creator ${rand(5)}`, kind: 'KOC', imageUrl: 'https://cdn.example.com/p.jpg', ...over });
     const cleanup = async () => { await prisma.$executeRawUnsafe(`DELETE FROM catalog.creators WHERE name LIKE 'IT creator %'`); };

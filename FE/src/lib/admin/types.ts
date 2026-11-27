@@ -99,3 +99,5 @@ export const BANNER_SLOT_LABEL: Record<BannerSlot, string> = { MAIN: "Khung lớ
 export type CreatorKind = "KOL" | "KOC";
 export interface AdminCreator { id: string; name: string; kind: CreatorKind; headline: string | null; imageUrl: string; linkUrl: string | null; sortOrder: number; isActive: boolean; createdAt: string }
 export const CREATOR_KIND_OPTIONS: Record<CreatorKind, string> = { KOL: "KOL (người có tầm ảnh hưởng)", KOC: "KOC (khách hàng chia sẻ)" };
+
+export interface AdminVideo { id: string; title: string; videoUrl: string; sortOrder: number; isActive: boolean; createdAt: string }

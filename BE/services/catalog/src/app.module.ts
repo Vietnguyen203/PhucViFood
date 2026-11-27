@@ -6,6 +6,7 @@ import { APP_CONFIG, AppConfig } from './config/app-config';
 import { BannersModule } from './banners/banners.module';
 import { CreatorsModule } from './creators/creators.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { VideosModule } from './videos/videos.module';
 import { PrismaService } from './prisma/prisma.service';
 import { ProductsModule } from './products/products.module';
 import { StockModule } from './stock/stock.module';
@@ -33,6 +34,7 @@ export class AppModule {
         UploadsModule,
         BannersModule,
         CreatorsModule,
+        VideosModule,
       ],
       controllers: [createHealthController('catalog') as never],
       providers: [{ provide: APP_CONFIG, useValue: config }],

@@ -36,6 +36,21 @@ export const IsBannerLink = (options?: ValidationOptions) => (object: object, pr
   });
 };
 
+/** Mã video YouTube (11 ký tự) từ link watch, youtu.be, shorts, embed, live; không đúng dạng thì null. */
+export function youtubeId(url: string): string | null {
+  const m = /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?:[?&#/].*)?$/.exec(url);
+  return m ? m[1] : null;
+}
+export const IsYoutubeUrl = (options?: ValidationOptions) => (object: object, propertyName: string): void => {
+  registerDecorator({
+    name: 'isYoutubeUrl', target: object.constructor, propertyName, options,
+    validator: {
+      validate: (v: unknown) => typeof v === 'string' && v.length <= 300 && youtubeId(v) !== null,
+      defaultMessage: () => 'videoUrl phải là link YouTube (youtube.com/watch?v=..., youtu.be/... hoặc youtube.com/shorts/...)',
+    },
+  });
+};
+
 export const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 export const trimLower = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value);
 
