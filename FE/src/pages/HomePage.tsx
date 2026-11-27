@@ -1,44 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
+import { HomeBanner } from "../components/HomeBanner";
 import { HomeIcon } from "../components/Icon";
 import { ProductCard } from "../components/ProductCard";
 import { HomeFooter } from "../components/SiteFooter";
 import { HomeHeader } from "../components/SiteHeader";
 import { describeError } from "../lib/api";
-import { articles } from "../lib/news";
 import { useDocumentTitle } from "../lib/pageTitle";
 import { fetchCategories, fetchProducts, type ProductPage } from "../lib/catalog";
 import type { Product } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
 import "../home.css";
-
-const slides = [
-  {
-    eyebrow: "Món ngon Việt cho mọi nhà",
-    title: "Gói trọn vị ngon,\ngửi trao hạnh phúc",
-    description:
-      "Khám phá những đặc sản Việt được Phúc Vị tuyển chọn kỹ lưỡng, an toàn và trọn vẹn hương vị.",
-    image: "/images/phuc-vi-home-hero.png",
-    className: "bright",
-  },
-  {
-    eyebrow: "Bộ quà tinh tuyển 2025",
-    title: "Món quà ý nghĩa\ncho người bạn thương",
-    description:
-      "Trao lời chúc chân thành qua những bộ quà ẩm thực được chăm chút trong từng chi tiết.",
-    image: "/images/phuc-vi-hero.png",
-    className: "dark",
-  },
-  {
-    eyebrow: "Cộng đồng Phúc Vị",
-    title: "Chia sẻ món ngon,\nnhận thêm thu nhập",
-    description:
-      "Trở thành cộng tác viên miễn phí, giới thiệu sản phẩm bạn yêu thích và nhận hoa hồng mỗi đơn.",
-    image:
-      "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1800&q=90",
-    className: "warm",
-  },
-];
 
 /** Ảnh minh họa cho thẻ danh mục (backend chưa có ảnh danh mục); lặp lại theo thứ tự. */
 const CATEGORY_IMAGES = [
@@ -49,52 +21,6 @@ const CATEGORY_IMAGES = [
 ];
 
 const PAGE_SIZE = 8;
-
-function HomeHero() {
-  const [active, setActive] = useState(0);
-  const slide = slides[active];
-  const previous = () => setActive((active - 1 + slides.length) % slides.length);
-  const next = () => setActive((active + 1) % slides.length);
-  return (
-    <section className={`home-hero ${slide.className}`}>
-      <img key={slide.image} src={slide.image} alt={slide.title.replace("\n", " ")} />
-      <div className="home-hero-shade" />
-      <div className="home-hero-content">
-        <span>{slide.eyebrow}</span>
-        <h1>
-          {slide.title.split("\n").map((line) => (
-            <span key={line}>{line}</span>
-          ))}
-        </h1>
-        <p>{slide.description}</p>
-        <div className="home-hero-actions">
-          <a href="#best-sellers">
-            Mua ngay <HomeIcon name="arrow" size={17} />
-          </a>
-          <a href="#brand-story">Khám phá Phúc Vị</a>
-        </div>
-      </div>
-      <div className="home-slider-controls">
-        <button onClick={previous} aria-label="Slide trước">
-          <HomeIcon name="chevron" />
-        </button>
-        <div>
-          {slides.map((item, index) => (
-            <button
-              key={item.title}
-              className={active === index ? "active" : ""}
-              onClick={() => setActive(index)}
-              aria-label={`Xem slide ${index + 1}`}
-            />
-          ))}
-        </div>
-        <button onClick={next} aria-label="Slide tiếp">
-          <HomeIcon name="chevron" />
-        </button>
-      </div>
-    </section>
-  );
-}
 
 function HomeSectionHeading({
   label,
@@ -196,69 +122,6 @@ function ProductsSection() {
   );
 }
 
-function BrandStory() {
-  return (
-    <section className="home-story" id="brand-story">
-      <div className="home-story-visual">
-        <img
-          src="https://images.unsplash.com/photo-1525755662778-989d0524087e?auto=format&fit=crop&w=1400&q=90"
-          alt="Bữa cơm Việt ấm cúng"
-        />
-        <div>
-          <strong>10+</strong>
-          <span>
-            Năm gìn giữ
-            <br />
-            vị ngon Việt
-          </span>
-        </div>
-      </div>
-      <div className="home-story-copy">
-        <span>Chuyện của Phúc Vị</span>
-        <h2>
-          Mỗi món ngon,
-          <br />
-          một niềm hạnh phúc
-        </h2>
-        <p>
-          Phúc Vị Foods bắt đầu từ mong muốn gìn giữ những hương vị Việt thân quen và đưa chúng đến
-          mọi gia đình bằng sự tử tế.
-        </p>
-        <p>
-          Chúng tôi chọn nguyên liệu rõ nguồn gốc, giữ gìn cách làm truyền thống và hoàn thiện bằng
-          tiêu chuẩn hiện đại để mỗi sản phẩm luôn an toàn, thơm ngon và trọn vị.
-        </p>
-        <div className="home-values">
-          <div>
-            <HomeIcon name="leaf" />
-            <span>
-              <strong>Nguyên liệu chọn lọc</strong>
-              <small>Tự nhiên và rõ nguồn gốc</small>
-            </span>
-          </div>
-          <div>
-            <HomeIcon name="shield" />
-            <span>
-              <strong>An tâm chất lượng</strong>
-              <small>Kiểm soát trong từng khâu</small>
-            </span>
-          </div>
-          <div>
-            <HomeIcon name="truck" />
-            <span>
-              <strong>Giao hàng tận nơi</strong>
-              <small>Đóng gói chu đáo toàn quốc</small>
-            </span>
-          </div>
-        </div>
-        <Link to="/thong-tin/gioi-thieu">
-          Tìm hiểu thêm <HomeIcon name="arrow" size={16} />
-        </Link>
-      </div>
-    </section>
-  );
-}
-
 function PartnerCTA() {
   return (
     <section className="home-partner-cta">
@@ -289,53 +152,16 @@ function PartnerCTA() {
   );
 }
 
-function NewsSection() {
-  return (
-    <section className="home-section home-news" id="news">
-      <HomeSectionHeading
-        label="Góc nhỏ Phúc Vị"
-        title="Tin tức & câu chuyện món ngon"
-        description="Cùng khám phá văn hóa ẩm thực Việt và những bí quyết giữ trọn hương vị mỗi ngày."
-      />
-      <div className="home-article-grid">
-        {articles.map((article) => (
-          <article className="home-article-card" key={article.slug}>
-            <Link to={`/tin-tuc/${article.slug}`} className="home-article-image">
-              <img src={article.image} alt={article.title} />
-              <span>Đọc bài viết</span>
-            </Link>
-            <div className="home-article-meta">
-              <span>{article.category}</span>
-              <i />
-              <time>{article.date}</time>
-            </div>
-            <h3>{article.title}</h3>
-            <p>{article.excerpt}</p>
-            <Link to={`/tin-tuc/${article.slug}`}>
-              Xem chi tiết <HomeIcon name="arrow" size={15} />
-            </Link>
-          </article>
-        ))}
-      </div>
-      <Link className="home-more-link" to="/tin-tuc">
-        Xem tất cả bài viết <HomeIcon name="arrow" size={16} />
-      </Link>
-    </section>
-  );
-}
-
 export default function HomePage() {
   useDocumentTitle(undefined);
   return (
     <div className="home-page">
       <HomeHeader />
       <main>
-        <HomeHero />
+        <HomeBanner />
         <CategorySection />
         <ProductsSection />
-        <BrandStory />
         <PartnerCTA />
-        <NewsSection />
       </main>
       <HomeFooter />
     </div>

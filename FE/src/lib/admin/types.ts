@@ -88,3 +88,10 @@ export const STOCK_REASON_LABEL: Record<string, string> = { ORDER_PLACED: "Đặ
 export interface AdminUser { id: string; email: string; role: string; status: string; createdAt: string; lastLoginAt: string | null }
 export const USER_ROLE_LABEL: Record<string, string> = { ADMIN: "Quản trị viên", AFFILIATE: "Cộng tác viên", CUSTOMER: "Khách hàng" };
 export const USER_STATUS_LABEL: Record<string, string> = { ACTIVE: "Hoạt động", DISABLED: "Đã khóa" };
+
+export type BannerSlot = "MAIN" | "SIDE";
+export interface AdminBanner {
+  id: string; title: string; imageUrl: string; linkUrl: string | null; slot: BannerSlot; sortOrder: number; isActive: boolean;
+  startsAt: string | null; endsAt: string | null; createdAt: string;
+}
+export const BANNER_SLOT_LABEL: Record<BannerSlot, string> = { MAIN: "Khung lớn (bên trái)", SIDE: "Ô khuyến mãi (bên phải)" };

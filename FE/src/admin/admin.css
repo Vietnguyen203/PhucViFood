@@ -186,3 +186,5 @@
 .ad-image-actions .ad-field { margin: 4px 0 0; }
 @media (max-width: 600px) { .ad-image-body { grid-template-columns: 1fr; } .ad-image-box { width: 100%; height: 160px; } }
 .ad-image-actions .ad-link { justify-self: start; }
+
+.ad-banner-thumb { width: 96px; height: 54px; object-fit: cover; border-radius: 8px; background: #eee3d6; display: block; }

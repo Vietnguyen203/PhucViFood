@@ -5,7 +5,7 @@ import { useAdmin } from "./AdminContext";
 import { Field } from "./ui";
 
 /** Ảnh sản phẩm: chọn tệp từ máy (tự thu nhỏ và nén rồi tải lên), hoặc dán đường dẫn ảnh. Có xem trước. */
-export function ImageField({ value, onChange, error }: { value: string; onChange: (url: string) => void; error?: string }) {
+export function ImageField({ value, onChange, error, label = "Ảnh sản phẩm", maxSide, hint }: { value: string; onChange: (url: string) => void; error?: string; label?: string; maxSide?: number; hint?: string }) {
   const { adm } = useAdmin();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -20,7 +20,7 @@ export function ImageField({ value, onChange, error }: { value: string; onChange
     if (bad) { setProblem(bad); return; }
     setBusy(true); setProblem(null);
     try {
-      const blob = await prepareImage(file);
+      const blob = await prepareImage(file, maxSide);
       const r = await adm<{ url: string }>("/products/images", { method: "POST", body: blob, timeoutMs: 60_000 });
       onChange(r.data.url);
     } catch (e) {
@@ -34,7 +34,7 @@ export function ImageField({ value, onChange, error }: { value: string; onChange
   const has = value.trim() !== "";
   return (
     <div className="ad-image-field">
-      <span className="ad-image-label">Ảnh sản phẩm</span>
+      <span className="ad-image-label">{label}</span>
       <div className="ad-image-body">
         <div className="ad-image-box">
           {has && !broken
@@ -47,7 +47,7 @@ export function ImageField({ value, onChange, error }: { value: string; onChange
             <button type="button" className="ad-btn" disabled={busy} onClick={() => input.current?.click()}>{busy ? "Đang tải lên..." : has ? "Đổi ảnh" : "Chọn ảnh từ máy"}</button>
             {has && <button type="button" className="ad-btn" disabled={busy} onClick={() => onChange("")}>Gỡ ảnh</button>}
           </div>
-          <small className="ad-muted">PNG, JPEG hoặc WebP. Ảnh lớn được tự thu nhỏ trước khi tải lên.</small>
+          <small className="ad-muted">{hint ?? "PNG, JPEG hoặc WebP. Ảnh lớn được tự thu nhỏ trước khi tải lên."}</small>
           <button type="button" className="ad-link" onClick={() => setAsLink((v) => !v)}>{asLink ? "Ẩn ô đường dẫn" : "Hoặc dán đường dẫn ảnh"}</button>
           {asLink && (
             <Field label="Đường dẫn ảnh" error={error}>

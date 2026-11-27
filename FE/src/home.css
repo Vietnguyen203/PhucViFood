@@ -1033,3 +1033,43 @@
 }
 .home-product-image > button.liked { color: #b3261e; }
 .home-product-image > button.liked svg { fill: currentColor; }
+
+/* ───────── Banner trang chủ: chỉ ảnh, khung lớn bên trái và ô khuyến mãi bên phải ───────── */
+.home-banner {
+  max-width: 1240px;
+  margin: 18px auto 0;
+  padding: 0 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 16px;
+  height: 440px;
+}
+.home-banner.no-side { grid-template-columns: minmax(0, 1fr); }
+.home-banner-main { position: relative; min-width: 0; border-radius: 18px; overflow: hidden; background: #efe1c9; }
+.home-banner-skeleton { animation: homePulse 1.4s ease-in-out infinite; }
+@keyframes homePulse { 50% { opacity: 0.6; } }
+.home-banner-link { display: block; width: 100%; height: 100%; }
+.home-banner-main img, .home-banner-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.home-banner-main img { animation: homeFade 0.55s ease; }
+a.home-banner-link, a.home-banner-tile { cursor: pointer; }
+.home-banner-link:focus-visible, .home-banner-tile:focus-visible { outline: 3px solid var(--home-gold); outline-offset: -3px; }
+.home-banner-controls { position: absolute; z-index: 3; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 5px 10px; border-radius: 999px; background: #4a0a0d66; }
+.home-banner-controls > button { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #fffde8; color: var(--home-red); cursor: pointer; }
+.home-banner-controls > button:first-child svg { transform: rotate(90deg); }
+.home-banner-controls > button:last-child svg { transform: rotate(-90deg); }
+.home-banner-controls > div { display: flex; gap: 6px; align-items: center; }
+.home-banner-controls > div button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 10px; background: #ffffffaa; cursor: pointer; transition: 0.2s; }
+.home-banner-controls > div button.active { width: 24px; background: var(--home-gold); }
+.home-banner-side { display: grid; gap: 16px; min-width: 0; }
+.home-banner-side.count-2 { grid-template-rows: 1fr 1fr; }
+.home-banner-side.count-1 { grid-template-rows: 1fr; }
+.home-banner-tile { display: block; min-height: 0; border-radius: 18px; overflow: hidden; background: #efe1c9; transition: transform 0.2s, box-shadow 0.2s; }
+a.home-banner-tile:hover { transform: translateY(-2px); box-shadow: 0 12px 28px #4a0a0d26; }
+@media (max-width: 899px) {
+  .home-banner { grid-template-columns: minmax(0, 1fr); height: auto; margin-top: 12px; }
+  .home-banner-main { aspect-ratio: 16 / 9; }
+  .home-banner-side { grid-template-columns: 1fr 1fr; grid-template-rows: none !important; }
+  .home-banner-side.count-1 { grid-template-columns: 1fr; }
+  .home-banner-tile { aspect-ratio: 16 / 10; }
+}
+@media (min-width: 1300px) { .home-banner { height: 480px; } }

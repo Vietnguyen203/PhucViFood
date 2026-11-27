@@ -34,9 +34,9 @@ export function HomeHeader() {
           <a href="/#best-sellers" onClick={() => setOpen(false)}>
             Sản phẩm
           </a>
-          <a href="/#brand-story" onClick={() => setOpen(false)}>
+          <Link to="/thong-tin/gioi-thieu" onClick={() => setOpen(false)}>
             Về Phúc Vị
-          </a>
+          </Link>
           <Link to="/tin-tuc" onClick={() => setOpen(false)}>
             Tin tức
           </Link>

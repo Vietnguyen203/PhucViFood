@@ -13,6 +13,25 @@ datasource db {
   schemas  = ["catalog"]
 }
 
+/// Banner trang chủ. slot: 1 MAIN (khung lớn, trượt), 2 SIDE (ô khuyến mãi bên phải). Chỉ hiện khi bật và đang trong khoảng lịch (nếu có).
+model Banner {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  title     String // tên gợi nhớ cho admin, đồng thời là mô tả ảnh (alt) cho người dùng trình đọc màn hình
+  imageUrl  String    @map("image_url")
+  linkUrl   String?   @map("link_url") // trang đích khi bấm vào banner
+  slot      Int       @db.SmallInt // BannerSlotCode
+  sortOrder Int       @default(0) @map("sort_order")
+  isActive  Boolean   @default(true) @map("is_active")
+  startsAt  DateTime? @map("starts_at") @db.Timestamptz(6)
+  endsAt    DateTime? @map("ends_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([slot, isActive, sortOrder])
+  @@map("banners")
+  @@schema("catalog")
+}
+
 model Category {
   id        String    @id @default(uuid(7)) @db.Uuid
   name      String

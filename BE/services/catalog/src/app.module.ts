@@ -3,6 +3,7 @@ import { createHealthController } from '@phucvi/shared-library/api';
 import { AuthGuardsModule } from '@phucvi/shared-library/auth';
 import { MessagingModule } from '@phucvi/shared-library/messaging';
 import { APP_CONFIG, AppConfig } from './config/app-config';
+import { BannersModule } from './banners/banners.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PrismaService } from './prisma/prisma.service';
 import { ProductsModule } from './products/products.module';
@@ -29,6 +30,7 @@ export class AppModule {
         ProductsModule,
         StockModule,
         UploadsModule,
+        BannersModule,
       ],
       controllers: [createHealthController('catalog') as never],
       providers: [{ provide: APP_CONFIG, useValue: config }],

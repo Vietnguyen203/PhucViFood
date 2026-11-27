@@ -295,6 +295,73 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
   });
 
   // ═════════════════════════ Admin: sản phẩm ═════════════════════════
+  describe('banner trang chủ', () => {
+    const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64, 3)]);
+    const mk = (over: Record<string, unknown> = {}) => ({ title: `IT banner ${rand(5)}`, imageUrl: 'https://cdn.example.com/b.jpg', slot: 'MAIN', ...over });
+    const cleanup = async () => { await prisma.$executeRawUnsafe(`DELETE FROM catalog.banners WHERE title LIKE 'IT banner %'`); };
+
+    it('admin tạo, sửa, xóa banner; khách chỉ thấy banner bật, trong lịch, chia theo vị trí và đúng thứ tự', async () => {
+      await cleanup();
+      const t = admin();
+      const key = rand(4);
+      const m1 = await api('POST', '/banners', { token: t, body: mk({ title: `IT banner ${key} chính 2`, sortOrder: 2, linkUrl: '/san-pham/kho-ca' }) });
+      const m0 = await api('POST', '/banners', { token: t, body: mk({ title: `IT banner ${key} chính 1`, sortOrder: 1 }) });
+      const side = await api('POST', '/banners', { token: t, body: mk({ title: `IT banner ${key} phải`, slot: 'SIDE', linkUrl: 'https://shop.example.vn/khuyen-mai' }) });
+      const off = await api('POST', '/banners', { token: t, body: mk({ title: `IT banner ${key} tắt`, isActive: false }) });
+      const future = await api('POST', '/banners', { token: t, body: mk({ title: `IT banner ${key} chưa tới`, startsAt: new Date(Date.now() + 86_400_000).toISOString() }) });
+      const past = await api('POST', '/banners', { token: t, body: mk({ title: `IT banner ${key} hết hạn`, endsAt: new Date(Date.now() - 1000).toISOString() }) });
+      for (const r of [m1, m0, side, off, future, past]) expect(r.status).toBe(201);
+      expect(m1.body.data).toMatchObject({ slot: 'MAIN', sortOrder: 2, isActive: true, linkUrl: '/san-pham/kho-ca' });
+
+      const pub = (await api('GET', '/public/banners')).body.data;
+      const mine = (list: any[]) => list.filter((b) => b.title.startsWith(`IT banner ${key}`)).map((b) => b.title);
+      expect(mine(pub.main)).toEqual([`IT banner ${key} chính 1`, `IT banner ${key} chính 2`]); // đúng thứ tự, không có tắt/chưa tới/hết hạn
+      expect(mine(pub.side)).toEqual([`IT banner ${key} phải`]);
+      expect(Object.keys(pub.main[0]).sort()).toEqual(['id', 'imageUrl', 'linkUrl', 'title']); // khách không thấy trường quản trị
+
+      // sửa: tắt rồi bật, đổi vị trí, gỡ liên kết, đặt lịch
+      expect((await api('PATCH', `/banners/${m0.body.data.id}`, { token: t, body: { isActive: false } })).body.data.isActive).toBe(false);
+      expect(mine((await api('GET', '/public/banners')).body.data.main)).toEqual([`IT banner ${key} chính 2`]);
+      const moved = await api('PATCH', `/banners/${m1.body.data.id}`, { token: t, body: { slot: 'SIDE', linkUrl: null } });
+      expect(moved.body.data).toMatchObject({ slot: 'SIDE', linkUrl: null });
+      const sched = await api('PATCH', `/banners/${off.body.data.id}`, { token: t, body: { isActive: true, startsAt: null, endsAt: new Date(Date.now() + 3_600_000).toISOString() } });
+      expect(sched.status).toBe(200);
+      expect(mine((await api('GET', '/public/banners')).body.data.main)).toEqual([`IT banner ${key} tắt`]);
+
+      // lọc và xóa
+      expect((await api('GET', `/banners?filter[slot]=SIDE&q=${key}`, { token: t })).body.data).toHaveLength(2);
+      expect((await api('DELETE', `/banners/${side.body.data.id}`, { token: t })).status).toBe(200);
+      expect((await api('GET', `/banners/${side.body.data.id}`, { token: t })).status).toBe(404);
+      await cleanup();
+    });
+
+    it('chặn: không đăng nhập, không phải ADMIN, dữ liệu sai (vị trí, ảnh, liên kết nguy hiểm, lịch ngược)', async () => {
+      expect((await api('POST', '/banners', { body: mk() })).status).toBe(401);
+      expect((await api('POST', '/banners', { token: token('AFFILIATE'), body: mk() })).status).toBe(403);
+      expect((await api('GET', '/banners', { token: token('AFFILIATE') })).status).toBe(403);
+      const t = admin();
+      const bad: Array<Record<string, unknown>> = [
+        { slot: 'GIUA' }, { imageUrl: 'javascript:alert(1)' }, { imageUrl: '/etc/passwd' }, { title: '' }, { imageUrl: undefined },
+        { linkUrl: 'javascript:alert(1)' }, { linkUrl: '//evil.example/x' }, { linkUrl: 'khong-co-gach' }, { linkUrl: '/a b' },
+        { sortOrder: -1 }, { startsAt: 'hom-qua' },
+        { startsAt: '2026-12-02T00:00:00Z', endsAt: '2026-12-01T00:00:00Z' },
+      ];
+      for (const patch of bad) expect((await api('POST', '/banners', { token: t, body: mk(patch) })).status, JSON.stringify(patch)).toBe(400);
+      const ok = await api('POST', '/banners', { token: t, body: mk() });
+      expect((await api('PATCH', `/banners/${ok.body.data.id}`, { token: t, body: { endsAt: '2000-01-01T00:00:00Z', startsAt: '2026-01-01T00:00:00Z' } })).status).toBe(400);
+      await cleanup();
+    });
+
+    it('ảnh banner có thể là ảnh đã tải lên hệ thống', async () => {
+      const up = await fetch(`${base}/products/images`, { method: 'POST', headers: { 'content-type': 'image/png', authorization: `Bearer ${admin()}` }, body: new Uint8Array(PNG) });
+      const url = ((await up.json()) as any).data.url as string;
+      const r = await api('POST', '/banners', { token: admin(), body: mk({ imageUrl: url }) });
+      expect(r.status).toBe(201);
+      expect(r.body.data.imageUrl).toBe(url);
+      await cleanup();
+    });
+  });
+
   describe('ảnh sản phẩm tải lên', () => {
     const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64, 7)]);
     const upload = async (body: Buffer | string, contentType: string | null, token?: string) => {

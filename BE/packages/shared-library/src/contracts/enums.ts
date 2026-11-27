@@ -36,6 +36,9 @@ export type AdjustmentStatus = (typeof AdjustmentStatus)[keyof typeof Adjustment
 export const UserRole = { ADMIN: 'ADMIN', AFFILIATE: 'AFFILIATE', CUSTOMER: 'CUSTOMER' } as const;
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
+export const BannerSlot = { MAIN: 'MAIN', SIDE: 'SIDE' } as const;
+export type BannerSlot = (typeof BannerSlot)[keyof typeof BannerSlot];
+
 export const UserStatus = { ACTIVE: 'ACTIVE', DISABLED: 'DISABLED' } as const;
 export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
 

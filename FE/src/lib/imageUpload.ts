@@ -18,8 +18,8 @@ export function fitWithin(width: number, height: number, max: number): { width: 
 }
 
 /** Giữ nguyên tệp (không nén lại, bảo toàn nền trong suốt của PNG) khi đã là loại nhận được, đủ nhỏ và đủ kích thước. */
-export function canUploadAsIs(file: { type: string; size: number }, dims: { width: number; height: number }): boolean {
-  return (ACCEPTED_TYPES as readonly string[]).includes(file.type) && file.size <= MAX_UPLOAD_BYTES && Math.max(dims.width, dims.height) <= MAX_SIDE;
+export function canUploadAsIs(file: { type: string; size: number }, dims: { width: number; height: number }, maxSide: number = MAX_SIDE): boolean {
+  return (ACCEPTED_TYPES as readonly string[]).includes(file.type) && file.size <= MAX_UPLOAD_BYTES && Math.max(dims.width, dims.height) <= maxSide;
 }
 
 /** Lỗi chọn tệp (null nếu hợp lệ): phải là ảnh và không quá lớn để xử lý trên trình duyệt. */
@@ -37,12 +37,12 @@ function toBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promi
  * Trả về ảnh sẵn sàng tải lên (PNG, JPEG hoặc WebP, ≤ MAX_UPLOAD_BYTES). Chỉ chạy trên trình duyệt (cần canvas).
  * Ưu tiên WebP (nhỏ, giữ nền trong suốt); trình duyệt không xuất được WebP thì dùng JPEG nền trắng.
  */
-export async function prepareImage(file: File): Promise<Blob> {
+export async function prepareImage(file: File, maxSide: number = MAX_SIDE): Promise<Blob> {
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => null);
   if (!bitmap) throw new Error('Không đọc được ảnh này, vui lòng chọn ảnh khác.');
   try {
-    if (canUploadAsIs(file, bitmap)) return file;
-    let { width, height } = fitWithin(bitmap.width, bitmap.height, MAX_SIDE);
+    if (canUploadAsIs(file, bitmap, maxSide)) return file;
+    let { width, height } = fitWithin(bitmap.width, bitmap.height, maxSide);
     for (let round = 0; round <= MAX_SHRINK_ROUNDS; round++) {
       const canvas = document.createElement('canvas');
       canvas.width = width; canvas.height = height;
