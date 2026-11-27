@@ -23,7 +23,7 @@
 .ad-head h1 { margin: 0; }
 
 .ad-card { background: var(--ad-card); border: 1px solid var(--ad-line); border-radius: 16px; padding: 18px; box-shadow: 0 8px 26px #4a0a0d0d; }
-.ad-table-wrap { background: var(--ad-card); border: 1px solid var(--ad-line); border-radius: 16px; overflow-x: auto; box-shadow: 0 8px 26px #4a0a0d0d; }
+.ad-table-wrap { width: fit-content; min-width: min(100%, 720px); max-width: 100%; background: var(--ad-card); border: 1px solid var(--ad-line); border-radius: 16px; overflow-x: auto; box-shadow: 0 8px 26px #4a0a0d0d; }
 .ad-table { width: 100%; border-collapse: collapse; }
 .ad-table th, .ad-table td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--ad-line); vertical-align: top; }
 .ad-table th { background: #fbf7f1; font-weight: 600; font-size: 13px; color: var(--ad-primary-dark); white-space: nowrap; }
@@ -50,10 +50,10 @@
 .ad-btn.block { width: 100%; padding: 9px; }
 .ad-row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 
-.ad-filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 14px; padding: 14px 16px; background: var(--ad-card); border: 1px solid var(--ad-line); border-radius: 16px; box-shadow: 0 8px 26px #4a0a0d0d; }
+.ad-filters { width: fit-content; max-width: 100%; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 14px; padding: 14px 16px; background: var(--ad-card); border: 1px solid var(--ad-line); border-radius: 16px; box-shadow: 0 8px 26px #4a0a0d0d; }
 .ad-filters .ad-field { min-width: 150px; margin-bottom: 0; }
 .ad-filters .ad-field input, .ad-filters .ad-field select { height: 40px; }
-.ad-filter-actions { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+.ad-filter-actions { display: flex; gap: 8px; align-items: center; }
 .ad-filter-actions .ad-btn { height: 40px; display: inline-flex; align-items: center; gap: 6px; }
 .ad-field { display: grid; gap: 4px; margin-bottom: 10px; }
 .ad-field > span { font-size: 13px; font-weight: 600; color: var(--ad-text); }
@@ -129,6 +129,7 @@
 
 /* ───────── Điện thoại ───────── */
 @media (max-width: 600px) {
+  .ad-filters { width: auto; }
   .ad-filters .ad-field { flex: 1 1 calc(50% - 8px); min-width: 0; }
   .ad-filters .ad-field:first-child { flex-basis: 100%; }
   .ad-btn { min-height: 38px; }
@@ -156,7 +157,7 @@
 
 /* ───────── Bảng dạng thẻ trên điện thoại ───────── */
 @media (max-width: 600px) {
-  .ad-table-wrap { background: transparent; border: 0; box-shadow: none; overflow: visible; }
+  .ad-table-wrap { width: auto; min-width: 0; background: transparent; border: 0; box-shadow: none; overflow: visible; }
   .ad-table, .ad-table tbody, .ad-table tr, .ad-table td { display: block; width: 100%; box-sizing: border-box; }
   .ad-table thead { display: none; }
   .ad-table tr { margin-bottom: 12px; padding: 6px 14px; background: var(--ad-card); border: 1px solid var(--ad-line); border-radius: 16px; box-shadow: 0 8px 26px #4a0a0d0d; }

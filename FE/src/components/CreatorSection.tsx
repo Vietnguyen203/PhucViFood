@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CREATOR_KIND_LABEL, fetchCreators } from "../lib/creator";
-import { youtubeId } from "../lib/video";
+import { playableVideo, type VideoSource } from "../lib/video";
 import { useAsync } from "../lib/useAsync";
 import { TargetLink } from "./TargetLink";
 import { VideoModal } from "./VideoModal";
@@ -11,19 +11,18 @@ import { VideoModal } from "./VideoModal";
  */
 export function CreatorSection() {
   const { data } = useAsync((signal) => fetchCreators(signal), []);
-  const [video, setVideo] = useState<{ id: string; title: string } | null>(null);
+  const [video, setVideo] = useState<{ source: Extract<VideoSource, { kind: "iframe" | "file" }>; title: string } | null>(null);
   if (!data || data.length === 0) return null;
   return (
     <section className="home-section home-creators" id="kol-koc" aria-labelledby="kol-koc-title">
       <div className="home-section-heading">
-        <span>KOL &amp; KOC</span>
         <h2 id="kol-koc-title">Người thật, trải nghiệm thật</h2>
         <p>Những gương mặt và khách hàng đã thử và chia sẻ cảm nhận về đặc sản Phúc Vị.</p>
       </div>
       <ul className="home-creator-row">
         {data.map((c) => {
           const label = `${c.name}${c.headline ? `: ${c.headline}` : ""}`;
-          const vid = youtubeId(c.linkUrl);
+          const vid = playableVideo(c.linkUrl);
           const inner = (
             <>
               <img src={c.imageUrl} alt="" loading="lazy" />
@@ -38,7 +37,7 @@ export function CreatorSection() {
           return (
             <li key={c.id}>
               {vid ? (
-                <button type="button" className="home-creator-card" aria-label={`Xem video: ${label}`} onClick={() => setVideo({ id: vid, title: label })}>{inner}</button>
+                <button type="button" className="home-creator-card" aria-label={`Xem video: ${label}`} onClick={() => setVideo({ source: vid, title: label })}>{inner}</button>
               ) : (
                 <TargetLink to={c.linkUrl} label={label} className="home-creator-card">{inner}</TargetLink>
               )}
@@ -46,7 +45,7 @@ export function CreatorSection() {
           );
         })}
       </ul>
-      {video && <VideoModal videoId={video.id} title={video.title} onClose={() => setVideo(null)} />}
+      {video && <VideoModal source={video.source} title={video.title} onClose={() => setVideo(null)} />}
     </section>
   );
 }

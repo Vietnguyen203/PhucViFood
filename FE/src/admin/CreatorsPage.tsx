@@ -35,7 +35,7 @@ function CreatorForm({ creator, onClose, onSaved }: { creator?: AdminCreator; on
             </Field>
             <Field label="Câu giới thiệu / cảm nhận" error={err.headline}><input value={f.headline} onChange={(e) => set("headline", e.target.value)} maxLength={160} placeholder="Ngắn gọn, tối đa 160 ký tự" /></Field>
             <Field label="Thứ tự (nhỏ hiện trước)" error={err.sortOrder}><input value={f.sortOrder} onChange={(e) => set("sortOrder", e.target.value)} inputMode="numeric" /></Field>
-            <Field label="Bấm vào đi đâu" error={err.linkUrl}><input value={f.linkUrl} onChange={(e) => set("linkUrl", e.target.value)} placeholder="Link video, trang cá nhân hoặc /san-pham/..." maxLength={300} /></Field>
+            <Field label="Bấm vào đi đâu" error={err.linkUrl}><input value={f.linkUrl} onChange={(e) => set("linkUrl", e.target.value)} placeholder="Link video (phát ngay trên trang), trang cá nhân hoặc /san-pham/..." maxLength={300} /></Field>
           </div>
           <ImageField label="Ảnh chân dung *" value={f.imageUrl} onChange={(v) => set("imageUrl", v)} error={err.imageUrl} maxSide={1200} hint="Nên dùng ảnh dọc tỷ lệ 3:4 (vd 600×800), gương mặt ở giữa. Ảnh khác tỷ lệ sẽ bị cắt cho vừa thẻ." />
           <label className="ad-check"><input type="checkbox" checked={f.isActive} onChange={(e) => set("isActive", e.target.checked)} /> Đang bật (hiện ở trang chủ)</label>

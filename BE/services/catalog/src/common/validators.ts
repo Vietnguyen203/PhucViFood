@@ -36,17 +36,13 @@ export const IsBannerLink = (options?: ValidationOptions) => (object: object, pr
   });
 };
 
-/** Mã video YouTube (11 ký tự) từ link watch, youtu.be, shorts, embed, live; không đúng dạng thì null. */
-export function youtubeId(url: string): string | null {
-  const m = /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})(?:[?&#/].*)?$/.exec(url);
-  return m ? m[1] : null;
-}
-export const IsYoutubeUrl = (options?: ValidationOptions) => (object: object, propertyName: string): void => {
+/** Link video: http(s) đầy đủ (YouTube, Vimeo, TikTok, Facebook, hoặc tệp .mp4/.webm...). Giao diện tự chọn cách phát; link lạ chỉ mở ở tab mới. */
+export const IsVideoUrl = (options?: ValidationOptions) => (object: object, propertyName: string): void => {
   registerDecorator({
-    name: 'isYoutubeUrl', target: object.constructor, propertyName, options,
+    name: 'isVideoUrl', target: object.constructor, propertyName, options,
     validator: {
-      validate: (v: unknown) => typeof v === 'string' && v.length <= 300 && youtubeId(v) !== null,
-      defaultMessage: () => 'videoUrl phải là link YouTube (youtube.com/watch?v=..., youtu.be/... hoặc youtube.com/shorts/...)',
+      validate: (v: unknown) => typeof v === 'string' && v.length <= 500 && isURL(v, { require_protocol: true, protocols: ['http', 'https'] }),
+      defaultMessage: () => 'videoUrl phải là link http(s) của video',
     },
   });
 };

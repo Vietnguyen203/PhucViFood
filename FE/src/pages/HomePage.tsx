@@ -25,17 +25,14 @@ const CATEGORY_IMAGES = [
 const PAGE_SIZE = 8;
 
 function HomeSectionHeading({
-  label,
   title,
   description,
 }: {
-  label: string;
   title: string;
   description?: string;
 }) {
   return (
     <div className="home-section-heading">
-      <span>{label}</span>
       <h2>{title}</h2>
       {description && <p>{description}</p>}
     </div>
@@ -53,10 +50,10 @@ function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) 
 
 function CategorySection() {
   const { data: categories, loading, error, reload } = useAsync((signal) => fetchCategories(signal), []);
+  if (!error && !loading && categories && categories.length === 0) return null; // chưa có danh mục thì ẩn cả mục
   return (
     <section className="home-section" id="categories">
       <HomeSectionHeading
-        label="Chọn món bạn yêu thích"
         title="Khám phá danh mục"
         description="Từ đặc sản thân quen đến những bộ quà tinh tế, Phúc Vị mang vị ngon Việt đến gần bạn hơn."
       />
@@ -96,19 +93,18 @@ function ProductsSection() {
     [pages],
   );
   const hasMore = data ? data.pagination.page < data.pagination.totalPages : false;
+  if (!error && !loading && data && data.items.length === 0) return null; // chưa có sản phẩm thì ẩn cả mục
 
   return (
     <section className="home-products-wrap" id="best-sellers">
       <div className="home-section">
         <HomeSectionHeading
-          label="Hương vị tuyển chọn"
           title="Sản phẩm của Phúc Vị"
           description="Những đặc sản được Phúc Vị tuyển chọn kỹ lưỡng, sẵn sàng giao đến tận nhà bạn."
         />
         {error ? <LoadError error={error} onRetry={reload} /> : (
           <>
             {loading && !data && <p className="home-loading">Đang tải sản phẩm...</p>}
-            {data && data.items.length === 0 && <p className="home-loading">Chưa có sản phẩm nào trong mục này.</p>}
             <div className="home-product-grid">
               {data?.items.map((product) => <ProductCard product={product} key={product.id} />)}
             </div>

@@ -32,11 +32,13 @@ model Banner {
   @@schema("catalog")
 }
 
-/// Video YouTube hiển thị ở khung video trang chủ.
+/// Video hiển thị ở khung video trang chủ.
 model Video {
   id        String   @id @default(uuid(7)) @db.Uuid
   title     String
-  videoUrl  String   @map("video_url") // link YouTube
+  videoUrl  String   @map("video_url") // link video bất kỳ (YouTube, Vimeo, TikTok, Facebook, tệp .mp4...)
+  /// Ảnh bìa (tùy chọn); YouTube thì giao diện tự lấy ảnh bìa.
+  thumbnailUrl String? @map("thumbnail_url")
   sortOrder Int      @default(0) @map("sort_order")
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)

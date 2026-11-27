@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
-import { youtubeEmbed } from "../lib/video";
+import type { VideoSource } from "../lib/video";
+import { VideoPlayer } from "./VideoPlayer";
 
-/** Hộp phát video YouTube ngay trên trang: Esc, bấm nền tối hoặc nút đóng để tắt; trả tiêu điểm về nút đã mở. */
-export function VideoModal({ videoId, title, onClose }: { videoId: string; title: string; onClose: () => void }) {
+/** Hộp phát video ngay trên trang: Esc, bấm nền tối hoặc nút đóng để tắt; trả tiêu điểm về nút đã mở. */
+export function VideoModal({ source, title, onClose }: { source: Extract<VideoSource, { kind: "iframe" | "file" }>; title: string; onClose: () => void }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
@@ -17,10 +18,7 @@ export function VideoModal({ videoId, title, onClose }: { videoId: string; title
     <div className="video-modal" role="dialog" aria-modal="true" aria-label={title} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="video-modal-box">
         <button ref={closeRef} className="video-modal-close" onClick={onClose} aria-label="Đóng video">×</button>
-        <div className="video-frame">
-          <iframe src={youtubeEmbed(videoId)} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
-        </div>
-        <p className="video-modal-title">{title}</p>
+        <VideoPlayer source={source} title={title} />
       </div>
     </div>
   );

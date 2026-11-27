@@ -7,10 +7,10 @@ import type { CreateVideoDto, UpdateVideoDto } from './dto';
 export const VIDEOS_SERVICE = Symbol('VIDEOS_SERVICE');
 
 export const toVideoView = (v: Video) => ({
-  id: v.id, title: v.title, videoUrl: v.videoUrl, sortOrder: v.sortOrder, isActive: v.isActive, createdAt: v.createdAt,
+  id: v.id, title: v.title, videoUrl: v.videoUrl, thumbnailUrl: v.thumbnailUrl, sortOrder: v.sortOrder, isActive: v.isActive, createdAt: v.createdAt,
 });
 
-/** Admin quản lý video YouTube ở trang chủ. Xóa là xóa hẳn. */
+/** Admin quản lý video ở trang chủ. Xóa là xóa hẳn. */
 @Injectable()
 export class VideosService extends PrismaCrudService<Video, CreateVideoDto, UpdateVideoDto> {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {
@@ -29,7 +29,7 @@ export class VideosService extends PrismaCrudService<Video, CreateVideoDto, Upda
 
   override async create(dto: CreateVideoDto) {
     return toVideoView(await this.prisma.video.create({
-      data: { title: dto.title, videoUrl: dto.videoUrl, sortOrder: dto.sortOrder ?? 0, isActive: dto.isActive ?? true },
+      data: { title: dto.title, videoUrl: dto.videoUrl, thumbnailUrl: dto.thumbnailUrl || null, sortOrder: dto.sortOrder ?? 0, isActive: dto.isActive ?? true },
     }));
   }
 
@@ -37,13 +37,13 @@ export class VideosService extends PrismaCrudService<Video, CreateVideoDto, Upda
     await this.findOrThrow(id);
     return toVideoView(await this.prisma.video.update({
       where: { id },
-      data: { title: dto.title, videoUrl: dto.videoUrl, sortOrder: dto.sortOrder, isActive: dto.isActive },
+      data: { title: dto.title, videoUrl: dto.videoUrl, thumbnailUrl: dto.thumbnailUrl === undefined ? undefined : dto.thumbnailUrl || null, sortOrder: dto.sortOrder, isActive: dto.isActive },
     }));
   }
 
   /** Khách thấy: video đang bật, theo thứ tự rồi ngày tạo. Tối đa 6 video. */
   async listPublic() {
     const rows = await this.prisma.video.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }], take: 6 });
-    return rows.map((v) => ({ id: v.id, title: v.title, videoUrl: v.videoUrl }));
+    return rows.map((v) => ({ id: v.id, title: v.title, videoUrl: v.videoUrl, thumbnailUrl: v.thumbnailUrl }));
   }
 }
