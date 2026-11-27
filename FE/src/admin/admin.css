@@ -14,7 +14,7 @@
 .ad-main { flex: 1; min-width: 0; }
 .ad-top { display: none; align-items: center; gap: 12px; padding: 10px 14px; background: #4a0a0d; color: #fff; border-bottom: 1px solid var(--ad-line); }
 .ad-content { padding: 22px 26px 60px; max-width: 1400px; }
-.ad-content h1 { font: 400 30px/1.2 "DM Serif Display", serif; color: var(--ad-primary-dark); margin: 0 0 14px; }
+.ad-content h1 { font-size: 24px; font-weight: 700; line-height: 1.3; letter-spacing: -.01em; color: var(--ad-primary-dark); margin: 0 0 14px; }
 .ad-content h2 { font-size: 17px; font-weight: 700; color: var(--ad-primary-dark); margin: 20px 0 8px; }
 .ad-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .ad-head h1 { margin: 0; }
@@ -47,8 +47,11 @@
 .ad-btn.block { width: 100%; padding: 9px; }
 .ad-row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 
-.ad-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
-.ad-filters .ad-field { min-width: 140px; }
+.ad-filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 14px; padding: 14px 16px; background: var(--ad-card); border: 1px solid var(--ad-line); border-radius: 16px; box-shadow: 0 8px 26px #4a0a0d0d; }
+.ad-filters .ad-field { min-width: 150px; margin-bottom: 0; }
+.ad-filters .ad-field input, .ad-filters .ad-field select { height: 40px; }
+.ad-filter-actions { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+.ad-filter-actions .ad-btn { height: 40px; display: inline-flex; align-items: center; gap: 6px; }
 .ad-field { display: grid; gap: 4px; margin-bottom: 10px; }
 .ad-field > span { font-size: 13px; font-weight: 600; color: var(--ad-text); }
 .ad-field input, .ad-field select, .ad-field textarea { border: 1px solid #dfd0c6; border-radius: 10px; padding: 8px 12px; font: inherit; background: #fff; width: 100%; box-sizing: border-box; }
@@ -134,3 +137,15 @@
   .ad-form-actions .ad-btn { flex: 1; }
   .ad-head h1 { font-size: 20px; }
 }
+
+/* ───────── Nút icon ───────── */
+.ad-icon-btn { width: 34px; height: 34px; display: inline-grid; place-items: center; padding: 0; border: 1px solid #dfd0c6; border-radius: 10px; background: var(--ad-card); color: var(--ad-primary); cursor: pointer; }
+.ad-icon-btn:hover:not(:disabled) { border-color: var(--ad-primary); background: #fff6f3; }
+.ad-icon-btn:disabled { opacity: .5; cursor: not-allowed; }
+.ad-icon-btn.danger { color: var(--ad-danger); }
+.ad-icon-btn.danger:hover:not(:disabled) { background: var(--ad-danger); border-color: var(--ad-danger); color: #fff; }
+.ad-icon-btn.primary { color: #1d6a23; }
+.ad-filter-actions .ad-icon-btn { width: 40px; height: 40px; }
+.ad-row-actions .ad-icon-btn { width: 32px; height: 32px; }
+.ad-table .actions .ad-row-actions { flex-wrap: nowrap; }
+@media (max-width: 600px) { .ad-filter-actions { width: 100%; justify-content: flex-end; } }

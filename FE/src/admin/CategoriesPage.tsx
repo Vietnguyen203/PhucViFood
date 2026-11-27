@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { AdminCategory } from "../lib/admin/types";
 import { useAdmin } from "./AdminContext";
+import { IconButton } from "./icons";
 import { Badge, ConfirmModal, ErrorBox, Field, FormModal, Loading, Pager, useAction, useList } from "./ui";
 
 function CategoryForm({ category, onClose, onSaved }: { category?: AdminCategory; onClose: () => void; onSaved: () => void }) {
@@ -54,9 +55,9 @@ export default function CategoriesPage() {
                   <td>{c.isActive ? <Badge tone="green">Hoạt động</Badge> : <Badge>Đã ẩn</Badge>}</td>
                   <td className="actions">
                     <div className="ad-row-actions">
-                      <button className="ad-btn small" onClick={() => setEdit(c)}>Sửa</button>
-                      <button className="ad-btn small" disabled={act.busy} onClick={() => void act.run(() => adm(`/categories/${c.id}`, { method: "PATCH", body: { isActive: !c.isActive } }), c.isActive ? "Đã ẩn danh mục" : "Đã hiện danh mục")}>{c.isActive ? "Ẩn" : "Hiện"}</button>
-                      <button className="ad-btn small danger" onClick={() => setDel(c)}>Xóa</button>
+                      <IconButton icon="edit" label="Sửa danh mục" onClick={() => setEdit(c)} />
+                      <IconButton icon={c.isActive ? "eyeOff" : "eye"} label={c.isActive ? "Ẩn danh mục" : "Hiện danh mục"} disabled={act.busy} onClick={() => void act.run(() => adm(`/categories/${c.id}`, { method: "PATCH", body: { isActive: !c.isActive } }), c.isActive ? "Đã ẩn danh mục" : "Đã hiện danh mục")} />
+                      <IconButton icon="trash" label="Xóa danh mục" tone="danger" onClick={() => setDel(c)} />
                     </div>
                   </td>
                 </tr>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { USER_ROLE_LABEL, USER_STATUS_LABEL, type AdminUser } from "../lib/admin/types";
 import { useAdmin } from "./AdminContext";
+import { IconButton } from "./icons";
 import { Badge, ConfirmModal, ErrorBox, Field, FilterBar, FormModal, Loading, Pager, SortHeader, fmtDateTime, useList, useListFilters } from "./ui";
 
 function RoleSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
@@ -103,9 +104,9 @@ export default function AccountsPage() {
                     <td className="actions">
                       {!self && (
                         <div className="ad-row-actions">
-                          <button className="ad-btn small" onClick={() => setRoleOf(u)}>Đổi vai trò</button>
-                          <button className="ad-btn small" onClick={() => setResetOf(u)}>Đặt lại mật khẩu</button>
-                          <button className={`ad-btn small ${u.status === "ACTIVE" ? "danger" : "primary"}`} onClick={() => setToggle(u)}>{u.status === "ACTIVE" ? "Khóa" : "Mở khóa"}</button>
+                          <IconButton icon="userCog" label="Đổi vai trò" onClick={() => setRoleOf(u)} />
+                          <IconButton icon="key" label="Đặt lại mật khẩu" onClick={() => setResetOf(u)} />
+                          <IconButton icon={u.status === "ACTIVE" ? "lock" : "unlock"} label={u.status === "ACTIVE" ? "Khóa tài khoản" : "Mở khóa tài khoản"} tone={u.status === "ACTIVE" ? "danger" : "primary"} onClick={() => setToggle(u)} />
                         </div>
                       )}
                     </td>

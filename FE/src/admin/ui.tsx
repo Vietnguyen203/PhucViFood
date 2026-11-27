@@ -3,6 +3,7 @@ import { ApiError, describeError, type PageMeta } from "../lib/api";
 import { buildQuery, type ListQuery } from "../lib/admin/query";
 import { useAsync } from "../lib/useAsync";
 import { useAdmin } from "./AdminContext";
+import { AdIcon } from "./icons";
 
 export const fmtDateTime = (iso?: string | null) => (iso ? new Date(iso).toLocaleString("vi-VN", { hour12: false }) : "—");
 export const fmtDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString("vi-VN") : "—");
@@ -183,8 +184,10 @@ export function FilterBar({ onApply, onReset, children }: { onApply: () => void;
   return (
     <form className="ad-filters" onSubmit={(e) => { e.preventDefault(); onApply(); }}>
       {children}
-      <button className="ad-btn primary" type="submit">Lọc</button>
-      <button className="ad-btn" type="button" onClick={onReset}>Xóa lọc</button>
+      <div className="ad-filter-actions">
+        <button className="ad-btn primary" type="submit"><AdIcon name="search" size={16} /> Lọc</button>
+        <button className="ad-icon-btn" type="button" onClick={onReset} title="Xóa bộ lọc" aria-label="Xóa bộ lọc"><AdIcon name="close" /></button>
+      </div>
     </form>
   );
 }

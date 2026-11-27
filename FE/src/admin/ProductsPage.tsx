@@ -2,6 +2,7 @@ import { useState } from "react";
 import { formatVnd } from "../lib/money";
 import { STOCK_REASON_LABEL, type AdminCategory, type AdminProduct, type StockMovement } from "../lib/admin/types";
 import { useAdmin } from "./AdminContext";
+import { IconButton } from "./icons";
 import { Badge, ConfirmModal, ErrorBox, Field, FilterBar, FormModal, Loading, Modal, Pager, SortHeader, fmtDateTime, useAction, useList, useListFilters } from "./ui";
 
 const EMPTY = { categoryId: "", name: "", sku: "", unit: "", price: "", originalPrice: "", imageUrl: "", description: "", stockQuantity: "0", isVisible: true };
@@ -146,7 +147,7 @@ export default function ProductsPage() {
             <option value="">Tất cả</option><option value="true">Đang hiện</option><option value="false">Đang ẩn</option>
           </select>
         </Field>
-        <Field label="Tồn kho tối đa" hint="Lọc hàng sắp hết"><input value={fl.filters.lowStock} onChange={(e) => fl.setField("lowStock", e.target.value.replace(/\D/g, ""))} inputMode="numeric" placeholder="vd 10" /></Field>
+        <Field label="Tồn kho tối đa"><input value={fl.filters.lowStock} onChange={(e) => fl.setField("lowStock", e.target.value.replace(/\D/g, ""))} inputMode="numeric" placeholder="Hàng sắp hết, vd 10" title="Chỉ hiện sản phẩm có tồn kho không quá số này" /></Field>
       </FilterBar>
       <ErrorBox error={list.error} onRetry={list.reload} />
       <Loading loading={list.loading && !list.data} empty={!list.loading && !list.error && list.data?.items.length === 0} />
@@ -170,11 +171,11 @@ export default function ProductsPage() {
                   <td>{p.isVisible ? <Badge tone="green">Đang hiện</Badge> : <Badge>Đang ẩn</Badge>}</td>
                   <td className="actions">
                     <div className="ad-row-actions">
-                      <button className="ad-btn small" onClick={() => setEdit(p)}>Sửa</button>
-                      <button className="ad-btn small" onClick={() => setAdjust(p)}>Điều chỉnh kho</button>
-                      <button className="ad-btn small" onClick={() => setMoves(p)}>Sổ kho</button>
-                      <button className="ad-btn small" disabled={act.busy} onClick={() => void act.run(() => adm(`/products/${p.id}`, { method: "PATCH", body: { isVisible: !p.isVisible } }), p.isVisible ? "Đã ẩn sản phẩm" : "Đã hiện sản phẩm")}>{p.isVisible ? "Ẩn" : "Hiện"}</button>
-                      <button className="ad-btn small danger" onClick={() => setDel(p)}>Xóa</button>
+                      <IconButton icon="edit" label="Sửa sản phẩm" onClick={() => setEdit(p)} />
+                      <IconButton icon="stock" label="Điều chỉnh kho" onClick={() => setAdjust(p)} />
+                      <IconButton icon="ledger" label="Sổ kho" onClick={() => setMoves(p)} />
+                      <IconButton icon={p.isVisible ? "eyeOff" : "eye"} label={p.isVisible ? "Ẩn sản phẩm" : "Hiện sản phẩm"} disabled={act.busy} onClick={() => void act.run(() => adm(`/products/${p.id}`, { method: "PATCH", body: { isVisible: !p.isVisible } }), p.isVisible ? "Đã ẩn sản phẩm" : "Đã hiện sản phẩm")} />
+                      <IconButton icon="trash" label="Xóa sản phẩm" tone="danger" onClick={() => setDel(p)} />
                     </div>
                   </td>
                 </tr>
