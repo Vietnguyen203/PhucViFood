@@ -11,6 +11,7 @@ const PATHS: Record<string, ReactNode> = {
   search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></>,
   close: <path d="M6 6l12 12M18 6 6 18" />,
   key: <><circle cx="8" cy="15" r="4" /><path d="m11 12 9-9M16 7l3 3M14 9l2 2" /></>,
+  logout: <><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4" /><path d="M16 8l4 4-4 4M20 12H9" /></>,
   lock: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>,
   unlock: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 7.5-2" /></>,
   userCog: <><circle cx="9" cy="8" r="4" /><path d="M2 20c.6-3.6 3.4-6 7-6 1.2 0 2.3.3 3.3.7" /><circle cx="18" cy="17" r="2.2" /><path d="M18 12.8v1.1M18 20.1v1.1M14.4 15l1 .6M20.6 18.4l1 .6M14.4 19l1-.6M20.6 15.6l1-.6" /></>,

@@ -6,6 +6,7 @@ import { AFFILIATE_STATUS_LABEL } from "../lib/admin/types";
 import type { PartnerProfile } from "../lib/partner";
 import { AdminProvider, useAdmin } from "../admin/AdminContext";
 import { ChangePasswordModal } from "../admin/ChangePasswordModal";
+import { IconButton } from "../admin/icons";
 import { ErrorBox, Loading, Toasts } from "../admin/ui";
 import type { PartnerContext } from "./partnerContext";
 import { ProfileForm } from "./ProfilePage";
@@ -44,8 +45,8 @@ function Shell() {
         </nav>
         <div className="ad-user">
           <span title={session.user.email}>{session.user.email}</span>
-          <button className="ad-btn" onClick={() => setPw(true)}>Đổi mật khẩu</button>
-          <button className="ad-btn" onClick={() => void logout()}>Đăng xuất</button>
+          <IconButton icon="key" label="Đổi mật khẩu" onClick={() => setPw(true)} />
+          <IconButton icon="logout" label="Đăng xuất" onClick={() => void logout()} />
         </div>
       </aside>
       <div className="ad-main">

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Navigate, NavLink, Outlet } from "react-router";
 import { AdminProvider, useAdmin } from "./AdminContext";
 import { ChangePasswordModal } from "./ChangePasswordModal";
+import { IconButton } from "./icons";
 import { Toasts } from "./ui";
 import "./admin.css";
 
@@ -32,8 +33,8 @@ function Shell() {
         </nav>
         <div className="ad-user">
           <span title={session.user.email}>{session.user.email}</span>
-          <button className="ad-btn" onClick={() => setPw(true)}>Đổi mật khẩu</button>
-          <button className="ad-btn" onClick={() => void logout()}>Đăng xuất</button>
+          <IconButton icon="key" label="Đổi mật khẩu" onClick={() => setPw(true)} />
+          <IconButton icon="logout" label="Đăng xuất" onClick={() => void logout()} />
         </div>
       </aside>
       <div className="ad-main">
