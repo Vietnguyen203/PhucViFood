@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router";
 import RootLayout from "./components/RootLayout";
 import { LoginPage, RegisterPage } from "./pages/AuthPages";
+import { NewsDetailPage, NewsListPage } from "./pages/NewsPages";
 import CartPage from "./pages/CartPage";
 import CategoryPage from "./pages/CategoryPage";
 import CheckoutPage from "./pages/CheckoutPage";
@@ -33,6 +34,8 @@ const router = createBrowserRouter([
       { path: "/danh-muc/:slug", Component: CategoryPage },
       { path: "/gio-hang", Component: CartPage },
       { path: "/yeu-thich", Component: WishlistPage },
+      { path: "/tin-tuc", Component: NewsListPage },
+      { path: "/tin-tuc/:slug", Component: NewsDetailPage },
       { path: "/dang-nhap", Component: LoginPage },
       { path: "/dang-ky", Component: RegisterPage },
       // Đường dẫn đăng nhập cũ của từng khu: dùng chung một trang đăng nhập

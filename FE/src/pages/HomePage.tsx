@@ -5,6 +5,7 @@ import { ProductCard } from "../components/ProductCard";
 import { HomeFooter } from "../components/SiteFooter";
 import { HomeHeader } from "../components/SiteHeader";
 import { describeError } from "../lib/api";
+import { articles } from "../lib/news";
 import { fetchCategories, fetchProducts, type ProductPage } from "../lib/catalog";
 import type { Product } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
@@ -47,34 +48,6 @@ const CATEGORY_IMAGES = [
 ];
 
 const PAGE_SIZE = 8;
-
-const articles = [
-  {
-    category: "Chuyện ẩm thực",
-    date: "18.05.2025",
-    title: "Hương vị Việt trong từng bữa cơm sum vầy",
-    excerpt: "Có những món ăn không chỉ ngon mà còn lưu giữ ký ức về gia đình và quê hương.",
-    image:
-      "https://images.unsplash.com/photo-1516211697506-8360dbcfe9a4?auto=format&fit=crop&w=1000&q=88",
-  },
-  {
-    category: "Bí quyết vào bếp",
-    date: "12.05.2025",
-    title: "5 cách biến tấu lạp xưởng cho bữa cơm nhà",
-    excerpt:
-      "Những công thức nhanh gọn giúp món lạp xưởng quen thuộc trở nên hấp dẫn hơn mỗi ngày.",
-    image:
-      "https://images.unsplash.com/photo-1511910849309-0dffb8785146?auto=format&fit=crop&w=1000&q=88",
-  },
-  {
-    category: "Cẩm nang sản phẩm",
-    date: "06.05.2025",
-    title: "Cách chọn đặc sản ngon để làm quà tặng",
-    excerpt: "Một món quà đúng vị là cách chân thành để gửi lời cảm ơn đến người bạn trân quý.",
-    image:
-      "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1000&q=88",
-  },
-];
 
 function HomeHero() {
   const [active, setActive] = useState(0);
@@ -277,9 +250,9 @@ function BrandStory() {
             </span>
           </div>
         </div>
-        <a href="#news">
+        <Link to="/thong-tin/gioi-thieu">
           Tìm hiểu thêm <HomeIcon name="arrow" size={16} />
-        </a>
+        </Link>
       </div>
     </section>
   );
@@ -325,11 +298,11 @@ function NewsSection() {
       />
       <div className="home-article-grid">
         {articles.map((article) => (
-          <article className="home-article-card" key={article.title}>
-            <a href="#news" className="home-article-image">
+          <article className="home-article-card" key={article.slug}>
+            <Link to={`/tin-tuc/${article.slug}`} className="home-article-image">
               <img src={article.image} alt={article.title} />
               <span>Đọc bài viết</span>
-            </a>
+            </Link>
             <div className="home-article-meta">
               <span>{article.category}</span>
               <i />
@@ -337,12 +310,15 @@ function NewsSection() {
             </div>
             <h3>{article.title}</h3>
             <p>{article.excerpt}</p>
-            <a href="#news">
+            <Link to={`/tin-tuc/${article.slug}`}>
               Xem chi tiết <HomeIcon name="arrow" size={15} />
-            </a>
+            </Link>
           </article>
         ))}
       </div>
+      <Link className="home-more-link" to="/tin-tuc">
+        Xem tất cả bài viết <HomeIcon name="arrow" size={16} />
+      </Link>
     </section>
   );
 }

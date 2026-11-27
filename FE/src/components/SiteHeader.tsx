@@ -46,9 +46,9 @@ export function HomeHeader() {
           <a href="/#brand-story" onClick={() => setOpen(false)}>
             Về Phúc Vị
           </a>
-          <a href="/#news" onClick={() => setOpen(false)}>
+          <Link to="/tin-tuc" onClick={() => setOpen(false)}>
             Tin tức
-          </a>
+          </Link>
           <Link to="/don-hang" onClick={() => setOpen(false)}>
             Tra cứu đơn
           </Link>

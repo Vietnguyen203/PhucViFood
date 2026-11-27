@@ -28,7 +28,7 @@ export function HomeFooter() {
           <a href="/#categories">Danh mục sản phẩm</a>
           <a href="/#best-sellers">Sản phẩm bán chạy</a>
           <a href="/#brand-story">Câu chuyện Phúc Vị</a>
-          <a href="/#news">Tin tức & Blog</a>
+          <Link to="/tin-tuc">Tin tức & Blog</Link>
         </div>
         <div className="home-footer-column">
           <strong>Hỗ trợ khách hàng</strong>

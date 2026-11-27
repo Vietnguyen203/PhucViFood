@@ -274,3 +274,17 @@ body.store-scale .home-page { min-height: calc(100vh / var(--store-zoom)); }
 .shop-auth-card .shop-btn { width: 100%; }
 .shop-auth-links { margin: 0; text-align: center; color: var(--shop-muted); font-size: 13px; line-height: 1.9; }
 .shop-auth-links a { color: var(--shop-red); }
+
+/* ───────── Bài viết ───────── */
+.shop-article { max-width: 820px; }
+.shop-article .home-article-meta { margin: 6px 0 4px; }
+.shop-article-cover { width: 100%; max-height: 420px; object-fit: cover; border-radius: 16px; margin: 4px 0 22px; display: block; }
+.shop-article-body { line-height: 1.85; font-size: 16px; color: var(--shop-ink); }
+.shop-article-body h2 { margin: 26px 0 8px; font-size: 22px; color: var(--shop-dark-red); }
+.shop-article-body p { margin: 0 0 14px; }
+.shop-article-body ul { margin: 0 0 14px; padding-left: 22px; }
+.shop-article-body li { margin-bottom: 6px; }
+.shop-article-cta { margin: 26px 0 8px; }
+.shop-article-more { margin: 30px 0 8px; font-size: 18px; color: var(--shop-dark-red); }
+.shop-article-list { margin: 0; padding-left: 20px; line-height: 2; }
+.shop-article-list a { color: var(--shop-red); }
