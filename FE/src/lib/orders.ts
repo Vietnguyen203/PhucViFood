@@ -1,4 +1,5 @@
 import { api } from './api';
+import { customerAuth } from './customerAuth';
 import type { PlaceOrderPayload } from './checkout';
 import type { PublicOrder } from './types';
 
@@ -9,7 +10,9 @@ export function newIdempotencyKey(): string {
 }
 
 export async function placeOrder(payload: PlaceOrderPayload, idempotencyKey: string, signal?: AbortSignal): Promise<PublicOrder> {
-  return (await api<PublicOrder>('/public/orders', { method: 'POST', body: payload, headers: { 'idempotency-key': idempotencyKey }, signal })).data;
+  // Khách đã đăng nhập: gửi kèm token để đơn gắn với tài khoản (xem lại ở trang tài khoản). Không có token thì đặt như khách vãng lai.
+  const token = (await customerAuth.freshAccessToken()) ?? undefined;
+  return (await api<PublicOrder>('/public/orders', { method: 'POST', body: payload, headers: { 'idempotency-key': idempotencyKey }, token, signal })).data;
 }
 
 /** Tra cứu bằng mã đơn và SĐT đã dùng khi đặt (sai một trong hai đều báo không tìm thấy). */

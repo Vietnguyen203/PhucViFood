@@ -1,9 +1,9 @@
-import { Controller, Get, HttpCode, Inject, Post, Req } from '@nestjs/common';
+import { Controller, Get, HttpCode, Inject, Patch, Post, Req } from '@nestjs/common';
 import { ValidBody } from '@phucvi/shared-library/api';
 import { CurrentUser, Public, type AuthUser } from '@phucvi/shared-library/auth';
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
-import { ChangePasswordDto, LoginDto, RefreshDto, RegisterDto } from './dto';
+import { ChangePasswordDto, LoginDto, RefreshDto, RegisterCustomerDto, RegisterDto, UpdateProfileDto } from './dto';
 import type { RequestContext } from './token.service';
 
 const contextOf = (req: Request): RequestContext => ({ userAgent: req.headers['user-agent'], ip: req.ip });
@@ -15,6 +15,12 @@ export class AuthController {
   @Public() @Post('register')
   register(@ValidBody(RegisterDto) dto: RegisterDto, @Req() req: Request) {
     return this.auth.register(dto, contextOf(req));
+  }
+
+  /** Khách mua hàng đăng ký tài khoản (vai trò CUSTOMER). */
+  @Public() @Post('register-customer')
+  registerCustomer(@ValidBody(RegisterCustomerDto) dto: RegisterCustomerDto, @Req() req: Request) {
+    return this.auth.registerCustomer(dto, contextOf(req));
   }
 
   @Public() @Post('login') @HttpCode(200)
@@ -40,6 +46,11 @@ export class AuthController {
   @Get('me')
   me(@CurrentUser() user: AuthUser) {
     return this.auth.me(user.id);
+  }
+
+  @Patch('me')
+  updateMe(@CurrentUser() user: AuthUser, @ValidBody(UpdateProfileDto) dto: UpdateProfileDto) {
+    return this.auth.updateProfile(user.id, dto);
   }
 
   @Post('change-password') @HttpCode(200)

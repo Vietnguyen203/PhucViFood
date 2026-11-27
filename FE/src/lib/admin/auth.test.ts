@@ -137,6 +137,44 @@ describe('đổi mật khẩu', () => {
   });
 });
 
+describe('token còn hạn và cập nhật hồ sơ', () => {
+  const jwtWith = (exp: number) => `h.${btoa(JSON.stringify({ exp })).replace(/=+$/, '')}.s`;
+  const nowSec = () => Math.floor(Date.now() / 1000);
+
+  it('token còn hạn dùng thì trả luôn, không gọi làm mới', async () => {
+    const { auth, store, calls } = setup(() => ok({}));
+    const valid = jwtWith(nowSec() + 600);
+    seed(store, valid);
+    expect(await auth.freshAccessToken()).toBe(valid);
+    expect(calls).toHaveLength(0);
+  });
+  it('token sắp hết hạn thì làm mới trước rồi trả token mới', async () => {
+    const fresh = jwtWith(nowSec() + 900);
+    const { auth, store, calls } = setup(() => ok({ user, accessToken: fresh, refreshToken: 'n'.repeat(30) }));
+    seed(store, jwtWith(nowSec() + 5));
+    expect(await auth.freshAccessToken()).toBe(fresh);
+    expect(calls[0].url).toBe('/api/auth/refresh');
+    expect(auth.session()?.accessToken).toBe(fresh);
+  });
+  it('chưa đăng nhập, hoặc làm mới thất bại: trả null (đặt hàng vẫn tiếp tục như khách vãng lai)', async () => {
+    const none = setup(() => ok({}));
+    expect(await none.auth.freshAccessToken()).toBeNull();
+    const failing = setup(() => fail(401));
+    seed(failing.store, jwtWith(nowSec() - 10));
+    expect(await failing.auth.freshAccessToken()).toBeNull();
+  });
+  it('cập nhật họ tên: gọi PATCH /auth/me kèm token và lưu vào phiên', async () => {
+    const { auth, store, calls } = setup(() => ok({ ...user, fullName: 'Khách Mới' }));
+    seed(store);
+    const s = await auth.updateProfile('Khách Mới');
+    expect(calls[0].url).toBe('/api/auth/me');
+    expect(calls[0].init.method).toBe('PATCH');
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({ fullName: 'Khách Mới' });
+    expect(s.user.fullName).toBe('Khách Mới');
+    expect(auth.session()?.user.fullName).toBe('Khách Mới');
+  });
+});
+
 describe('buildQuery', () => {
   it('rỗng', () => expect(buildQuery()).toBe(''));
   it('trang 1 không ghi, bỏ giá trị rỗng', () => {

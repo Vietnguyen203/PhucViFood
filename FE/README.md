@@ -19,7 +19,10 @@ React 19 + Vite + Tailwind (xuất từ Figma Make), gọi backend **chỉ qua g
 | `/don-hang/:code?` | Tra cứu đơn bằng mã + SĐT; thông tin chuyển khoản và hạn thanh toán; hủy đơn; xác nhận đã nhận hàng | `GET /public/orders/:code`, `POST .../cancel`, `POST .../confirm-received` |
 | `/r/:code?c=kênh` | Link giới thiệu của CTV: ghi nhận lượt bấm, lưu cookie, về trang chủ | `POST /public/referrals/click` |
 | `/ctv` | Trang giới thiệu chương trình CTV (nội dung tĩnh; giỏ hàng dùng chung), nút đăng nhập/đăng ký dẫn vào khu CTV | |
-| `/dang-nhap`, `/dang-ky` | Đăng nhập chung (ADMIN vào `/admin`, CTV vào `/ctv/tai-khoan`, theo vai trò) và đăng ký CTV, thiết kế cùng cửa hàng; `/ctv/dang-nhap`, `/ctv/dang-ky`, `/admin/login` chuyển hướng về đây | `POST /auth/login`, `/auth/register` |
+| `/dang-nhap` | Đăng nhập chung: tự vào đúng khu theo vai trò (ADMIN `/admin`, CTV `/ctv/tai-khoan`, khách `/tai-khoan`); `/ctv/dang-nhap`, `/admin/login` chuyển hướng về đây | `POST /auth/login` |
+| `/dang-ky` | Khách mua hàng đăng ký tài khoản (họ tên, email, mật khẩu), đăng nhập luôn | `POST /auth/register-customer` |
+| `/ctv/dang-ky` | Đăng ký cộng tác viên | `POST /auth/register` |
+| `/tai-khoan` | Tài khoản của khách: đổi họ tên và mật khẩu, lịch sử đơn (mở rộng xem chi tiết, hướng dẫn chuyển khoản); thanh toán tự điền họ tên, email và gắn đơn với tài khoản (token gửi kèm khi đặt hàng, làm mới trước nếu sắp hết hạn). Phiên lưu ở `pv.customer.session` | `GET /my-orders`, `GET /my-orders/:code`, `PATCH /auth/me` |
 | `/ctv/tai-khoan/*` | Khu CTV (xem mục dưới) | `/me/*` |
 
 Khi khách vào qua link CTV, FE gửi cookie kèm đơn hàng (backend quyết định hoa hồng) và ghi nhận sự kiện `ADD_TO_CART`, `CHECKOUT_START` cho thống kê của CTV.

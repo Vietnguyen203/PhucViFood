@@ -34,7 +34,7 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
   const fake = new FakeDownstream(INTERNAL_KEY);
 
   // ───────── Hỗ trợ ─────────
-  const token = (role: 'ADMIN' | 'AFFILIATE', id = uuidv7()) => signAccessToken({ id, email: `${rand()}@example.com`, role }, { ...config.jwt, privateKey: KEYS.privateKey });
+  const token = (role: 'ADMIN' | 'AFFILIATE' | 'CUSTOMER', id = uuidv7()) => signAccessToken({ id, email: `${rand()}@example.com`, role }, { ...config.jwt, privateKey: KEYS.privateKey });
   const admin = () => token('ADMIN');
 
   async function api(method: string, path: string, opts: { token?: string; body?: unknown; headers?: Record<string, string> } = {}) {
@@ -50,11 +50,12 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
   const toE164 = (p: string) => `+84${p.slice(1)}`;
   const product = (over: Partial<FakeProduct> & { price?: number; stock?: number } = {}) => fake.addProduct({ price: 100_000, stock: 50, ...over });
 
-  interface PlaceOpts { items?: Array<{ productId: string; quantity: number }>; phone?: string; payment?: 'COD' | 'BANK_QR'; referralCode?: string; cookie?: object; key?: string; extra?: object; marketingConsent?: boolean }
+  interface PlaceOpts { items?: Array<{ productId: string; quantity: number }>; phone?: string; payment?: 'COD' | 'BANK_QR'; referralCode?: string; cookie?: object; key?: string; extra?: object; marketingConsent?: boolean; token?: string }
   async function place(o: PlaceOpts = {}) {
     const p = o.items ?? [{ productId: product().id, quantity: 1 }];
     const phone = o.phone ?? newPhone();
     const res = await api('POST', '/public/orders', {
+      token: o.token,
       headers: o.key ? { 'idempotency-key': o.key } : {},
       body: {
         items: p, paymentMethod: o.payment ?? 'COD', referralCode: o.referralCode, cookie: o.cookie,
@@ -744,6 +745,55 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
       expect(r.body.data[0]).toMatchObject({ status: 'PLACED', totalAmount: expect.any(Number) });
       expect((await api('GET', `/internal/customers/${customerId}/orders?limit=0`, { headers: { 'x-internal-key': INTERNAL_KEY } })).status).toBe(400);
       expect((await api('GET', '/internal/customers/abc/orders', { headers: { 'x-internal-key': INTERNAL_KEY } })).status).toBe(400);
+    });
+  });
+
+  describe('đơn gắn với tài khoản khách', () => {
+    it('đặt khi đã đăng nhập (CUSTOMER) thì đơn gắn userId; khách vãng lai, vai trò khác hoặc token hỏng vẫn đặt được nhưng không gắn', async () => {
+      const userId = uuidv7();
+      const mine = await place({ token: token('CUSTOMER', userId) });
+      expect(mine.status).toBe(201);
+      expect((await dbOrder(mine.body.data.code)).userId).toBe(userId);
+      const guest = await place();
+      expect(guest.status).toBe(201);
+      expect((await dbOrder(guest.body.data.code)).userId).toBeNull();
+      const asAdmin = await place({ token: token('ADMIN') });
+      expect((await dbOrder(asAdmin.body.data.code)).userId).toBeNull();
+      const broken = await place({ token: 'khong.phai.token' });
+      expect(broken.status).toBe(201);
+      expect((await dbOrder(broken.body.data.code)).userId).toBeNull();
+      // gửi lại cùng Idempotency-Key trả đúng đơn cũ
+      const key = `it-key-${rand(8)}`;
+      const first = await place({ token: token('CUSTOMER', userId), key });
+      const again = await place({ token: token('CUSTOMER', userId), key });
+      expect(again.body.data.code).toBe(first.body.data.code);
+      expect(again.body.data.replayed).toBe(true);
+    });
+
+    it('/my-orders: chỉ thấy đơn của mình, phân trang, chi tiết có lịch sử; đơn người khác 404; cần vai trò CUSTOMER', async () => {
+      const userId = uuidv7();
+      const a = await place({ token: token('CUSTOMER', userId), payment: 'BANK_QR' });
+      const b = await place({ token: token('CUSTOMER', userId) });
+      await place({ token: token('CUSTOMER') }); // đơn của người khác
+      await place(); // khách vãng lai
+
+      const list = await api('GET', '/my-orders', { token: token('CUSTOMER', userId) });
+      expect(list.status).toBe(200);
+      expect(list.body.data.map((o: any) => o.code)).toEqual([b.body.data.code, a.body.data.code]); // mới nhất trước
+      expect(list.body.meta.pagination.total).toBe(2);
+      expect(list.body.data[0]).toMatchObject({ status: 'PLACED', totalAmount: expect.any(Number), items: expect.any(Array) });
+      expect((await api('GET', '/my-orders?pageSize=1', { token: token('CUSTOMER', userId) })).body.data).toHaveLength(1);
+
+      const detail = await api('GET', `/my-orders/${a.body.data.code}`, { token: token('CUSTOMER', userId) });
+      expect(detail.status).toBe(200);
+      expect(detail.body.data).toMatchObject({ code: a.body.data.code, paymentMethod: 'BANK_QR', items: expect.any(Array), history: expect.any(Array) });
+      expect((await api('GET', `/my-orders/${a.body.data.code}`, { token: token('CUSTOMER') })).status).toBe(404); // của người khác
+      expect((await api('GET', '/my-orders/PV-000000-ZZZZ', { token: token('CUSTOMER', userId) })).status).toBe(404);
+
+      expect((await api('GET', '/my-orders')).status).toBe(401);
+      expect((await api('GET', '/my-orders', { token: token('AFFILIATE') })).status).toBe(403);
+      expect((await api('GET', '/my-orders', { token: token('ADMIN') })).status).toBe(403);
+      expect((await api('GET', '/my-orders', { token: token('CUSTOMER') })).body.data).toEqual([]); // chưa có đơn
     });
   });
 

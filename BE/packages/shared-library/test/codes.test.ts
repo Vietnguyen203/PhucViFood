@@ -12,7 +12,7 @@ import { parseListQuery } from '../src/crud';
  * đổi hoặc tái sử dụng số cũ. Muốn thêm giá trị: thêm dòng mới với số kế tiếp, không sửa dòng cũ.
  */
 const FROZEN: Array<[string, EnumCodec<string>, Record<string, number>]> = [
-  ['UserRole', UserRoleCodec, { ADMIN: 1, AFFILIATE: 2 }],
+  ['UserRole', UserRoleCodec, { ADMIN: 1, AFFILIATE: 2, CUSTOMER: 3 }],
   ['UserStatus', UserStatusCodec, { ACTIVE: 1, DISABLED: 2 }],
   ['AffiliateStatus', AffiliateStatusCodec, { PENDING: 1, ACTIVE: 2, SUSPENDED: 3, REJECTED: 4 }],
   ['TrackingEventType', TrackingEventTypeCodec, { PRODUCT_VIEW: 1, ADD_TO_CART: 2, CHECKOUT_START: 3 }],

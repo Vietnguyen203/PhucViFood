@@ -33,8 +33,8 @@ const PAGES: Record<string, Info> = {
       <>
         <p>Cần hỗ trợ về đơn hàng, sản phẩm hoặc hợp tác? Liên hệ Phúc Vị theo các cách sau.</p>
         <dl className="shop-info-dl">
-          <dt>Địa chỉ</dt><dd>128 Nguyễn Văn Linh, Quận 7, TP.HCM</dd>
-          <dt>Điện thoại</dt><dd>1900 6868</dd>
+          <dt>Địa chỉ</dt><dd>Khu đồ thị The Manor Central Park, Xã Thanh Liệt, Huyện Thanh Trì, TP Hà Nội, Hanoi, Vietnam, Hanoi, Vietnam, Hanoi, Vietnam</dd>
+          <dt>Điện thoại</dt><dd>097 265 82 93</dd>
           <dt>Email</dt><dd>hello@phucvifoods.vn</dd>
         </dl>
         <p>Khi hỏi về đơn hàng, vui lòng cung cấp mã đơn và số điện thoại đặt hàng để chúng tôi hỗ trợ nhanh hơn. Bạn cũng có thể tự <Link to="/don-hang">tra cứu đơn hàng</Link>.</p>

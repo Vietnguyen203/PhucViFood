@@ -18,7 +18,7 @@ export function HomeHeader() {
     <>
       <div className="home-topbar">
         <span>Miễn phí giao hàng cho đơn từ 500.000₫</span>
-        <span>Hotline: 1900 6868</span>
+        <span>Hotline: 097 265 82 93</span>
       </div>
       <header className="home-header">
         <Link className="home-logo" to="/">

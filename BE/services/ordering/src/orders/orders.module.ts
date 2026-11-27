@@ -7,16 +7,16 @@ import { SettingsService } from '../settings/settings.service';
 import { AdminStatsService } from '../stats/admin-stats.service';
 import { OrderStatsService } from '../stats/order-stats.service';
 import { CustomerStatsController, InternalOrdersController } from '../stats/stats.controller';
-import { AdminOrdersController, AffiliateOrdersController, PublicOrdersController } from './orders.controller';
+import { AdminOrdersController, AffiliateOrdersController, MyOrdersController, PublicOrdersController } from './orders.controller';
 import { OrderExpiryService } from './order-expiry.service';
 import { OrderPlacementService } from './order-placement.service';
-import { AffiliateOrdersService, OrdersService } from './orders.service';
+import { AffiliateOrdersService, MyOrdersService, OrdersService } from './orders.service';
 
 @Module({
-  controllers: [PublicOrdersController, AdminOrdersController, AffiliateOrdersController, CustomerStatsController, InternalOrdersController, OrderSettingsController],
+  controllers: [PublicOrdersController, AdminOrdersController, AffiliateOrdersController, MyOrdersController, CustomerStatsController, InternalOrdersController, OrderSettingsController],
   providers: [
     AdminStatsService,
-    OrderPlacementService, OrdersService, AffiliateOrdersService, SettingsService, OrderStatsService, OrderExpiryService,
+    OrderPlacementService, OrdersService, AffiliateOrdersService, MyOrdersService, SettingsService, OrderStatsService, OrderExpiryService,
     CatalogClient, AffiliateClient, CustomerClient, InternalKeyGuard,
     { provide: INTERNAL_API_KEY, useFactory: (config: AppConfig) => config.internalApiKey, inject: [APP_CONFIG] },
   ],

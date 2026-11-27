@@ -50,7 +50,7 @@ export class OrderPlacementService {
     return this.prisma.order.findUnique({ where: { idempotencyKey: key }, include: { items: true, history: true } });
   }
 
-  async place(dto: PlaceOrderDto, idempotencyKey?: string): Promise<{ order: OrderFull; replayed: boolean }> {
+  async place(dto: PlaceOrderDto, idempotencyKey?: string, userId?: string | null): Promise<{ order: OrderFull; replayed: boolean }> {
     // Cùng Idempotency-Key: trả lại đúng đơn đã tạo (khách bấm đúp, mạng chập chờn thử lại).
     if (idempotencyKey) {
       const existing = await this.findByKey(idempotencyKey);
@@ -100,7 +100,7 @@ export class OrderPlacementService {
     // 4. Tạo đơn; lỗi thì bồi hoàn
     try {
       this.assertReservationMatches(wanted, reservation);
-      const order = await this.persist({ orderId, idempotencyKey, customerId, phone, dto, attribution, reservation, placedAt });
+      const order = await this.persist({ orderId, idempotencyKey, customerId, userId: userId ?? null, phone, dto, attribution, reservation, placedAt });
       return { order, replayed: false };
     } catch (e) {
       // Hai yêu cầu song song cùng Idempotency-Key: một bên tạo xong, bên kia thua ở unique và trả lại đơn đã có.
@@ -131,7 +131,7 @@ export class OrderPlacementService {
   }
 
   private async persist(a: {
-    orderId: string; idempotencyKey?: string; customerId: string; phone: string; dto: PlaceOrderDto;
+    orderId: string; idempotencyKey?: string; customerId: string; userId: string | null; phone: string; dto: PlaceOrderDto;
     attribution: Attribution; reservation: Reservation; placedAt: Date;
   }): Promise<OrderFull> {
     // Tính lại tiền từ snapshot (không tin lineTotal/subtotal của service khác).
@@ -150,7 +150,7 @@ export class OrderPlacementService {
         return await this.prisma.$transaction(async (tx) => {
           const order = await tx.order.create({
             data: {
-              id: a.orderId, code, idempotencyKey: a.idempotencyKey ?? null, customerId: a.customerId,
+              id: a.orderId, code, idempotencyKey: a.idempotencyKey ?? null, customerId: a.customerId, userId: a.userId,
               status: OrderStatusCodec.toCode('PLACED'),
               paymentMethod: PaymentMethodCodec.toCode(method), paymentStatus: PaymentStatusCodec.toCode(paymentStatus),
               subtotalAmount: subtotal, shippingFee, totalAmount: subtotal + shippingFee,

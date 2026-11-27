@@ -279,7 +279,7 @@ function PartnerCTA() {
         </p>
       </div>
       <div className="home-cta-action">
-        <strong>Hoa hồng đến 15%</strong>
+        <strong>Hoa hồng cố định 10%</strong>
         <small>Thanh toán mỗi tuần</small>
         <Link to="/ctv">
           Khám phá chương trình CTV <HomeIcon name="arrow" size={17} />

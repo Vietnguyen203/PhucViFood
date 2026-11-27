@@ -309,3 +309,38 @@ body.store-scale .home-page { min-height: calc(100vh / var(--store-zoom)); }
 .home-page a:focus-visible, .home-page button:focus-visible, .home-page select:focus-visible, .home-page input:focus-visible,
 .shop-scope a:focus-visible, .shop-scope button:focus-visible { outline: 3px solid #e3b04b; outline-offset: 2px; box-shadow: 0 0 0 5px #4a0a0d; }
 main:focus { outline: none; }
+
+/* ───────── Tài khoản của khách ───────── */
+.shop-account-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.shop-account-head .shop-title { margin: 0; }
+.shop-account-grid { display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
+.shop-account-side { display: grid; gap: 20px; }
+.shop-account .shop-card { display: grid; gap: 12px; }
+.shop-account .shop-card h2 { margin: 0; }
+.shop-account .shop-field input:disabled { background: #f3eadd; color: var(--shop-muted); }
+.shop-account-orders { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.shop-account-orders > li { border: 1px solid var(--shop-line); border-radius: 12px; overflow: hidden; }
+.shop-account-row { width: 100%; display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: center; padding: 12px 14px; border: 0; background: #fff; font: inherit; text-align: left; cursor: pointer; }
+.shop-account-row:hover { background: #fbf7f1; }
+.shop-account-row small { display: block; color: var(--shop-muted); font-size: 12px; }
+.shop-account-row > span:last-child { text-align: right; }
+.shop-status { padding: 3px 10px; border-radius: 999px; background: #eceff2; color: #475467; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.shop-status.PLACED, .shop-status.CONFIRMED { background: #fdf0cf; color: #8a5a00; }
+.shop-status.SHIPPING { background: #dbeafe; color: #1e4fa3; }
+.shop-status.DELIVERED, .shop-status.COMPLETED { background: #e1f2df; color: #1d6a23; }
+.shop-status.CANCELLED, .shop-status.RETURNED { background: #fde2df; color: #a1291d; }
+.shop-account-detail { padding: 4px 14px 14px; border-top: 1px dashed var(--shop-line); display: grid; gap: 10px; font-size: 14px; }
+.shop-account-detail ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.shop-account-detail li { display: flex; justify-content: space-between; gap: 12px; }
+.shop-account-detail dl { margin: 0; display: grid; gap: 4px; }
+.shop-account-detail dl div { display: flex; justify-content: space-between; }
+.shop-account-detail dl .total { font-weight: 700; border-top: 1px solid var(--shop-line); padding-top: 6px; }
+.shop-account-detail dt, .shop-account-detail dd, .shop-account-detail p { margin: 0; }
+.shop-account-history { margin: 0; padding-left: 18px; display: grid; gap: 2px; color: var(--shop-muted); font-size: 13px; }
+.shop-account-history li { display: flex; gap: 10px; }
+@media (max-width: 860px) {
+  .shop-account-grid { grid-template-columns: 1fr; }
+  .shop-account-row { grid-template-columns: 1fr auto; }
+  .shop-account-row > span:nth-child(2) { grid-column: 2; grid-row: 1; }
+  .shop-account-row > span:last-child { grid-column: 1 / -1; text-align: left; display: flex; justify-content: space-between; }
+}

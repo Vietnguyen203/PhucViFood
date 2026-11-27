@@ -2,7 +2,7 @@
 import { ApiError, type ApiRequest, type ApiResult, type createApi } from '../api';
 import type { KeyValueStore } from '../storage';
 
-export interface AdminUser { id: string; email: string; role: string }
+export interface AdminUser { id: string; email: string; role: string; /** Họ tên hiển thị (khách đăng ký tài khoản có; admin và CTV có thể không). */ fullName?: string | null }
 export interface Session { accessToken: string; refreshToken: string; user: AdminUser }
 type Api = ReturnType<typeof createApi>;
 
@@ -60,6 +60,35 @@ export function createAdminAuth({ api, store, onSessionLost, role = 'ADMIN', ses
     return s;
   }
 
+  /** Giây còn lại của access token (đọc từ trường exp trong JWT, không kiểm tra chữ ký); không đọc được thì 0. */
+  function secondsLeft(token: string): number {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { exp?: number };
+      return typeof payload.exp === 'number' ? payload.exp - Math.floor(Date.now() / 1000) : 0;
+    } catch { return 0; }
+  }
+
+  /**
+   * Access token còn hạn dùng (làm mới trước nếu sắp hết), hoặc null nếu chưa đăng nhập / phiên đã hết.
+   * Dùng cho API công khai có đọc token tùy chọn (vd đặt hàng): token hết hạn ở đó không báo 401 mà lặng lẽ coi là khách vãng lai.
+   */
+  async function freshAccessToken(): Promise<string | null> {
+    const s = sessions.load();
+    if (!s) return null;
+    if (secondsLeft(s.accessToken) > 30) return s.accessToken;
+    try { return (await refresh(s))?.accessToken ?? null; } catch { return null; }
+  }
+
+  /** Đổi họ tên hiển thị của chính mình và cập nhật phiên đang lưu. */
+  async function updateProfile(fullName: string): Promise<Session> {
+    const { data } = await authed<AdminUser>('/auth/me', { method: 'PATCH', body: { fullName } });
+    const cur = sessions.load();
+    if (!cur) throw new ApiError(401, 'UNAUTHORIZED', 'Phiên đăng nhập đã hết, vui lòng đăng nhập lại.');
+    const s: Session = { ...cur, user: { ...cur.user, fullName: data.fullName ?? fullName } };
+    sessions.save(s);
+    return s;
+  }
+
   /** Một lần làm mới dùng chung cho nhiều yêu cầu cùng hết hạn (refresh token chỉ dùng được một lần). */
   function refresh(stale: Session): Promise<Session | null> {
     refreshing ??= (async () => {
@@ -93,6 +122,6 @@ export function createAdminAuth({ api, store, onSessionLost, role = 'ADMIN', ses
     }
   }
 
-  return { login, register, logout, changePassword, authed, session: () => sessions.load() };
+  return { login, register, logout, changePassword, freshAccessToken, updateProfile, authed, session: () => sessions.load() };
 }
 export type AdminAuth = ReturnType<typeof createAdminAuth>;

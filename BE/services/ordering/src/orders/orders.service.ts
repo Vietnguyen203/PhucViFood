@@ -222,3 +222,33 @@ export class AffiliateOrdersService extends PrismaCrudService<OrderFull> {
     return toAffiliateView(o);
   }
 }
+
+/** Khách đã đăng nhập xem đơn của chính mình (đơn đặt khi đã đăng nhập). */
+@Injectable()
+export class MyOrdersService extends PrismaCrudService<OrderFull> {
+  constructor(
+    @Inject(PrismaService) private readonly db: PrismaService,
+    @Inject(SettingsService) private readonly settings: SettingsService,
+  ) {
+    super(db.order, {
+      label: 'Đơn hàng',
+      sortableFields: ['placedAt', 'totalAmount', 'status'],
+      defaultSort: '-placedAt',
+      filterableFields: { status: { codec: OrderStatusCodec }, placedAt: 'date' },
+      searchableFields: ['code'],
+      include: { items: true },
+    });
+  }
+
+  /** Danh sách gọn: không kèm hướng dẫn chuyển khoản (xem ở chi tiết). */
+  protected override toResponse(o: OrderFull) {
+    return toPublicView(o, null);
+  }
+
+  /** Chi tiết một đơn của mình theo mã đơn, kèm lịch sử trạng thái và hướng dẫn chuyển khoản. Đơn của người khác: 404. */
+  async detail(userId: string, code: string) {
+    const order = await this.db.order.findFirst({ where: { code, userId }, include: { items: true, history: true } });
+    if (!order) throw AppException.notFound('Không tìm thấy đơn hàng');
+    return toPublicView(order as OrderFull, await this.settings.bankAccount());
+  }
+}

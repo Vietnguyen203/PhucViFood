@@ -9,7 +9,7 @@
 // - Số 0 không dùng, để phân biệt với "chưa gán".
 // - Khi thêm hoặc đổi giá trị: sửa file này, sửa CHECK trong migration mới, cập nhật docs/database.md.
 
-export enum UserRoleCode { ADMIN = 1, AFFILIATE = 2 }
+export enum UserRoleCode { ADMIN = 1, AFFILIATE = 2, CUSTOMER = 3 }
 export enum UserStatusCode { ACTIVE = 1, DISABLED = 2 }
 
 export enum AffiliateStatusCode { PENDING = 1, ACTIVE = 2, SUSPENDED = 3, REJECTED = 4 }

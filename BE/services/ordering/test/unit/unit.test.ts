@@ -94,7 +94,7 @@ describe('DTO đặt hàng', () => {
 });
 
 const order = (over: Partial<OrderFull> = {}): OrderFull => ({
-  id: 'o1', code: 'PV-261125-AAAA', idempotencyKey: null, customerId: 'c1', status: 1, paymentMethod: 2, paymentStatus: 2,
+  id: 'o1', code: 'PV-261125-AAAA', idempotencyKey: null, customerId: 'c1', userId: null, status: 1, paymentMethod: 2, paymentStatus: 2,
   subtotalAmount: 610_000n, shippingFee: 0n, totalAmount: 610_000n, affiliateId: 'a1', linkId: null, channelCode: 'facebook',
   referralCodeUsed: 'linh01', attributionSource: 1, isSelfPurchase: false, shipName: 'Nguyễn Văn An', shipPhone: '+84912345678',
   shipProvince: 'Hà Nội', shipWard: 'Cầu Giấy', shipAddressLine: '12 Trần Thái Tông', customerNote: null,

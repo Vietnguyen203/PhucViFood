@@ -107,6 +107,62 @@ describe.skipIf(!enabled)('service user: đăng nhập JWT (HTTP thật)', () =>
     });
   });
 
+  describe('đăng ký khách mua hàng', () => {
+    const registerCustomer = (body: Record<string, unknown>) => call('POST', '/auth/register-customer', body);
+
+    it('tạo tài khoản CUSTOMER kèm họ tên, trả token, đăng nhập được, ghi sự kiện vào outbox', async () => {
+      const email = uniq();
+      const r = await registerCustomer({ email, password: PASSWORD, fullName: '  Nguyễn   Văn  A ' });
+      expect(r.status).toBe(201);
+      expect(r.body.data.user).toMatchObject({ email, role: 'CUSTOMER', status: 'ACTIVE', fullName: 'Nguyễn Văn A' });
+      expect(r.body.data.user.passwordHash).toBeUndefined();
+      expect(r.body.data.accessToken.split('.')).toHaveLength(3);
+      const claims = JSON.parse(Buffer.from(r.body.data.accessToken.split('.')[1], 'base64url').toString());
+      expect(claims.role).toBe('CUSTOMER');
+      expect((await login(email)).body.data.user.role).toBe('CUSTOMER');
+      const row = await prisma.user.findUniqueOrThrow({ where: { email } });
+      expect(row.role).toBe(UserRoleCode.CUSTOMER); // DB lưu mã số
+      const ev = await prisma.outboxEvent.findFirst({ where: { aggregateId: row.id } });
+      expect(ev?.eventType).toBe('user.user.created');
+    });
+
+    it('từ chối: email trùng (409), mật khẩu yếu, thiếu hoặc quá ngắn họ tên, email sai (400), gửi thêm role', async () => {
+      const email = uniq();
+      expect((await registerCustomer({ email, password: PASSWORD, fullName: 'Khách A' })).status).toBe(201);
+      expect((await registerCustomer({ email: email.toUpperCase(), password: PASSWORD, fullName: 'Khách A' })).status).toBe(409);
+      for (const body of [
+        { email: uniq(), password: '123', fullName: 'Khách A' },
+        { email: uniq(), password: PASSWORD },
+        { email: uniq(), password: PASSWORD, fullName: 'A' },
+        { email: 'khong-phai-email', password: PASSWORD, fullName: 'Khách A' },
+        { email: uniq(), password: PASSWORD, fullName: 'Khách A', role: 'ADMIN' },
+      ]) expect((await registerCustomer(body)).status, JSON.stringify(body)).toBe(400);
+    });
+
+    it('khách xem và đổi họ tên của mình; không vào được API quản trị người dùng', async () => {
+      const s = (await registerCustomer({ email: uniq(), password: PASSWORD, fullName: 'Khách Cũ' })).body.data;
+      expect((await call('GET', '/auth/me', undefined, s.accessToken)).body.data.fullName).toBe('Khách Cũ');
+      const upd = await call('PATCH', '/auth/me', { fullName: 'Khách Mới' }, s.accessToken);
+      expect(upd.status).toBe(200);
+      expect(upd.body.data).toMatchObject({ fullName: 'Khách Mới', role: 'CUSTOMER' });
+      expect((await call('PATCH', '/auth/me', { fullName: 'A' }, s.accessToken)).status).toBe(400);
+      expect((await call('PATCH', '/auth/me', { fullName: 'Tên hợp lệ' })).status).toBe(401);
+      expect((await call('GET', '/users', undefined, s.accessToken)).status).toBe(403);
+    });
+
+    it('admin lọc được danh sách khách và tạo tài khoản CUSTOMER', async () => {
+      const admin = await adminSession();
+      const email = uniq();
+      await registerCustomer({ email, password: PASSWORD, fullName: 'Khách Lọc' });
+      const list = await call('GET', `/users?filter[role]=CUSTOMER&q=${encodeURIComponent(email)}`, undefined, admin.token);
+      expect(list.status).toBe(200);
+      expect(list.body.data.map((u: any) => u.email)).toEqual([email]);
+      const created = await call('POST', '/users', { email: uniq(), password: PASSWORD, role: 'CUSTOMER' }, admin.token);
+      expect(created.status).toBe(201);
+      expect(created.body.data.role).toBe('CUSTOMER');
+    });
+  });
+
   describe('đăng nhập', () => {
     it('đăng nhập đúng; email không phân biệt hoa thường; cập nhật lastLoginAt', async () => {
       const { email } = await register();

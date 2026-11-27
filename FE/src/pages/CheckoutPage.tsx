@@ -10,6 +10,7 @@ import {
   buildOrderPayload, describeStockProblems, EMPTY_CHECKOUT, mapServerFieldErrors, validateCheckout, type CheckoutErrors, type CheckoutForm,
 } from "../lib/checkout";
 import { formatVnd } from "../lib/money";
+import { customerAuth } from "../lib/customerAuth";
 import { newIdempotencyKey, placeOrder } from "../lib/orders";
 import { loadReferral } from "../lib/referral";
 import { safeStorage } from "../lib/storage";
@@ -36,7 +37,9 @@ export default function CheckoutPage() {
   useDocumentTitle("Thanh toán");
   const { cart, subtotal, clear } = useCart();
   const navigate = useNavigate();
-  const [form, setForm] = useState<CheckoutForm>(EMPTY_CHECKOUT);
+  // Khách đã đăng nhập: điền sẵn họ tên và email từ tài khoản (sửa được); đơn sẽ gắn với tài khoản để xem lại.
+  const account = customerAuth.session()?.user;
+  const [form, setForm] = useState<CheckoutForm>(() => ({ ...EMPTY_CHECKOUT, fullName: account?.fullName ?? "", email: account?.email ?? "" }));
   const [errors, setErrors] = useState<CheckoutErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverMessage, setServerMessage] = useState<string | null>(null);

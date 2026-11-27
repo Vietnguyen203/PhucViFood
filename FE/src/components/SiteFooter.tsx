@@ -43,11 +43,11 @@ export function HomeFooter() {
           <strong>Liên hệ</strong>
           <p>
             <HomeIcon name="pin" size={16} />
-            128 Nguyễn Văn Linh, Quận 7, TP.HCM
+            Khu đồ thị The Manor Central Park, Xã Thanh Liệt, Huyện Thanh Trì, TP Hà Nội, Hanoi, Vietnam, Hanoi, Vietnam, Hanoi, Vietnam
           </p>
           <p>
             <HomeIcon name="phone" size={16} />
-            1900 6868
+            097 265 82 93
           </p>
           <p>
             <HomeIcon name="mail" size={16} />

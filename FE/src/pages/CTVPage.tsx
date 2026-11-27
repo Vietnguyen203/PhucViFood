@@ -177,7 +177,7 @@ const videos = [
     image:
       "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=700&q=88",
     product: "Set quà Phúc Lộc",
-    commission: "91.080₫",
+    commission: "75.900₫",
   },
   {
     platform: "Facebook",
@@ -187,7 +187,7 @@ const videos = [
     image:
       "https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=700&q=88",
     product: "Lạp xưởng tươi",
-    commission: "28.350₫",
+    commission: "18.900₫",
   },
   {
     platform: "YouTube",
@@ -197,7 +197,7 @@ const videos = [
     image:
       "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=700&q=88",
     product: "Khô gà lá chanh",
-    commission: "18.850₫",
+    commission: "14.500₫",
   },
 ];
 
@@ -400,8 +400,8 @@ function Hero() {
           </div>
           <div className="hero-stats">
             <div>
-              <strong>15%</strong>
-              <span>Hoa hồng đến</span>
+              <strong>10%</strong>
+              <span>Hoa hồng mỗi đơn</span>
             </div>
             <div>
               <strong>Mỗi tuần</strong>
@@ -534,7 +534,7 @@ function ProductCard({ product, code }: { product: Product; code: string | null 
               {copied ? "Đã sao chép" : "Sao chép link giới thiệu"}
             </button>
           ) : (
-            <a className="button secondary-button" href="/dang-ky">Đăng ký để lấy link giới thiệu</a>
+            <a className="button secondary-button" href="/ctv/dang-ky">Đăng ký để lấy link giới thiệu</a>
           )}
           <ShareButtons url={url} onCopy={copy} />
         </div>
@@ -734,74 +734,44 @@ function DashboardPreview() {
   );
 }
 
+/** Chính sách hoa hồng: một mức cố định cho mọi cộng tác viên (không phân hạng). */
 function Tiers() {
-  const tiers = [
-    {
-      name: "Mới bắt đầu",
-      rate: "8%",
-      requirement: "Dưới 20 đơn / tháng",
-      benefits: ["Tài khoản miễn phí", "Kho nội dung có sẵn", "Hỗ trợ từ cộng đồng"],
-      color: "starter",
-    },
-    {
-      name: "Tích cực",
-      rate: "12%",
-      requirement: "Từ 20 đơn / tháng",
-      benefits: ["Tất cả quyền lợi cơ bản", "Ưu tiên chiến dịch hot", "Thưởng thêm theo mốc"],
-      color: "active",
-      popular: true,
-    },
-    {
-      name: "Đại sứ",
-      rate: "15%",
-      requirement: "Từ 80 đơn / tháng",
-      benefits: ["Mức hoa hồng cao nhất", "Sản phẩm dùng thử", "Quản lý hỗ trợ riêng"],
-      color: "ambassador",
-    },
-  ];
+  const benefits = ["Mọi đơn qua link của bạn đều được tính", "Hoa hồng tính trên giá sản phẩm, không gồm phí giao hàng", "Tài khoản miễn phí, không cần nhập hàng", "Thanh toán theo đợt, xem được trong tài khoản"];
   return (
     <section className="tiers-section" id="tiers">
       <div className="section">
         <SectionHeading
-          eyebrow="Càng chia sẻ, càng nhận nhiều"
-          title="Cấp bậc hoa hồng dành cho bạn"
-          description="Tự động nâng hạng theo hiệu quả mỗi tháng. Không áp lực doanh số, không phí duy trì."
+          eyebrow="Đơn giản và minh bạch"
+          title="Hoa hồng cố định 10% cho mỗi đơn hàng"
+          description="Một mức duy nhất cho mọi cộng tác viên. Không áp lực doanh số, không phí duy trì."
         />
-        <div className="tier-grid">
-          {tiers.map((tier) => (
-            <article className={`tier-card ${tier.color}`} key={tier.name}>
-              {tier.popular && <span className="popular-label">Được chọn nhiều nhất</span>}
-              <div className="tier-icon">
-                <Icon
-                  name={
-                    tier.color === "starter" ? "spark" : tier.color === "active" ? "star" : "shield"
-                  }
-                  size={25}
-                />
-              </div>
-              <h3>{tier.name}</h3>
-              <div className="tier-rate">
-                <strong>{tier.rate}</strong>
-                <span>
-                  hoa hồng
-                  <br />
-                  mỗi đơn
-                </span>
-              </div>
-              <p>{tier.requirement}</p>
-              <ul>
-                {tier.benefits.map((benefit) => (
-                  <li key={benefit}>
-                    <Icon name="check" size={15} />
-                    {benefit}
-                  </li>
-                ))}
-              </ul>
-              <a href="/ctv/dang-ky">
-                Bắt đầu ngay <Icon name="arrow" size={16} />
-              </a>
-            </article>
-          ))}
+        <div className="tier-grid single">
+          <article className="tier-card active">
+            <div className="tier-icon">
+              <Icon name="gift" size={25} />
+            </div>
+            <h3>Cộng tác viên Phúc Vị</h3>
+            <div className="tier-rate">
+              <strong>10%</strong>
+              <span>
+                hoa hồng
+                <br />
+                mỗi đơn
+              </span>
+            </div>
+            <p>Ví dụ: khách mua 200.000₫ qua link của bạn, bạn nhận 20.000₫.</p>
+            <ul>
+              {benefits.map((benefit) => (
+                <li key={benefit}>
+                  <Icon name="check" size={15} />
+                  {benefit}
+                </li>
+              ))}
+            </ul>
+            <a href="/ctv/dang-ky">
+              Bắt đầu ngay <Icon name="arrow" size={16} />
+            </a>
+          </article>
         </div>
       </div>
     </section>
@@ -930,7 +900,7 @@ function Footer() {
         <div className="footer-column contact">
           <strong>Đồng hành cùng bạn</strong>
           <p>
-            Hotline: <b>1900 6868</b>
+            Hotline: <b>097 265 82 93</b>
           </p>
           <p>Email: partner@phucvifoods.vn</p>
           <small>Thứ 2 – Thứ 7, 8:00 – 18:00</small>

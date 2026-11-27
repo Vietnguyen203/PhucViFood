@@ -4,11 +4,13 @@ import { CurrentUser, Public, Roles, type AuthUser } from '@phucvi/shared-librar
 import type { Response } from 'express';
 import { AffiliateClient, toClientError } from '../clients/clients';
 import { IDEMPOTENCY_KEY_REGEX } from '../common/validators';
+import { APP_CONFIG, AppConfig } from '../config/app-config';
 import { SettingsService } from '../settings/settings.service';
 import { AdminStatsService } from '../stats/admin-stats.service';
 import { AdminReasonDto, CareNoteDto, CustomerCancelDto, PaymentDto, PhoneDto, PlaceOrderDto } from './dto';
 import { OrderPlacementService } from './order-placement.service';
-import { AffiliateOrdersService, OrdersService } from './orders.service';
+import { customerUserIdFrom } from './optional-auth';
+import { AffiliateOrdersService, MyOrdersService, OrdersService } from './orders.service';
 import { toPublicView } from './views';
 
 /** API công khai cho khách (không cần tài khoản). */
@@ -19,22 +21,25 @@ export class PublicOrdersController {
     @Inject(OrderPlacementService) private readonly placement: OrderPlacementService,
     @Inject(OrdersService) private readonly orders: OrdersService,
     @Inject(SettingsService) private readonly settings: SettingsService,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
   /**
    * Đặt hàng. Header `Idempotency-Key` (8-100 ký tự chữ, số, . _ -) giúp bấm đúp hoặc thử lại không tạo đơn trùng:
    * cùng khóa thì trả lại đúng đơn cũ (HTTP 200, replayed=true).
    */
-  @Post() @ParamTypes(Object, String, Object)
+  @Post() @ParamTypes(Object, String, String, Object)
   async place(
     @ValidBody(PlaceOrderDto) dto: PlaceOrderDto,
     @Headers('idempotency-key') idempotencyKey: string | undefined,
+    @Headers('authorization') authorization: string | undefined,
     @Res({ passthrough: true }) res: Response,
   ) {
     if (idempotencyKey !== undefined && !IDEMPOTENCY_KEY_REGEX.test(idempotencyKey)) {
       throw AppException.validation([{ field: 'Idempotency-Key', messages: ['gồm 8-100 ký tự chữ, số, dấu chấm, gạch dưới hoặc gạch ngang'] }]);
     }
-    const { order, replayed } = await this.placement.place(dto, idempotencyKey);
+    // Khách đã đăng nhập (vai trò CUSTOMER): đơn gắn với tài khoản để xem lại ở /my-orders. Không có hoặc token sai: khách vãng lai.
+    const { order, replayed } = await this.placement.place(dto, idempotencyKey, customerUserIdFrom(authorization, this.config.jwt));
     res.status(replayed ? 200 : 201);
     return { ...toPublicView(order, await this.settings.bankAccount()), replayed };
   }
@@ -53,6 +58,23 @@ export class PublicOrdersController {
   @Post(':code/cancel') @HttpCode(200) @ParamTypes(String, Object)
   cancel(@Param('code') code: string, @ValidBody(CustomerCancelDto) dto: CustomerCancelDto) {
     return this.orders.cancelByCustomer(code, dto.phone, dto.reason);
+  }
+}
+
+/** Khách đã đăng nhập xem lịch sử đơn của mình. */
+@Roles('CUSTOMER')
+@Controller('my-orders')
+export class MyOrdersController {
+  constructor(@Inject(MyOrdersService) private readonly orders: MyOrdersService) {}
+
+  @Get() @ParamTypes(Object, Object)
+  list(@CurrentUser() user: AuthUser, @Query() query: Record<string, unknown>) {
+    return this.orders.list(query, { userId: user.id });
+  }
+
+  @Get(':code') @ParamTypes(Object, String)
+  detail(@CurrentUser() user: AuthUser, @Param('code') code: string) {
+    return this.orders.detail(user.id, code);
   }
 }
 

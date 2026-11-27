@@ -8,7 +8,7 @@ import { OutboxService } from '@phucvi/shared-library/messaging';
 import type { User } from '../../generated/client';
 import { APP_CONFIG, AppConfig } from '../config/app-config';
 import { PrismaService } from '../prisma/prisma.service';
-import type { ChangePasswordDto, LoginDto, RefreshDto, RegisterDto } from './dto';
+import type { ChangePasswordDto, LoginDto, RefreshDto, RegisterCustomerDto, RegisterDto, UpdateProfileDto } from './dto';
 import { PasswordService } from './password';
 import { RequestContext, TokenPair, TokenService } from './token.service';
 
@@ -17,13 +17,15 @@ export interface PublicUser {
   email: string;
   /** Tên chuỗi (ADMIN, AFFILIATE); DB lưu mã số. */
   role: UserRole;
+  /** Họ tên hiển thị (có thể null với admin và CTV). */
+  fullName: string | null;
   status: UserStatus;
   createdAt: Date;
   lastLoginAt: Date | null;
 }
 
 export const toPublicUser = (u: User): PublicUser => ({
-  id: u.id, email: u.email, role: UserRoleCodec.toName(u.role), status: UserStatusCodec.toName(u.status),
+  id: u.id, email: u.email, role: UserRoleCodec.toName(u.role), fullName: u.fullName, status: UserStatusCodec.toName(u.status),
   createdAt: u.createdAt, lastLoginAt: u.lastLoginAt,
 });
 
@@ -63,6 +65,34 @@ export class AuthService {
     }
     const issued = await this.tokens.issue(this.prisma, toAuthUser(user), ctx);
     return { user: toPublicUser(user), ...this.stripId(issued) };
+  }
+
+  /** Khách mua hàng đăng ký tài khoản: role CUSTOMER cố định, đăng nhập luôn sau khi đăng ký. */
+  async registerCustomer(dto: RegisterCustomerDto, ctx: RequestContext): Promise<{ user: PublicUser } & TokenPair> {
+    const passwordHash = await this.passwords.hash(dto.password);
+    let user: User;
+    try {
+      user = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({ data: { email: dto.email, passwordHash, fullName: dto.fullName, role: UserRoleCode.CUSTOMER } });
+        await this.outbox.add('user', tx, {
+          type: EventTypes.USER_CREATED, aggregateType: 'User', aggregateId: created.id,
+          payload: { userId: created.id, email: created.email, role: UserRoleCodec.toName(created.role) },
+        });
+        return created;
+      });
+    } catch (e) {
+      if ((e as { code?: string }).code === 'P2002') throw AppException.conflict('Email đã được đăng ký');
+      throw e;
+    }
+    const issued = await this.tokens.issue(this.prisma, toAuthUser(user), ctx);
+    return { user: toPublicUser(user), ...this.stripId(issued) };
+  }
+
+  /** Đổi họ tên hiển thị của chính mình. */
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<PublicUser> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.status !== UserStatusCode.ACTIVE) throw AppException.unauthorized();
+    return toPublicUser(await this.prisma.user.update({ where: { id: userId }, data: { fullName: dto.fullName } }));
   }
 
   async login(dto: LoginDto, ctx: RequestContext): Promise<{ user: PublicUser } & TokenPair> {

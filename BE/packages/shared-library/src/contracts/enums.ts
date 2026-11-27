@@ -32,7 +32,8 @@ export type CommissionStatus = (typeof CommissionStatus)[keyof typeof Commission
 export const AdjustmentStatus = { PENDING: 'PENDING', APPLIED: 'APPLIED', WAIVED: 'WAIVED' } as const;
 export type AdjustmentStatus = (typeof AdjustmentStatus)[keyof typeof AdjustmentStatus];
 
-export const UserRole = { ADMIN: 'ADMIN', AFFILIATE: 'AFFILIATE' } as const;
+/** CUSTOMER: khách mua hàng có tài khoản (xem lịch sử đơn của mình). */
+export const UserRole = { ADMIN: 'ADMIN', AFFILIATE: 'AFFILIATE', CUSTOMER: 'CUSTOMER' } as const;
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 export const UserStatus = { ACTIVE: 'ACTIVE', DISABLED: 'DISABLED' } as const;

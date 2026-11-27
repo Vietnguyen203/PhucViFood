@@ -12,6 +12,26 @@ export class RegisterDto {
   password!: string;
 }
 
+/** Khách mua hàng đăng ký tài khoản (vai trò CUSTOMER cố định, không nhận role từ client). */
+export class RegisterCustomerDto {
+  @Transform(normalizeEmail) @IsEmail() @MaxLength(254)
+  email!: string;
+
+  @IsString() @IsStrongPassword()
+  password!: string;
+
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : value))
+  @IsString() @MinLength(2) @MaxLength(100)
+  fullName!: string;
+}
+
+/** Cập nhật họ tên của chính mình. */
+export class UpdateProfileDto {
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : value))
+  @IsString() @MinLength(2) @MaxLength(100)
+  fullName!: string;
+}
+
 export class LoginDto {
   @Transform(normalizeEmail) @IsEmail() @MaxLength(254)
   email!: string;

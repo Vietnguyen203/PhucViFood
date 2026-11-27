@@ -32,6 +32,8 @@ model Order {
   // Khóa chống đặt trùng do client gửi (header Idempotency-Key): cùng khóa thì trả lại đúng đơn đã tạo.
   idempotencyKey    String?              @unique @map("idempotency_key")
   customerId        String               @map("customer_id") @db.Uuid // customer.customers.id (không FK)
+  /// Tài khoản khách (user.users.id, vai trò CUSTOMER) nếu khách đặt hàng khi đã đăng nhập; NULL = khách vãng lai. Không FK.
+  userId            String?              @map("user_id") @db.Uuid
   status            Int                  @default(1) @db.SmallInt // OrderStatusCode, mặc định 1 = PLACED
   paymentMethod     Int                  @map("payment_method") @db.SmallInt // PaymentMethodCode
   paymentStatus     Int                  @map("payment_status") @db.SmallInt // PaymentStatusCode
@@ -69,6 +71,7 @@ model Order {
   careNotes         CareNote[]
 
   @@index([customerId, placedAt])
+  @@index([userId, placedAt])
   @@index([affiliateId, placedAt])
   @@index([status, placedAt])
   @@index([placedAt])

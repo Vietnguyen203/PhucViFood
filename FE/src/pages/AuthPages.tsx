@@ -22,17 +22,24 @@ function Field({ label, error, hint, children }: { label: string; error?: string
   );
 }
 
-/** Đăng nhập (mọi vai trò, tự vào đúng khu) và đăng ký cộng tác viên: cùng một khung, hai chế độ. */
-function AuthForm({ mode }: { mode: "login" | "register" }) {
-  useDocumentTitle(mode === "register" ? "Đăng ký cộng tác viên" : "Đăng nhập");
+type Mode = "login" | "register" | "register-partner";
+
+/**
+ * Đăng nhập (mọi vai trò, tự vào đúng khu) và hai kiểu đăng ký cùng một khung:
+ * "register" cho khách mua hàng (/dang-ky), "register-partner" cho cộng tác viên (/ctv/dang-ky).
+ */
+function AuthForm({ mode }: { mode: Mode }) {
+  const isPartner = mode === "register-partner";
+  useDocumentTitle(isPartner ? "Đăng ký cộng tác viên" : mode === "register" ? "Đăng ký tài khoản" : "Đăng nhập");
   const navigate = useNavigate();
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const isRegister = mode === "register";
+  const isRegister = mode !== "login";
   const already = signedInTo(store);
   if (already) return <Navigate to={already} replace />;
 
@@ -40,6 +47,7 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
     ev.preventDefault();
     if (busy) return;
     const found: Record<string, string> = {};
+    if (mode === "register" && fullName.trim().length < 2) found.fullName = "Vui lòng nhập họ tên (ít nhất 2 ký tự).";
     if (!email.trim()) found.email = "Vui lòng nhập email.";
     if (!password) found.password = "Vui lòng nhập mật khẩu.";
     if (isRegister) {
@@ -52,7 +60,9 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
 
     setBusy(true);
     try {
-      navigate(await signIn(api, store, isRegister ? "/auth/register" : "/auth/login", email.trim(), password), { replace: true });
+      const path = mode === "login" ? "/auth/login" : isPartner ? "/auth/register" : "/auth/register-customer";
+      const extra: Record<string, string> = mode === "register" ? { fullName: fullName.trim().replace(/\s+/g, " ") } : {};
+      navigate(await signIn(api, store, path, email.trim(), password, extra), { replace: true });
     } catch (e) {
       setError(
         e instanceof ApiError && e.status === 401 ? "Email hoặc mật khẩu không đúng."
@@ -70,12 +80,17 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
       <main className="shop-page shop-auth">
         <form className="shop-card shop-auth-card" onSubmit={submit} noValidate>
           <img className="shop-auth-logo" src="/images/phuc-vi-logo-official-transparent.png" alt="Phúc Vị Foods" />
-          <h1 className="shop-title">{isRegister ? "Đăng ký cộng tác viên" : "Đăng nhập"}</h1>
+          <h1 className="shop-title">{isPartner ? "Đăng ký cộng tác viên" : mode === "register" ? "Đăng ký tài khoản" : "Đăng nhập"}</h1>
           <p className="shop-muted">
-            {isRegister ? "Tạo tài khoản để nhận link giới thiệu và hoa hồng cho mỗi đơn." : ""}
+            {isPartner ? "Tạo tài khoản để nhận link giới thiệu và hoa hồng 10% cho mỗi đơn." : mode === "register" ? "Lưu thông tin giao hàng và xem lại lịch sử đơn hàng của bạn." : ""}
           </p>
+          {mode === "register" && (
+            <Field label="Họ và tên" error={errors.fullName}>
+              <input value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" maxLength={100} autoFocus />
+            </Field>
+          )}
           <Field label="Email" error={errors.email}>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" autoFocus />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" autoFocus={mode !== "register"} />
           </Field>
           <Field label="Mật khẩu" error={errors.password} hint={isRegister ? "Ít nhất 8 ký tự, có chữ và số." : undefined}>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={isRegister ? "new-password" : "current-password"} />
@@ -90,9 +105,11 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
           <p className="shop-auth-links">
             {isRegister
               ? <>Đã có tài khoản? <Link to="/dang-nhap">Đăng nhập</Link></>
-              : <>Chưa có tài khoản? <Link to="/dang-ky">Đăng ký làm cộng tác viên</Link></>}
+              : <>Chưa có tài khoản? <Link to="/dang-ky">Đăng ký</Link></>}
             <br />
-            <Link to="/ctv">Tìm hiểu chương trình cộng tác viên</Link>
+            {isPartner
+              ? <Link to="/ctv">Tìm hiểu chương trình cộng tác viên</Link>
+              : <>Muốn nhận hoa hồng? <Link to="/ctv/dang-ky">Đăng ký làm cộng tác viên</Link></>}
           </p>
         </form>
       </main>
@@ -103,3 +120,4 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
 
 export const LoginPage = () => <AuthForm mode="login" />;
 export const RegisterPage = () => <AuthForm mode="register" />;
+export const RegisterPartnerPage = () => <AuthForm mode="register-partner" />;

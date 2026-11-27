@@ -13,13 +13,15 @@ datasource db {
 }
 
 // Enum lưu dạng SMALLINT. Mã số định nghĩa ở shared-library (contracts/codes.ts), CHECK trong migration.
-//   role:   1 ADMIN, 2 AFFILIATE
+//   role:   1 ADMIN, 2 AFFILIATE, 3 CUSTOMER
 //   status: 1 ACTIVE, 2 DISABLED
 
 model User {
   id                  String         @id @default(uuid(7)) @db.Uuid
   email               String         @unique // luôn chữ thường (CHECK trong migration)
   passwordHash        String         @map("password_hash")
+  // Họ tên hiển thị (khách đăng ký tài khoản mua hàng nhập khi đăng ký); CTV và admin có thể để trống.
+  fullName            String?        @map("full_name")
   role                Int            @db.SmallInt // UserRoleCode
   status              Int            @default(1) @db.SmallInt // UserStatusCode, mặc định 1 = ACTIVE
   lastLoginAt         DateTime?      @map("last_login_at") @db.Timestamptz(6)

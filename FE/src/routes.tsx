@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router";
 import RootLayout from "./components/RootLayout";
-import { LoginPage, RegisterPage } from "./pages/AuthPages";
+import AccountPage from "./pages/AccountPage";
+import { LoginPage, RegisterPage, RegisterPartnerPage } from "./pages/AuthPages";
 import { NewsDetailPage, NewsListPage } from "./pages/NewsPages";
 import CartPage from "./pages/CartPage";
 import CategoryPage from "./pages/CategoryPage";
@@ -40,7 +41,8 @@ const router = createBrowserRouter([
       { path: "/dang-ky", Component: RegisterPage },
       // Đường dẫn đăng nhập cũ của từng khu: dùng chung một trang đăng nhập
       { path: "/ctv/dang-nhap", element: <Navigate to="/dang-nhap" replace /> },
-      { path: "/ctv/dang-ky", element: <Navigate to="/dang-ky" replace /> },
+      { path: "/ctv/dang-ky", Component: RegisterPartnerPage },
+      { path: "/tai-khoan", Component: AccountPage },
       { path: "/thong-tin/:page", Component: InfoPage },
       { path: "/thanh-toan", Component: CheckoutPage },
       // Tra cứu đơn bằng mã đơn + SĐT; có mã trên đường dẫn thì tự tra cứu khi vừa đặt hàng xong.

@@ -39,7 +39,7 @@ describe('resolveService', () => {
     ['/me/affiliate', 'affiliate'], ['/me/commissions/summary', 'affiliate'], ['/payouts', 'affiliate'], ['/adjustments/abc/waive', 'affiliate'], ['/me/adjustments', 'affiliate'], ['/public/referrals/abc', 'affiliate'],
     ['/public/tracking/events', 'tracking'], ['/me/stats', 'tracking'],
     ['/public/products/khô-cá', 'catalog'], ['/public/categories', 'catalog'], ['/products/1/stock-adjustments', 'catalog'], ['/categories', 'catalog'],
-    ['/public/orders', 'ordering'], ['/public/orders/PV-1/cancel', 'ordering'], ['/orders/cskh-queue', 'ordering'], ['/me/orders', 'ordering'],
+    ['/public/orders', 'ordering'], ['/public/orders/PV-1/cancel', 'ordering'], ['/orders/cskh-queue', 'ordering'], ['/me/orders', 'ordering'], ['/my-orders', 'ordering'], ['/my-orders/PV-1', 'ordering'],
     ['/customers/export', 'customer'], ['/customer-settings/segment.vip_min_orders', 'customer'],
   ])('%s -> %s', (path, service) => {
     expect(resolveService(path)).toBe(service);

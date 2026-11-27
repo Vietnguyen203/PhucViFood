@@ -24,12 +24,23 @@ describe('đăng nhập chung', () => {
     expect(store.getItem('pv.admin.session')).toBeNull();
   });
 
-  it('vai trò lạ: báo lỗi và không lưu phiên', async () => {
+  it('CUSTOMER vào /tai-khoan, phiên lưu ở khóa khách; trường thêm của form đăng ký được gửi đi', async () => {
     const store = new MemoryStore();
-    await expect(signIn(apiWith(() => ok(tokens('CUSTOMER'))), store, '/auth/login', 'a@b.vn', 'x')).rejects.toThrow();
+    let sent = '';
+    const api = createApi({ baseUrl: '/api', fetch: vi.fn(async (_u: string | URL | Request, init?: RequestInit) => { sent = String(init?.body); return ok(tokens('CUSTOMER')); }) as unknown as typeof fetch });
+    const to = await signIn(api, store, '/auth/register-customer', 'k@d.vn', 'x', { fullName: 'Khách A' });
+    expect(to).toBe('/tai-khoan');
+    expect(JSON.parse(sent)).toEqual({ email: 'k@d.vn', password: 'x', fullName: 'Khách A' });
+    expect(store.getItem('pv.customer.session')).toContain('CUSTOMER');
     expect(store.getItem('pv.admin.session')).toBeNull();
     expect(store.getItem('pv.partner.session')).toBeNull();
-    expect(areaFor('CUSTOMER')).toBeNull();
+  });
+
+  it('vai trò lạ: báo lỗi và không lưu phiên', async () => {
+    const store = new MemoryStore();
+    await expect(signIn(apiWith(() => ok(tokens('SUPPORT'))), store, '/auth/login', 'a@b.vn', 'x')).rejects.toThrow();
+    for (const k of ['pv.admin.session', 'pv.partner.session', 'pv.customer.session']) expect(store.getItem(k)).toBeNull();
+    expect(areaFor('SUPPORT')).toBeNull();
   });
 
   it('nhận ra máy đã đăng nhập, ưu tiên quản trị', async () => {
@@ -39,5 +50,13 @@ describe('đăng nhập chung', () => {
     expect(signedInTo(store)).toBe('/ctv/tai-khoan');
     await signIn(apiWith(() => ok(tokens('ADMIN'))), store, '/auth/login', 'a@b.vn', 'x');
     expect(signedInTo(store)).toBe('/admin');
+  });
+
+  it('khách đã đăng nhập: vào /tai-khoan (sau quản trị và CTV)', async () => {
+    const store = new MemoryStore();
+    await signIn(apiWith(() => ok(tokens('CUSTOMER'))), store, '/auth/login', 'k@d.vn', 'x');
+    expect(signedInTo(store)).toBe('/tai-khoan');
+    await signIn(apiWith(() => ok(tokens('AFFILIATE'))), store, '/auth/login', 'c@d.vn', 'x');
+    expect(signedInTo(store)).toBe('/ctv/tai-khoan');
   });
 });

@@ -9,6 +9,8 @@ Tiền tố `/api`. Mặc định **mọi route đều cần JWT**, trừ route 
 | Method | Đường dẫn | Quyền | Mô tả |
 |---|---|---|---|
 | POST | `/auth/register` | Công khai | Đăng ký tài khoản CTV (vai trò `AFFILIATE`), trả luôn cặp token |
+| POST | `/auth/register-customer` | Công khai | Khách mua hàng đăng ký tài khoản (vai trò `CUSTOMER` cố định; không nhận `role` từ client). Cần `email`, `password` (theo chính sách chung), `fullName` (2-100 ký tự); trả luôn cặp token. Email trùng 409 |
+| PATCH | `/auth/me` | Đã đăng nhập | Đổi họ tên hiển thị (`fullName`) của chính mình |
 | POST | `/auth/login` | Công khai | Đăng nhập bằng email và mật khẩu |
 | POST | `/auth/refresh` | Công khai | Đổi refresh token lấy cặp token mới (xoay vòng) |
 | POST | `/auth/logout` | Công khai | Thu hồi phiên của refresh token gửi lên |
