@@ -46,6 +46,7 @@ Chỉ tài khoản ADMIN (đăng nhập ở `/dang-nhap`; tài khoản dev nằm
 | Hàng chờ CSKH | Đơn đã giao chưa hoàn tất, số ngày chờ, lần liên hệ gần nhất |
 | Sản phẩm | Thêm, sửa, ẩn/hiện, xóa (danh mục không bắt buộc, không có SKU; giá bán gõ theo nghìn đồng: gõ 339 là 339.000₫, hoặc viết đủ 339.000; thay ô giá gốc bằng ô "Giảm giá (%)" và hệ thống tự tính giá gốc); ảnh tải từ máy (tự thu nhỏ và nén trên trình duyệt, tối đa 1 MB) hoặc dán link; điều chỉnh kho kèm lý do; sổ kho (lịch sử thay đổi); lọc hàng sắp hết |
 | Danh mục | Thêm, sửa, ẩn/hiện, xóa; ảnh đại diện tùy chọn (hiện trong vòng tròn ở trang chủ) |
+| Chỉnh ảnh (mọi ô ảnh ở admin) | Chọn ảnh từ máy thì mở trình chỉnh ảnh: chọn tỷ lệ khung (gốc, 1:1, 4:3, 3:4, 16:9, 9:16), kéo để căn, phóng to, xoay 90°; "Dùng nguyên ảnh" để bỏ qua. Ảnh đã có có nút "Chỉnh ảnh" (ảnh từ đường dẫn ngoài thường không mở được do trình duyệt chặn) |
 | Banner trang chủ (`/admin/banner`) | Thêm, sửa, bật/tắt, xóa banner; chọn vị trí (khung lớn hoặc ô khuyến mãi bên phải), tải ảnh từ máy, đích bấm, thứ tự và lịch hiển thị; thấy trạng thái đang hiện, đã tắt, chưa tới lịch, đã hết hạn |
 | KOL / KOC (`/admin/kol-koc`) | Thêm, sửa, bật/tắt, xóa thẻ KOL/KOC; chọn loại, tải ảnh chân dung dọc 3:4, câu giới thiệu, link đích, thứ tự (khách thấy tối đa 12 thẻ) |
 | Video trang chủ (`/admin/video`) | Thêm, sửa, bật/tắt, xóa video (dán link bất kỳ, ảnh bìa tùy chọn, báo link phát được hay chỉ mở tab mới), thứ tự; khách thấy tối đa 6 video |

@@ -37,7 +37,7 @@ function VideoForm({ video, onClose, onSaved }: { video?: AdminVideo; onClose: (
               : src.kind === "file" ? "Tệp video: phát ngay trên trang chủ. Nên đặt thêm ảnh bìa bên dưới."
               : `Nhận ra ${src.provider === "youtube" ? "YouTube" : src.provider === "vimeo" ? "Vimeo" : src.provider === "tiktok" ? "TikTok" : "Facebook"}: phát ngay trên trang chủ.${src.provider === "youtube" ? "" : " Nên đặt thêm ảnh bìa bên dưới."}`}
           </p>
-          <ImageField label="Ảnh bìa (tùy chọn)" value={f.thumbnailUrl} onChange={(v) => set("thumbnailUrl", v)} error={err.thumbnailUrl} maxSide={1280} hint="YouTube tự có ảnh bìa; video khác nên có ảnh bìa tỷ lệ 16:9." />
+          <ImageField label="Ảnh bìa (tùy chọn)" value={f.thumbnailUrl} onChange={(v) => set("thumbnailUrl", v)} error={err.thumbnailUrl} maxSide={1280} aspect="16:9" hint="YouTube tự có ảnh bìa; video khác nên có ảnh bìa tỷ lệ 16:9." />
           {!f.thumbnailUrl.trim() && thumb && <img className="ad-video-preview" src={thumb} alt="Ảnh bìa video" />}
           <label className="ad-check"><input type="checkbox" checked={f.isActive} onChange={(e) => set("isActive", e.target.checked)} /> Đang bật (hiện ở trang chủ)</label>
         </>

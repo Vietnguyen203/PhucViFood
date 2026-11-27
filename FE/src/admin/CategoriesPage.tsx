@@ -24,7 +24,7 @@ function CategoryForm({ category, onClose, onSaved }: { category?: AdminCategory
       {(err) => (
         <>
           <Field label="Tên danh mục *" error={err.name}><input value={name} onChange={(e) => setName(e.target.value)} maxLength={100} autoFocus /></Field>
-          <ImageField label="Ảnh đại diện (tùy chọn)" value={imageUrl} onChange={setImageUrl} error={err.imageUrl} maxSide={400} hint="Hiện trong vòng tròn ở trang chủ; nên dùng ảnh vuông. Không có ảnh thì hiện chữ cái đầu của tên." />
+          <ImageField label="Ảnh đại diện (tùy chọn)" value={imageUrl} onChange={setImageUrl} error={err.imageUrl} maxSide={400} aspect="1:1" hint="Hiện trong vòng tròn ở trang chủ; nên dùng ảnh vuông. Không có ảnh thì hiện chữ cái đầu của tên." />
           <Field label="Thứ tự hiển thị" error={err.sortOrder} hint="Số nhỏ hiện trước."><input value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} inputMode="numeric" /></Field>
           <label className="ad-check"><input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} /> Đang hoạt động (hiện trên cửa hàng)</label>
         </>

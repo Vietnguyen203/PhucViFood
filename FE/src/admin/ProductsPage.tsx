@@ -85,7 +85,7 @@ function ProductForm({ product, categories, onClose, onSaved }: { product?: Admi
               ? <Field label="Tồn kho hiện tại"><input value={String(product.stockQuantity)} readOnly disabled title='Đổi tồn kho bằng "Điều chỉnh kho" để có ghi chú trong sổ kho' /></Field>
               : <Field label="Tồn kho ban đầu" error={err.stockQuantity}><input value={f.stockQuantity} onChange={(e) => set("stockQuantity", e.target.value)} inputMode="numeric" /></Field>}
           </div>
-          <ImageField value={f.imageUrl} onChange={(v) => set("imageUrl", v)} error={err.imageUrl} />
+          <ImageField value={f.imageUrl} onChange={(v) => set("imageUrl", v)} error={err.imageUrl} aspect="1:1" />
           <Field label="Mô tả" error={err.description}><textarea rows={3} value={f.description} onChange={(e) => set("description", e.target.value)} maxLength={5000} /></Field>
           <label className="ad-check"><input type="checkbox" checked={f.isVisible} onChange={(e) => set("isVisible", e.target.checked)} /> Hiển thị cho khách</label>
           {product && <p className="ad-muted">Muốn đổi tồn kho, dùng "Điều chỉnh kho" ở danh sách để có ghi chú trong sổ kho.</p>}
