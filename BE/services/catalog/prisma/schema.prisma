@@ -32,6 +32,25 @@ model Banner {
   @@schema("catalog")
 }
 
+/// KOL/KOC hiển thị ở trang chủ: người thật chia sẻ trải nghiệm. kind: 1 KOL, 2 KOC.
+model Creator {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  name      String
+  kind      Int      @db.SmallInt // CreatorKindCode
+  /// Câu giới thiệu hoặc cảm nhận ngắn hiển thị trên thẻ.
+  headline  String?
+  imageUrl  String   @map("image_url") // ảnh chân dung dọc
+  linkUrl   String?  @map("link_url") // trang đích khi bấm (video, trang cá nhân, sản phẩm...)
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([isActive, sortOrder])
+  @@map("creators")
+  @@schema("catalog")
+}
+
 model Category {
   id        String    @id @default(uuid(7)) @db.Uuid
   name      String

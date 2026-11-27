@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
+import { CreatorSection } from "../components/CreatorSection";
 import { HomeBanner } from "../components/HomeBanner";
 import { HomeIcon } from "../components/Icon";
 import { ProductCard } from "../components/ProductCard";
@@ -160,6 +161,7 @@ export default function HomePage() {
       <main>
         <HomeBanner />
         <CategorySection />
+        <CreatorSection />
         <ProductsSection />
         <PartnerCTA />
       </main>

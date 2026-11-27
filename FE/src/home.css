@@ -1073,3 +1073,21 @@ a.home-banner-tile:hover { transform: translateY(-2px); box-shadow: 0 12px 28px 
   .home-banner-tile { aspect-ratio: 16 / 10; }
 }
 @media (min-width: 1300px) { .home-banner { height: 480px; } }
+
+/* ───────── KOL & KOC ───────── */
+.home-creator-row { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
+.home-creator-card { position: relative; display: block; aspect-ratio: 3 / 4; border-radius: 16px; overflow: hidden; background: #eee3d6; color: #fff; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; }
+a.home-creator-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px #4a0a0d2e; }
+.home-creator-card:focus-visible { outline: 3px solid var(--home-gold); outline-offset: 2px; }
+.home-creator-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.home-creator-card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, #2a0508d9 100%); }
+.home-creator-kind { position: absolute; z-index: 2; top: 10px; left: 10px; padding: 3px 10px; border-radius: 999px; background: var(--home-gold); color: #4a0a0d; font-size: 12px; font-weight: 700; }
+.home-creator-kind.KOC { background: #fff3ce; }
+.home-creator-info { position: absolute; z-index: 2; left: 12px; right: 12px; bottom: 12px; display: grid; gap: 2px; }
+.home-creator-info strong { font-size: 15px; line-height: 1.25; }
+.home-creator-info small { font-size: 12px; line-height: 1.4; opacity: 0.92; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 1100px) { .home-creator-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .home-creator-row { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; padding-bottom: 8px; margin-right: -18px; }
+  .home-creator-row > li { flex: 0 0 42%; scroll-snap-align: start; }
+}

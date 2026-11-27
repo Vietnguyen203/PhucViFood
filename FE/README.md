@@ -14,6 +14,7 @@ React 19 + Vite + Tailwind (xuất từ Figma Make), gọi backend **chỉ qua g
 | `/yeu-thich` | Sản phẩm đã bấm tim (thẻ sản phẩm, trang chi tiết); lưu trên thiết bị (`pv.wishlist`: chỉ id và slug), tên/giá/tồn kho lấy mới từ catalog, sản phẩm ngừng bán tự bị bỏ | `GET /public/products/:slug` |
 | `/gio-hang` | Giỏ hàng đầy đủ: đổi số lượng, xóa, tóm tắt phí ship tạm tính, sang thanh toán (ngăn kéo giỏ có link vào đây) | Chỉ localStorage |
 | `/` (banner đầu trang) | Chỉ ảnh, không chữ: khung lớn bên trái (nhiều ảnh tự trượt, dừng khi rê chuột) và tối đa 2 ô khuyến mãi bên phải; bấm vào ra trang đích. Nội dung cài ở admin "Banner trang chủ"; chưa có banner thì dùng ảnh mặc định bấm ra khu sản phẩm | `GET /public/banners` |
+| `/` (mục KOL & KOC, dưới banner) | Hàng thẻ chân dung dọc (6 thẻ/hàng màn rộng, vuốt ngang trên điện thoại), nhãn KOL/KOC, tên và câu giới thiệu; bấm ra link đã cài. Chưa có thẻ nào đang bật thì ẩn cả mục | `GET /public/creators` |
 | `/tim-kiem?q=...&sort=...&gia=...` | Kết quả tìm kiếm (tên, mô tả), sắp xếp, "Xem thêm"; ô tìm kiếm ở header | `GET /public/products?q=` |
 | (mọi trang) | Giỏ hàng dạng ngăn kéo, lưu trong trình duyệt, đồng bộ giữa các tab | |
 | `/thanh-toan` | Thanh toán: thông tin giao hàng, COD hoặc chuyển khoản, mã CTV, đồng ý tư vấn | `POST /public/orders` (có `Idempotency-Key`) |
@@ -45,6 +46,7 @@ Chỉ tài khoản ADMIN (đăng nhập ở `/dang-nhap`; tài khoản dev nằm
 | Sản phẩm | Thêm, sửa, ẩn/hiện, xóa (danh mục không bắt buộc, không có SKU; giá bán gõ theo nghìn đồng: gõ 339 là 339.000₫, hoặc viết đủ 339.000; thay ô giá gốc bằng ô "Giảm giá (%)" và hệ thống tự tính giá gốc); ảnh tải từ máy (tự thu nhỏ và nén trên trình duyệt, tối đa 1 MB) hoặc dán link; điều chỉnh kho kèm lý do; sổ kho (lịch sử thay đổi); lọc hàng sắp hết |
 | Danh mục | Thêm, sửa, ẩn/hiện, xóa |
 | Banner trang chủ (`/admin/banner`) | Thêm, sửa, bật/tắt, xóa banner; chọn vị trí (khung lớn hoặc ô khuyến mãi bên phải), tải ảnh từ máy, đích bấm, thứ tự và lịch hiển thị; thấy trạng thái đang hiện, đã tắt, chưa tới lịch, đã hết hạn |
+| KOL / KOC (`/admin/kol-koc`) | Thêm, sửa, bật/tắt, xóa thẻ KOL/KOC; chọn loại, tải ảnh chân dung dọc 3:4, câu giới thiệu, link đích, thứ tự (khách thấy tối đa 12 thẻ) |
 | Cộng tác viên | Duyệt (hợp đồng, tỷ lệ), từ chối, tạm ngưng, kích hoạt lại, sửa hợp đồng/tỷ lệ |
 | Hoa hồng, đợt chi trả, khoản trừ | Xác nhận sớm; tạo đợt chi (chọn hoa hồng, thấy khoản trừ chờ); miễn khoản trừ kèm lý do |
 | Khách hàng | Lọc theo phân loại, mức hoạt động, đồng ý tư vấn, tỉnh, ngày; chi tiết, sửa liên hệ, ghi nhận đồng ý; xuất Excel theo đúng bộ lọc |

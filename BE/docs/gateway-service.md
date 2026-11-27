@@ -23,7 +23,7 @@ Chuyển tiếp theo kiểu stream: file `.xlsx` xuất khách hàng đi thẳng
 | user | `/auth`, `/users` |
 | affiliate | `/me/affiliate`, `/me/links`, `/me/commissions`, `/me/payouts`, `/me/adjustments`, `/affiliates`, `/commissions`, `/payouts`, `/adjustments`, `/affiliate-settings`, `/public/referrals` |
 | tracking | `/public/tracking`, `/me/stats`, và riêng `POST /public/referrals/click` |
-| catalog | `/public/categories`, `/public/products`, `/public/uploads`, `/public/banners`, `/categories`, `/products`, `/banners` |
+| catalog | `/public/categories`, `/public/products`, `/public/uploads`, `/public/banners`, `/public/creators`, `/categories`, `/products`, `/banners`, `/creators` |
 | ordering | `/public/orders`, `/orders`, `/me/orders`, `/my-orders`, `/order-settings` |
 | customer | `/customers`, `/customer-settings` |
 

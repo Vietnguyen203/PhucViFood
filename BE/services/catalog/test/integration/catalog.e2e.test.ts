@@ -295,6 +295,60 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
   });
 
   // ═════════════════════════ Admin: sản phẩm ═════════════════════════
+  describe('KOL/KOC trang chủ', () => {
+    const mk = (over: Record<string, unknown> = {}) => ({ name: `IT creator ${rand(5)}`, kind: 'KOC', imageUrl: 'https://cdn.example.com/p.jpg', ...over });
+    const cleanup = async () => { await prisma.$executeRawUnsafe(`DELETE FROM catalog.creators WHERE name LIKE 'IT creator %'`); };
+
+    it('admin tạo, sửa, xóa; khách chỉ thấy thẻ đang bật, đúng thứ tự, không lộ trường quản trị', async () => {
+      await cleanup();
+      const t = admin();
+      const key = rand(4);
+      const a = await api('POST', '/creators', { token: t, body: mk({ name: `IT creator ${key} B`, kind: 'KOL', sortOrder: 2, headline: 'Review khô cá lóc', linkUrl: 'https://youtube.com/watch?v=x' }) });
+      const b = await api('POST', '/creators', { token: t, body: mk({ name: `IT creator ${key} A`, sortOrder: 1, linkUrl: '/san-pham/kho-ca' }) });
+      const off = await api('POST', '/creators', { token: t, body: mk({ name: `IT creator ${key} tắt`, isActive: false }) });
+      for (const r of [a, b, off]) expect(r.status).toBe(201);
+      expect(a.body.data).toMatchObject({ kind: 'KOL', headline: 'Review khô cá lóc', sortOrder: 2, isActive: true });
+
+      const mine = (list: any[]) => list.filter((c) => c.name.startsWith(`IT creator ${key}`));
+      let pub = (await api('GET', '/public/creators')).body.data;
+      expect(mine(pub).map((c: any) => c.name)).toEqual([`IT creator ${key} A`, `IT creator ${key} B`]);
+      expect(Object.keys(pub[0]).sort()).toEqual(['headline', 'id', 'imageUrl', 'kind', 'linkUrl', 'name']);
+
+      // sửa: bật thẻ tắt, đổi loại, gỡ liên kết và câu giới thiệu
+      expect((await api('PATCH', `/creators/${off.body.data.id}`, { token: t, body: { isActive: true, kind: 'KOL' } })).body.data).toMatchObject({ isActive: true, kind: 'KOL' });
+      const cleared = await api('PATCH', `/creators/${a.body.data.id}`, { token: t, body: { linkUrl: null, headline: '' } });
+      expect(cleared.body.data).toMatchObject({ linkUrl: null, headline: null });
+      pub = (await api('GET', '/public/creators')).body.data;
+      expect(mine(pub)).toHaveLength(3);
+
+      // lọc, tìm, xóa
+      expect((await api('GET', `/creators?filter[kind]=KOL&q=${key}`, { token: t })).body.data).toHaveLength(2);
+      expect((await api('DELETE', `/creators/${b.body.data.id}`, { token: t })).status).toBe(200);
+      expect((await api('GET', `/creators/${b.body.data.id}`, { token: t })).status).toBe(404);
+      await cleanup();
+    });
+
+    it('chặn: không đăng nhập, không phải ADMIN, dữ liệu sai', async () => {
+      expect((await api('POST', '/creators', { body: mk() })).status).toBe(401);
+      expect((await api('POST', '/creators', { token: token('AFFILIATE'), body: mk() })).status).toBe(403);
+      const t = admin();
+      const bad: Array<Record<string, unknown>> = [
+        { kind: 'INFLUENCER' }, { name: '' }, { name: 'x'.repeat(61) }, { imageUrl: 'javascript:alert(1)' }, { imageUrl: undefined },
+        { linkUrl: 'javascript:alert(1)' }, { linkUrl: '//evil.example' }, { headline: 'x'.repeat(161) }, { sortOrder: -1 },
+      ];
+      for (const patch of bad) expect((await api('POST', '/creators', { token: t, body: mk(patch) })).status, JSON.stringify(patch)).toBe(400);
+      await cleanup();
+    });
+
+    it('khách chỉ nhận tối đa 12 thẻ', async () => {
+      await cleanup();
+      const t = admin();
+      for (let i = 0; i < 14; i++) await api('POST', '/creators', { token: t, body: mk({ sortOrder: i }) });
+      expect((await api('GET', '/public/creators')).body.data.length).toBeLessThanOrEqual(12);
+      await cleanup();
+    });
+  });
+
   describe('banner trang chủ', () => {
     const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64, 3)]);
     const mk = (over: Record<string, unknown> = {}) => ({ title: `IT banner ${rand(5)}`, imageUrl: 'https://cdn.example.com/b.jpg', slot: 'MAIN', ...over });

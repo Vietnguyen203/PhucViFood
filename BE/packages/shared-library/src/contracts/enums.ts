@@ -39,6 +39,9 @@ export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 export const BannerSlot = { MAIN: 'MAIN', SIDE: 'SIDE' } as const;
 export type BannerSlot = (typeof BannerSlot)[keyof typeof BannerSlot];
 
+export const CreatorKind = { KOL: 'KOL', KOC: 'KOC' } as const;
+export type CreatorKind = (typeof CreatorKind)[keyof typeof CreatorKind];
+
 export const UserStatus = { ACTIVE: 'ACTIVE', DISABLED: 'DISABLED' } as const;
 export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
 

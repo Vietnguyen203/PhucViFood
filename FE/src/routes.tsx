@@ -79,6 +79,7 @@ const router = createBrowserRouter([
           { path: "khach-hang/:id", ...admin(() => import("./admin/CustomerDetailPage")) },
           { path: "tai-khoan", ...admin(() => import("./admin/AccountsPage")) },
           { path: "banner", ...admin(() => import("./admin/BannersPage")) },
+          { path: "kol-koc", ...admin(() => import("./admin/CreatorsPage")) },
           { path: "san-pham", ...admin(() => import("./admin/ProductsPage")) },
           { path: "danh-muc", ...admin(() => import("./admin/CategoriesPage")) },
         ],

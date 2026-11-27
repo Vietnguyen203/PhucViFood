@@ -31,6 +31,8 @@ export enum ContactChannelCode { CALL = 1, ZALO = 2, SMS = 3 }
 
 /** Lý do thay đổi tồn kho (catalog.stock_movements.reason). */
 /** Vị trí banner trên trang chủ: MAIN là khung lớn (trượt nhiều ảnh), SIDE là các ô khuyến mãi bên phải. */
+/** KOL: người có tầm ảnh hưởng (đông người theo dõi); KOC: khách hàng thật chia sẻ trải nghiệm. */
+export enum CreatorKindCode { KOL = 1, KOC = 2 }
 export enum BannerSlotCode { MAIN = 1, SIDE = 2 }
 export enum StockMovementReasonCode { ORDER_PLACED = 1, ORDER_CANCELLED = 2, ADMIN_ADJUSTMENT = 3 }
 
@@ -97,3 +99,4 @@ export const ActorTypeCodec = createCodec(ActorTypeCode);
 export const ContactChannelCodec = createCodec(ContactChannelCode);
 export const StockMovementReasonCodec = createCodec(StockMovementReasonCode);
 export const BannerSlotCodec = createCodec(BannerSlotCode);
+export const CreatorKindCodec = createCodec(CreatorKindCode);
