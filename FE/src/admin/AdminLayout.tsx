@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Navigate, NavLink, Outlet, useLocation } from "react-router";
+import { Link, Navigate, NavLink, Outlet, useLocation } from "react-router";
 import { AdminProvider, useAdmin } from "./AdminContext";
 import { ChangePasswordModal } from "./ChangePasswordModal";
 import { IconButton } from "./icons";
@@ -10,7 +10,7 @@ import "./admin.css";
 const NAV: Array<{ group: string; items: Array<[string, string]> }> = [
   { group: "Tổng quan", items: [["/admin", "Tổng quan"], ["/admin/bao-cao", "Báo cáo"]] },
   { group: "Bán hàng", items: [["/admin/don-hang", "Đơn hàng"], ["/admin/cskh", "Hàng chờ CSKH"], ["/admin/khach-hang", "Khách hàng"]] },
-  { group: "Sản phẩm", items: [["/admin/san-pham", "Sản phẩm và tồn kho"], ["/admin/danh-muc", "Danh mục"]] },
+  { group: "Sản phẩm", items: [["/admin/san-pham", "Sản phẩm"], ["/admin/danh-muc", "Danh mục"]] },
   { group: "Cộng tác viên", items: [["/admin/ctv", "Cộng tác viên"], ["/admin/hoa-hong", "Hoa hồng"], ["/admin/chi-tra", "Đợt chi trả"], ["/admin/khoan-tru", "Khoản trừ"]] },
   { group: "Hệ thống", items: [["/admin/tai-khoan", "Tài khoản"], ["/admin/cai-dat-cua-hang", "Cấu hình bán hàng"], ["/admin/cai-dat", "Ngưỡng khách và nhật ký xuất"]] },
 ];
@@ -28,7 +28,7 @@ function Shell() {
   return (
     <div className="ad-shell">
       <aside className={`ad-side${open ? " open" : ""}`}>
-        <div className="ad-brand">Phúc Vị <small>Quản trị</small></div>
+        <Link className="ad-brand" to="/" title="Về trang chủ cửa hàng" aria-label="Phúc Vị Quản trị, về trang chủ cửa hàng">Phúc Vị <small>Quản trị</small></Link>
         <nav onClick={() => setOpen(false)}>
           {NAV.map((g) => (
             <div key={g.group}>

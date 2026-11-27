@@ -143,7 +143,7 @@ export default function ProductsPage() {
   return (
     <>
       <div className="ad-head">
-        <h1>Sản phẩm và tồn kho</h1>
+        <h1>Sản phẩm</h1>
         <button className="ad-btn primary" disabled={categories.length === 0} onClick={() => setEdit("new")}>+ Thêm sản phẩm</button>
       </div>
       <FilterBar onApply={fl.apply} onReset={fl.reset}>

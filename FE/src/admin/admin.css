@@ -2,7 +2,8 @@
 .ad-shell, .ad-login { --ad-bg: #f8f4ec; --ad-card: #fff; --ad-line: #eadfd2; --ad-text: #3b2021; --ad-muted: #6d5753; --ad-primary: #9b1c22; --ad-primary-dark: #4a0a0d; --ad-gold: #e3b04b; --ad-danger: #b3261e; font: 15px/1.55 "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ad-text); }
 .ad-shell { display: flex; min-height: 100vh; background: var(--ad-bg); }
 .ad-side { width: 250px; background: #4a0a0d; color: #f1e2d6; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-shrink: 0; }
-.ad-brand { font: 400 24px/1.2 "DM Serif Display", serif; padding: 20px 20px 14px; color: #fff; }
+.ad-brand { display: block; font: 400 24px/1.2 "DM Serif Display", serif; padding: 20px 20px 14px; color: #fff; text-decoration: none; }
+.ad-brand:hover { color: var(--ad-gold); }
 .ad-brand small { font: 500 13px "Be Vietnam Pro", sans-serif; color: var(--ad-gold); margin-left: 6px; }
 .ad-side nav { flex: 1; padding: 0 10px; }
 .ad-side h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ad-gold); opacity: .85; margin: 16px 10px 4px; }

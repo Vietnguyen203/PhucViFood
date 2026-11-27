@@ -41,7 +41,7 @@ function Shell() {
   return (
     <div className="ad-shell">
       <aside className={`ad-side${open ? " open" : ""}`}>
-        <div className="ad-brand">Phúc Vị <small>Cộng tác viên</small></div>
+        <Link className="ad-brand" to="/" title="Về trang chủ cửa hàng" aria-label="Phúc Vị Cộng tác viên, về trang chủ cửa hàng">Phúc Vị <small>Cộng tác viên</small></Link>
         <nav onClick={() => setOpen(false)}>
           <div>
             {active && NAV.map(([to, label]) => <NavLink key={to} to={to} end={to === "/ctv/tai-khoan"} className={({ isActive }) => (isActive ? "active" : "")}>{label}</NavLink>)}
