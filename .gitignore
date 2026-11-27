@@ -16,3 +16,6 @@ generated/
 # IDE
 .idea/
 .vscode/
+
+# Ảnh sản phẩm tải lên khi chạy local (catalog, UPLOAD_DIR mặc định)
+BE/services/catalog/uploads/

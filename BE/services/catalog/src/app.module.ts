@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { PrismaService } from './prisma/prisma.service';
 import { ProductsModule } from './products/products.module';
 import { StockModule } from './stock/stock.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({})
 export class AppModule {
@@ -27,6 +28,7 @@ export class AppModule {
         }),
         ProductsModule,
         StockModule,
+        UploadsModule,
       ],
       controllers: [createHealthController('catalog') as never],
       providers: [{ provide: APP_CONFIG, useValue: config }],

@@ -62,6 +62,7 @@ Biến của từng service (cổng, địa chỉ database, địa chỉ service
 - **Khởi động** (`entrypoint.sh`): service có Prisma thì chạy `prisma migrate deploy` trước, rồi chạy service. Database mới được tạo bởi script `BE/infra/postgres/init` lần đầu khởi tạo volume.
 - **Healthcheck** mỗi service gọi `/api/health` của chính nó; gateway chỉ khởi động khi 6 service healthy, Caddy chỉ khởi động khi gateway healthy.
 - **Địa chỉ người dùng thật**: Caddy đặt `X-Forwarded-For` bằng IP người gọi (bỏ giá trị client tự gửi); gateway chạy `TRUST_PROXY_HOPS=1` nên giới hạn tốc độ tính theo IP thật. Đã kiểm tra giả 24 giá trị `X-Forwarded-For` khác nhau vẫn bị chặn 429 từ lần thứ 21.
+- **Ảnh sản phẩm tải lên** nằm trong volume `phucvi-uploads` (catalog, `UPLOAD_DIR=/data/uploads`): giữ khi tạo lại container, nhưng cần sao lưu cùng database. Ảnh tối đa 1 MiB nên không cần nới giới hạn của Caddy và gateway; ảnh không còn dùng (đã thay hoặc gỡ) vẫn nằm trên đĩa, chưa có việc dọn.
 - **Giới hạn kích thước**: `request_body max_size` của Caddy phải bằng `MAX_BODY_BYTES` của gateway (cùng 1 MiB). Nếu Caddy cho qua mà gateway từ chối và đóng kết nối khi Caddy đang gửi dở, Caddy trả 502 thay vì 413. Đổi một chỗ thì đổi cả chỗ kia.
 - **Bí mật** truyền qua biến môi trường từ `.env`; gateway không nhận khóa JWT hay khóa nội bộ. Khóa riêng JWT chỉ đưa vào user service (compose đặt riêng cho service đó), các service khác chỉ có khóa công khai nên một service bị chiếm quyền không ký giả token được.
 

@@ -70,7 +70,7 @@ export class StockService {
     }
 
     const ids = wanted.map(([id]) => id);
-    const products = await tx.product.findMany({ where: { id: { in: ids }, deletedAt: null, isVisible: true, category: { isActive: true } } });
+    const products = await tx.product.findMany({ where: { id: { in: ids }, deletedAt: null, isVisible: true, OR: [{ categoryId: null }, { category: { isActive: true, deletedAt: null } }] } });
     const byId = new Map(products.map((p) => [p.id, p]));
 
     const unavailable = ids.filter((id) => !byId.has(id));

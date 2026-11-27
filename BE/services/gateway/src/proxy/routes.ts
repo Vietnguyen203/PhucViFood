@@ -12,7 +12,7 @@ export const ROUTE_PREFIXES: Record<ServiceName, readonly string[]> = {
     '/public/referrals',
   ],
   tracking: ['/public/tracking', '/me/stats'],
-  catalog: ['/public/categories', '/public/products', '/categories', '/products'],
+  catalog: ['/public/categories', '/public/products', '/public/uploads', '/categories', '/products'],
   ordering: ['/public/orders', '/orders', '/me/orders', '/my-orders', '/order-settings'],
   customer: ['/customers', '/customer-settings'],
 };

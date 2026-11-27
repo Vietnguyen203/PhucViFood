@@ -53,7 +53,8 @@ export function createApi({ baseUrl, fetch: fetchImpl }: ApiOptions) {
 
   return async function api<T>(path: string, req: ApiRequest = {}): Promise<ApiResult<T>> {
     const headers: Record<string, string> = { accept: 'application/json', ...req.headers };
-    if (req.body !== undefined) headers['content-type'] = 'application/json';
+    const raw = typeof Blob !== 'undefined' && req.body instanceof Blob; // tệp (vd ảnh): gửi nguyên, đúng loại của tệp
+    if (req.body !== undefined) headers['content-type'] = raw ? (req.body as Blob).type || 'application/octet-stream' : 'application/json';
     if (req.token) headers.authorization = `Bearer ${req.token}`;
 
     let res: Response;
@@ -61,7 +62,7 @@ export function createApi({ baseUrl, fetch: fetchImpl }: ApiOptions) {
       res = await fetchImpl(`${root}${path}`, {
         method: req.method ?? (req.body !== undefined ? 'POST' : 'GET'),
         headers,
-        body: req.body === undefined ? undefined : JSON.stringify(req.body),
+        body: req.body === undefined ? undefined : raw ? (req.body as Blob) : JSON.stringify(req.body),
         signal: withTimeout(req.signal, req.timeoutMs ?? 15_000),
       });
     } catch (e) {

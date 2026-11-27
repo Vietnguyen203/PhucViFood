@@ -1,24 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { formatVnd } from "../lib/money";
 import { STOCK_REASON_LABEL, type AdminCategory, type AdminProduct, type StockMovement } from "../lib/admin/types";
 import { useAdmin } from "./AdminContext";
 import { IconButton } from "./icons";
+import { ImageField } from "./ImageField";
 import { Badge, ConfirmModal, ErrorBox, Field, FilterBar, FormModal, Loading, Modal, Pager, SortHeader, fmtDateTime, useAction, useList, useListFilters } from "./ui";
 
-/** Xem trước ảnh theo đường dẫn đang nhập; link hỏng thì báo ngay để người nhập biết trước khi lưu. */
-function ImagePreview({ url }: { url: string }) {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [url]);
-  return failed
-    ? <p className="ad-error" role="alert">Không tải được ảnh từ đường dẫn này.</p>
-    : <img className="ad-preview" src={url} alt="Xem trước ảnh sản phẩm" onError={() => setFailed(true)} />;
-}
-
-const EMPTY = { categoryId: "", name: "", sku: "", unit: "", price: "", originalPrice: "", imageUrl: "", description: "", stockQuantity: "0", isVisible: true };
+const EMPTY = { categoryId: "", name: "", unit: "", price: "", originalPrice: "", imageUrl: "", description: "", stockQuantity: "0", isVisible: true };
 type Form = typeof EMPTY;
 
 function toForm(p: AdminProduct): Form {
-  return { categoryId: p.categoryId, name: p.name, sku: p.sku ?? "", unit: p.unit ?? "", price: String(p.price), originalPrice: p.originalPrice ? String(p.originalPrice) : "", imageUrl: p.imageUrl ?? "", description: p.description ?? "", stockQuantity: String(p.stockQuantity), isVisible: p.isVisible };
+  return { categoryId: p.categoryId ?? "", name: p.name, unit: p.unit ?? "", price: String(p.price), originalPrice: p.originalPrice ? String(p.originalPrice) : "", imageUrl: p.imageUrl ?? "", description: p.description ?? "", stockQuantity: String(p.stockQuantity), isVisible: p.isVisible };
 }
 
 /** Số nguyên không âm từ ô nhập; rỗng → undefined, không hợp lệ → NaN (để backend báo lỗi rõ ràng thay vì gửi sai). */
@@ -26,15 +18,17 @@ const intOrUndef = (v: string) => (v.trim() === "" ? undefined : Number(v.replac
 
 function ProductForm({ product, categories, onClose, onSaved }: { product?: AdminProduct; categories: AdminCategory[]; onClose: () => void; onSaved: () => void }) {
   const { adm, notify } = useAdmin();
-  const [f, setF] = useState<Form>(product ? toForm(product) : { ...EMPTY, categoryId: categories[0]?.id ?? "" });
+  const [f, setF] = useState<Form>(product ? toForm(product) : EMPTY);
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }));
   return (
     <FormModal title={product ? "Sửa sản phẩm" : "Thêm sản phẩm"} wide onClose={onClose}
       onSubmit={async () => {
         const body: Record<string, unknown> = {
-          categoryId: f.categoryId, name: f.name.trim(), price: intOrUndef(f.price), isVisible: f.isVisible,
-          sku: f.sku.trim() || undefined, unit: f.unit.trim() || undefined, description: f.description.trim() || undefined,
-          originalPrice: intOrUndef(f.originalPrice), imageUrl: f.imageUrl.trim() || undefined,
+          // Danh mục là tùy chọn: để trống khi tạo thì không gửi; khi sửa gửi null để bỏ sản phẩm khỏi danh mục.
+          categoryId: f.categoryId || (product ? null : undefined), name: f.name.trim(), price: intOrUndef(f.price), isVisible: f.isVisible,
+          unit: f.unit.trim() || undefined, description: f.description.trim() || undefined,
+          originalPrice: intOrUndef(f.originalPrice), // Sửa: bỏ trống ảnh nghĩa là gỡ ảnh (gửi null); tạo mới thì bỏ qua trường.
+          imageUrl: f.imageUrl.trim() || (product ? null : undefined),
         };
         if (!product) body.stockQuantity = intOrUndef(f.stockQuantity) ?? 0;
         // Sửa: để trống giá gốc nghĩa là bỏ giá gốc (gửi null); tạo mới thì bỏ qua trường.
@@ -46,27 +40,26 @@ function ProductForm({ product, categories, onClose, onSaved }: { product?: Admi
       }}>
       {(err) => (
         <>
-          <div className="ad-grid2">
+          {/* Bố cục hai cột đều nhau, các ô cùng chiều cao (không có chú thích dưới ô để các hàng thẳng hàng). */}
+          <div className="ad-grid2 ad-form-balanced">
             <Field label="Tên sản phẩm *" error={err.name}><input value={f.name} onChange={(e) => set("name", e.target.value)} maxLength={200} autoFocus /></Field>
-            <Field label="Danh mục *" error={err.categoryId}>
+            <Field label="Danh mục" error={err.categoryId}>
               <select value={f.categoryId} onChange={(e) => set("categoryId", e.target.value)}>
-                <option value="" disabled>Chọn danh mục</option>
+                <option value="">Không thuộc danh mục nào</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
             <Field label="Giá bán (VND) *" error={err.price}><input value={f.price} onChange={(e) => set("price", e.target.value)} inputMode="numeric" /></Field>
-            <Field label="Giá gốc (VND)" error={err.originalPrice} hint="Để trống nếu không giảm giá."><input value={f.originalPrice} onChange={(e) => set("originalPrice", e.target.value)} inputMode="numeric" /></Field>
-            <Field label="SKU" error={err.sku}><input value={f.sku} onChange={(e) => set("sku", e.target.value)} maxLength={50} /></Field>
+            <Field label="Giá gốc (VND)" error={err.originalPrice}><input value={f.originalPrice} onChange={(e) => set("originalPrice", e.target.value)} inputMode="numeric" placeholder="Để trống nếu không giảm giá" /></Field>
             <Field label="Đơn vị" error={err.unit}><input value={f.unit} onChange={(e) => set("unit", e.target.value)} maxLength={50} placeholder="kg, gói, hộp..." /></Field>
-            {!product && <Field label="Tồn kho ban đầu" error={err.stockQuantity}><input value={f.stockQuantity} onChange={(e) => set("stockQuantity", e.target.value)} inputMode="numeric" /></Field>}
-            <Field label="Ảnh (đường dẫn)" error={err.imageUrl} hint="Dán link ảnh (http hoặc https). Hệ thống chưa hỗ trợ tải ảnh từ máy lên; hãy dùng link từ nơi lưu ảnh của bạn.">
-              <input value={f.imageUrl} onChange={(e) => set("imageUrl", e.target.value)} placeholder="https://..." />
-            </Field>
-            {/^https?:\/\//i.test(f.imageUrl.trim()) && <ImagePreview url={f.imageUrl.trim()} />}
+            {product
+              ? <Field label="Tồn kho hiện tại"><input value={String(product.stockQuantity)} readOnly disabled title='Đổi tồn kho bằng "Điều chỉnh kho" để có ghi chú trong sổ kho' /></Field>
+              : <Field label="Tồn kho ban đầu" error={err.stockQuantity}><input value={f.stockQuantity} onChange={(e) => set("stockQuantity", e.target.value)} inputMode="numeric" /></Field>}
           </div>
+          <ImageField value={f.imageUrl} onChange={(v) => set("imageUrl", v)} error={err.imageUrl} />
           <Field label="Mô tả" error={err.description}><textarea rows={3} value={f.description} onChange={(e) => set("description", e.target.value)} maxLength={5000} /></Field>
           <label className="ad-check"><input type="checkbox" checked={f.isVisible} onChange={(e) => set("isVisible", e.target.checked)} /> Hiển thị cho khách</label>
-          {product && <p className="ad-muted">Tồn kho hiện tại: <b>{product.stockQuantity}</b>. Muốn đổi, dùng "Điều chỉnh kho" để có ghi chú trong sổ kho.</p>}
+          {product && <p className="ad-muted">Muốn đổi tồn kho, dùng "Điều chỉnh kho" ở danh sách để có ghi chú trong sổ kho.</p>}
         </>
       )}
     </FormModal>
@@ -144,10 +137,10 @@ export default function ProductsPage() {
     <>
       <div className="ad-head">
         <h1>Sản phẩm</h1>
-        <button className="ad-btn primary" disabled={categories.length === 0} onClick={() => setEdit("new")}>+ Thêm sản phẩm</button>
+        <button className="ad-btn primary" onClick={() => setEdit("new")}>+ Thêm sản phẩm</button>
       </div>
       <FilterBar onApply={fl.apply} onReset={fl.reset}>
-        <Field label="Tìm kiếm"><input value={fl.filters.q} onChange={(e) => fl.setField("q", e.target.value)} placeholder="Tên, SKU..." /></Field>
+        <Field label="Tìm kiếm"><input value={fl.filters.q} onChange={(e) => fl.setField("q", e.target.value)} placeholder="Tên sản phẩm..." /></Field>
         <Field label="Danh mục">
           <select value={fl.filters.categoryId} onChange={(e) => fl.applyNow({ categoryId: e.target.value })}>
             <option value="">Tất cả</option>
@@ -176,7 +169,7 @@ export default function ProductsPage() {
               {list.data.items.map((p) => (
                 <tr key={p.id}>
                   <td>{p.imageUrl ? <img className="ad-thumb" src={p.imageUrl} alt="" /> : <div className="ad-thumb" />}</td>
-                  <td><b>{p.name}</b><div className="ad-muted">{p.sku ?? "—"} · {p.unit ?? "—"}</div></td>
+                  <td><b>{p.name}</b><div className="ad-muted">{p.unit ?? "—"}</div></td>
                   <td>{p.category?.name ?? "—"}</td>
                   <td>{formatVnd(p.price)}{p.originalPrice ? <div className="ad-muted"><s>{formatVnd(p.originalPrice)}</s> −{p.discountPercent}%</div> : null}</td>
                   <td><Badge tone={p.stockQuantity === 0 ? "red" : p.stockQuantity <= 10 ? "amber" : "green"}>{p.stockQuantity}</Badge></td>

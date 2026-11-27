@@ -102,6 +102,10 @@ services:
       PORT: "3003"
       ORDERING_URL: http://ordering:3004/api
       CATALOG_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/catalog_db
+      UPLOAD_DIR: /data/uploads
+    # Ảnh sản phẩm admin tải lên: để trong volume để không mất khi tạo lại container.
+    volumes:
+      - phucvi-uploads:/data/uploads
     depends_on: *depends-infra
     healthcheck: *healthcheck
 
@@ -229,6 +233,7 @@ services:
       gateway: { condition: service_healthy }
 
 volumes:
+  phucvi-uploads:
   phucvi-pgdata:
   phucvi-rabbitmq:
   phucvi-caddy-data:

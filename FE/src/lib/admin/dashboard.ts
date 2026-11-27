@@ -50,7 +50,7 @@ export function bankConfigured(settings: ShopSetting[]): boolean {
 export const SETTING_LABEL: Record<string, { label: string; unit?: 'vnd' | 'phút' | 'ngày' | '%'; hint?: string }> = {
   'shipping.flat_fee': { label: 'Phí giao hàng đồng giá', unit: 'vnd', hint: 'Áp dụng cho đơn chưa đủ mức miễn phí.' },
   'shipping.free_threshold': { label: 'Miễn phí giao hàng từ', unit: 'vnd', hint: 'Tổng tiền sản phẩm (chưa gồm phí ship) từ mức này thì miễn phí giao hàng.' },
-  'payment.hold_minutes': { label: 'Giữ hàng cho đơn chuyển khoản', unit: 'phút', hint: 'Quá hạn chưa thanh toán thì đơn tự hủy và hàng về kho (1440 phút = 24 giờ).' },
+  'payment.hold_minutes': { label: 'Giữ hàng cho đơn chuyển khoản', unit: 'phút', hint: '' },
   'payment.bank_name': { label: 'Ngân hàng nhận tiền' },
   'payment.bank_account_no': { label: 'Số tài khoản nhận tiền', hint: '6-30 chữ số.' },
   'payment.bank_account_holder': { label: 'Chủ tài khoản' },

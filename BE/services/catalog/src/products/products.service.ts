@@ -11,7 +11,7 @@ import type { CreateProductDto, UpdateProductDto } from './dto';
 export const PRODUCTS_SERVICE = Symbol('PRODUCTS_SERVICE');
 export const PUBLIC_PRODUCTS_SERVICE = Symbol('PUBLIC_PRODUCTS_SERVICE');
 
-type ProductWithCategory = Product & { category?: Pick<Category, 'id' | 'name' | 'slug'> };
+type ProductWithCategory = Product & { category?: Pick<Category, 'id' | 'name' | 'slug'> | null };
 
 const categoryView = (c?: Pick<Category, 'id' | 'name' | 'slug'>) => (c ? { id: c.id, name: c.name, slug: c.slug } : undefined);
 
@@ -23,7 +23,7 @@ export function discountPercent(price: bigint, originalPrice: bigint | null): nu
 
 /** Dữ liệu cho admin: đủ mọi trường, gồm tồn kho chính xác. */
 export const toAdminProductView = (p: ProductWithCategory) => ({
-  id: p.id, categoryId: p.categoryId, category: categoryView(p.category),
+  id: p.id, categoryId: p.categoryId, category: categoryView(p.category ?? undefined),
   name: p.name, slug: p.slug, sku: p.sku, description: p.description, unit: p.unit,
   price: p.price, originalPrice: p.originalPrice, discountPercent: discountPercent(p.price, p.originalPrice),
   imageUrl: p.imageUrl, stockQuantity: p.stockQuantity, isVisible: p.isVisible,
@@ -34,7 +34,7 @@ export const toAdminProductView = (p: ProductWithCategory) => ({
 export const toPublicProductView = (p: ProductWithCategory) => ({
   id: p.id, name: p.name, slug: p.slug, sku: p.sku, description: p.description, unit: p.unit,
   price: p.price, originalPrice: p.originalPrice, discountPercent: discountPercent(p.price, p.originalPrice),
-  imageUrl: p.imageUrl, inStock: p.stockQuantity > 0, category: categoryView(p.category),
+  imageUrl: p.imageUrl, inStock: p.stockQuantity > 0, category: categoryView(p.category ?? undefined),
 });
 
 const isUnique = (e: unknown) => (e as { code?: string }).code === 'P2002';
@@ -75,7 +75,7 @@ export class ProductsService extends PrismaCrudService<ProductWithCategory, Crea
   }
 
   override async create(dto: CreateProductDto) {
-    await this.assertCategory(dto.categoryId);
+    if (dto.categoryId) await this.assertCategory(dto.categoryId);
     assertPrices(dto.price, dto.originalPrice);
     const slug = dto.slug ?? (await makeUniqueSlug(slugify(dto.name), 'san-pham', async (s) => (await this.prisma.product.count({ where: { slug: s } })) > 0));
     const stock = dto.stockQuantity ?? 0;
@@ -83,7 +83,7 @@ export class ProductsService extends PrismaCrudService<ProductWithCategory, Crea
       const created = await this.prisma.$transaction(async (tx) => {
         const p = await tx.product.create({
           data: {
-            categoryId: dto.categoryId, name: dto.name, slug, sku: dto.sku, description: dto.description, unit: dto.unit,
+            categoryId: dto.categoryId ?? null, name: dto.name, slug, sku: dto.sku, description: dto.description, unit: dto.unit,
             price: BigInt(dto.price), originalPrice: dto.originalPrice === undefined ? null : BigInt(dto.originalPrice),
             imageUrl: dto.imageUrl, stockQuantity: stock, isVisible: dto.isVisible ?? true,
           },
@@ -130,7 +130,8 @@ export class ProductsService extends PrismaCrudService<ProductWithCategory, Crea
 /** Khách xem hàng: chỉ sản phẩm đang hiển thị, chưa xóa, thuộc danh mục đang bật. */
 @Injectable()
 export class PublicProductsService extends PrismaCrudService<ProductWithCategory> {
-  private static readonly VISIBLE = { isVisible: true, category: { isActive: true } };
+  /** Đang bán: hiện, và hoặc không thuộc danh mục nào, hoặc thuộc danh mục đang bật chưa xóa. */
+  static readonly VISIBLE = { isVisible: true, OR: [{ categoryId: null }, { category: { isActive: true, deletedAt: null } }] };
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {
     super(prisma.product, {

@@ -21,7 +21,9 @@ Khách chỉ thấy sản phẩm đang hiển thị, chưa xóa, thuộc danh m�
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
 | GET, POST, PATCH, DELETE | `/categories`, `/categories/:id` | Danh mục. Slug tự sinh từ tên (không dấu). Xóa là xóa mềm (`deleted_at`), chỉ khi không còn sản phẩm đang tồn tại (sản phẩm đã xóa mềm không tính; còn sản phẩm thì báo số lượng, hoặc tắt bằng `isActive=false`). Danh mục đã xóa không gán thêm cho sản phẩm được |
-| GET, POST, PATCH, DELETE | `/products`, `/products/:id` | Sản phẩm. Xóa là xóa mềm (đơn cũ vẫn tham chiếu). Thấy cả hàng ẩn và tồn kho chính xác |
+| POST | `/products/images` | ADMIN. Tải ảnh sản phẩm: thân yêu cầu là ảnh thô, `Content-Type` là `image/png`, `image/jpeg` hoặc `image/webp`, tối đa 1 MiB (bằng giới hạn gateway và Caddy). Loại ảnh được kiểm tra theo byte đầu của tệp (khai sai loại hoặc giả ảnh trả 400); tên tệp do hệ thống sinh (UUID). Lưu ở `UPLOAD_DIR` (mặc định `./uploads`; Docker: volume `phucvi-uploads` gắn vào `/data/uploads`). Trả `{ url, size, contentType }` với `url` dạng `/api/public/uploads/<uuid>.<đuôi>` |
+| GET | `/public/uploads/:name` | Công khai. Phục vụ ảnh đã tải lên (`Cache-Control` immutable, `nosniff`); tên không đúng dạng hoặc không có tệp thì 404 |
+| GET, POST, PATCH, DELETE | `/products`, `/products/:id` | Sản phẩm. `imageUrl` là link http(s) hoặc đường dẫn ảnh đã tải lên (gửi `null` khi sửa để gỡ ảnh). Danh mục không bắt buộc (`categoryId` bỏ trống hoặc `null` = không thuộc danh mục nào; sửa `null` để bỏ khỏi danh mục; sản phẩm không danh mục vẫn hiện và bán bình thường). Xóa là xóa mềm (đơn cũ vẫn tham chiếu). Thấy cả hàng ẩn và tồn kho chính xác |
 | POST | `/products/:id/stock-adjustments` | Điều chỉnh tồn kho `{delta, note}`; `note` bắt buộc; không cho âm |
 | GET | `/products/:id/stock-movements` | Sổ cái tồn kho của sản phẩm |
 

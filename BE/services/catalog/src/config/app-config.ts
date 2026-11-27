@@ -25,6 +25,8 @@ export interface AppConfig {
   orphanMinAgeMinutes: number;
   /** Chỉ xét các lần giữ hàng trong số giờ gần nhất. */
   orphanLookbackHours: number;
+  /** Thư mục lưu ảnh sản phẩm tải lên (trong Docker nên là một volume để không mất ảnh khi tạo lại container). */
+  uploadDir: string;
 }
 
 type Env = Record<string, string | undefined>;
@@ -72,5 +74,6 @@ export function loadConfig(env: Env = process.env): AppConfig {
     relayEnabled: env.OUTBOX_RELAY_ENABLED !== 'false',
     orderingUrl, downstreamTimeoutMs, downstreamResilience,
     orphanSweepEnabled: env.ORPHAN_SWEEP_ENABLED !== 'false', orphanSweepIntervalMs, orphanMinAgeMinutes, orphanLookbackHours,
+    uploadDir: env.UPLOAD_DIR?.trim() || './uploads',
   };
 }

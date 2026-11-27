@@ -10,6 +10,23 @@ function setup(handler: (url: string, init: RequestInit) => Response | Promise<R
   return { api, fetchMock };
 }
 
+describe('createApi: gửi tệp', () => {
+  it('thân là Blob thì gửi nguyên với đúng loại của tệp, không bọc JSON', async () => {
+    const { api, fetchMock } = setup(() => json({ success: true, data: { url: '/x' } }));
+    const file = new Blob([new Uint8Array([1, 2, 3])], { type: 'image/webp' });
+    await api('/products/images', { method: 'POST', body: file, token: 't' });
+    const init = fetchMock.mock.calls[0][1]!;
+    expect(init.body).toBe(file);
+    expect((init.headers as Record<string, string>)['content-type']).toBe('image/webp');
+    expect((init.headers as Record<string, string>).authorization).toBe('Bearer t');
+  });
+  it('Blob không rõ loại thì gửi application/octet-stream', async () => {
+    const { api, fetchMock } = setup(() => json({ success: true, data: null }));
+    await api('/u', { method: 'POST', body: new Blob(['x']) });
+    expect((fetchMock.mock.calls[0][1]!.headers as Record<string, string>)['content-type']).toBe('application/octet-stream');
+  });
+});
+
 describe('createApi: thành công', () => {
   it('bóc phong bì { success, data, meta } và ghép địa chỉ (bỏ dấu / thừa ở cuối base)', async () => {
     const { api, fetchMock } = setup(() => json({ success: true, data: [{ id: 1 }], meta: { pagination: { page: 1, pageSize: 8, total: 1, totalPages: 1 } } }));

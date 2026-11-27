@@ -31,7 +31,8 @@ model Category {
 
 model Product {
   id            String    @id @default(uuid(7)) @db.Uuid
-  categoryId    String    @map("category_id") @db.Uuid
+  /// Danh mục là tùy chọn: sản phẩm không có danh mục vẫn bán bình thường.
+  categoryId    String?   @map("category_id") @db.Uuid
   name          String
   slug          String    @unique
   sku           String?   @unique
@@ -45,7 +46,7 @@ model Product {
   deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6) // xóa mềm vì đơn cũ vẫn tham chiếu
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  category      Category  @relation(fields: [categoryId], references: [id])
+  category      Category? @relation(fields: [categoryId], references: [id])
   movements     StockMovement[]
 
   @@index([categoryId])

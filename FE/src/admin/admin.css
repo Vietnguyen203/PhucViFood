@@ -173,3 +173,16 @@
 }
 .ad-preview { width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 1px solid var(--ad-line); margin: 0 0 10px; background: #eee3d6; }
 .ad-shell a:focus-visible, .ad-shell button:focus-visible, .ad-shell select:focus-visible, .ad-login a:focus-visible, .ad-login button:focus-visible { outline: 3px solid var(--ad-gold); outline-offset: 2px; box-shadow: 0 0 0 5px var(--ad-primary-dark); }
+
+/* ───────── Form sản phẩm cân đối, ô tải ảnh ───────── */
+.ad-form-balanced { align-items: start; gap: 0 16px; }
+.ad-field input:disabled { background: #f3eadd; color: var(--ad-muted); }
+.ad-image-field { margin-bottom: 12px; }
+.ad-image-label { display: block; margin-bottom: 4px; font-size: 13px; font-weight: 600; }
+.ad-image-body { display: grid; grid-template-columns: 132px 1fr; gap: 16px; align-items: start; padding: 12px; border: 1px dashed #dfd0c6; border-radius: 14px; background: #fffdf9; }
+.ad-image-box { width: 132px; height: 132px; display: grid; place-items: center; border-radius: 12px; background: #eee3d6; overflow: hidden; color: var(--ad-muted); font-size: 13px; text-align: center; }
+.ad-image-box img { width: 100%; height: 100%; object-fit: cover; }
+.ad-image-actions { display: grid; gap: 8px; align-content: start; }
+.ad-image-actions .ad-field { margin: 4px 0 0; }
+@media (max-width: 600px) { .ad-image-body { grid-template-columns: 1fr; } .ad-image-box { width: 100%; height: 160px; } }
+.ad-image-actions .ad-link { justify-self: start; }

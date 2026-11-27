@@ -48,5 +48,7 @@ COPY --from=build --chown=node:node /app /app
 COPY --chown=node:node BE/infra/docker/entrypoint.sh /entrypoint.sh
 # Phòng checkout trên Windows làm script có CRLF.
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
+# Thư mục ảnh tải lên (catalog gắn volume vào đây); tạo sẵn và giao cho user node để volume mới nhận đúng quyền ghi.
+RUN mkdir -p /data/uploads && chown node:node /data/uploads
 USER node
 ENTRYPOINT ["/entrypoint.sh"]

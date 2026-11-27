@@ -1,13 +1,28 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString, IsUrl, IsUUID, Length, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, IsUUID, isURL, Length, Matches, Max, MaxLength, Min, registerDecorator, type ValidationOptions } from 'class-validator';
 import { IsSlug, trim, trimLower } from '../common/validators';
+import { UPLOAD_URL_RE } from '../uploads/image-files';
 
 const MAX_PRICE = 1_000_000_000; // 1 tỷ VND cho một sản phẩm là đủ rộng và an toàn trong JSON
+/** imageUrl hợp lệ: link http(s) đầy đủ, hoặc đường dẫn ảnh đã tải lên hệ thống (/api/public/uploads/<uuid>.<đuôi>). */
+function IsImageRef(options?: ValidationOptions) {
+  return (object: object, propertyName: string): void => {
+    registerDecorator({
+      name: 'isImageRef', target: object.constructor, propertyName, options,
+      validator: {
+        validate: (v: unknown) => typeof v === 'string' && v.length <= 500 && (UPLOAD_URL_RE.test(v) || isURL(v, { require_protocol: true, protocols: ['http', 'https'] })),
+        defaultMessage: () => 'imageUrl phải là link http(s) hoặc ảnh đã tải lên',
+      },
+    });
+  };
+}
+
 const SKU_RE = /^[A-Za-z0-9._-]{1,50}$/;
 
 export class CreateProductDto {
-  @IsUUID()
-  categoryId!: string;
+  /** Tùy chọn: không gửi hoặc null nghĩa là sản phẩm không thuộc danh mục nào. */
+  @IsOptional() @IsUUID()
+  categoryId?: string | null;
 
   @Transform(trim) @IsString() @Length(1, 200)
   name!: string;
@@ -34,7 +49,7 @@ export class CreateProductDto {
   @IsOptional() @IsInt() @Min(0) @Max(MAX_PRICE)
   originalPrice?: number;
 
-  @IsOptional() @IsUrl({ require_protocol: true, protocols: ['http', 'https'] }) @MaxLength(500)
+  @IsOptional() @IsImageRef()
   imageUrl?: string;
 
   /** Tồn đầu kỳ khi tạo. Sau đó chỉ đổi bằng điều chỉnh tồn kho hoặc theo đơn hàng. */
@@ -47,8 +62,9 @@ export class CreateProductDto {
 
 /** Không có stockQuantity: tồn kho chỉ đổi qua sổ cái (điều chỉnh, giữ hàng, trả hàng). */
 export class UpdateProductDto {
+  /** null để bỏ sản phẩm khỏi danh mục; không gửi thì giữ nguyên. */
   @IsOptional() @IsUUID()
-  categoryId?: string;
+  categoryId?: string | null;
 
   @IsOptional() @Transform(trim) @IsString() @Length(1, 200)
   name?: string;
@@ -71,7 +87,7 @@ export class UpdateProductDto {
   @IsOptional() @IsInt() @Min(0) @Max(MAX_PRICE)
   originalPrice?: number | null;
 
-  @IsOptional() @IsUrl({ require_protocol: true, protocols: ['http', 'https'] }) @MaxLength(500)
+  @IsOptional() @IsImageRef()
   imageUrl?: string;
 
   @IsOptional() @IsBoolean()

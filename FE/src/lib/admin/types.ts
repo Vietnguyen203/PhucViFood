@@ -2,7 +2,7 @@
 export interface AdminCategory { id: string; name: string; slug: string; sortOrder: number; isActive: boolean; createdAt: string }
 
 export interface AdminProduct {
-  id: string; categoryId: string; category: { id: string; name: string; slug: string } | null;
+  id: string; categoryId: string | null; category: { id: string; name: string; slug: string } | null;
   name: string; slug: string; sku: string | null; description: string | null; unit: string | null;
   price: number; originalPrice: number | null; discountPercent: number | null; imageUrl: string | null;
   stockQuantity: number; isVisible: boolean; createdAt: string; updatedAt: string;

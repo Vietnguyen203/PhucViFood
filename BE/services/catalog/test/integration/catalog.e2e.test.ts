@@ -1,7 +1,10 @@
 // Test tích hợp service catalog: Postgres (catalog_db) + RabbitMQ thật, gọi API qua HTTP thật.
 // Chạy: pnpm --filter @phucvi/catalog test:integration
 import { createServer, type Server } from 'node:http';
+import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import * as amqp from 'amqplib';
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -23,6 +26,7 @@ const enabled = process.env.RUN_INTEGRATION === '1';
 const DB_URL = process.env.CATALOG_DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5433/catalog_db';
 const RABBIT_URL = process.env.RABBITMQ_URL ?? 'amqp://phucvi:phucvi@localhost:5672';
 const INTERNAL_KEY = 'integration-internal-key-1234567890';
+const UPLOAD_DIR = mkdtempSync(join(tmpdir(), 'phucvi-uploads-it-'));
 const rand = (n = 6) => Math.random().toString(36).slice(2, 2 + n).padEnd(n, '0');
 
 
@@ -128,6 +132,7 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
       CATALOG_DATABASE_URL: DB_URL, RABBITMQ_URL: RABBIT_URL, JWT_PUBLIC_KEY: KEYS.publicKey,
       JWT_ISSUER: 'phucvi-it', INTERNAL_API_KEY: INTERNAL_KEY, CATALOG_EVENT_QUEUE: `catalog.it.${rand(8)}`, OUTBOX_RELAY_ENABLED: 'false',
       ORDERING_URL: `${ordering.url}/api`, ORPHAN_SWEEP_ENABLED: 'false', // test gọi runOnce() trực tiếp
+      UPLOAD_DIR,
       DOWNSTREAM_TIMEOUT_MS: '1500', DOWNSTREAM_BREAKER_THRESHOLD: '1000', DOWNSTREAM_RETRY_ATTEMPTS: '2', DOWNSTREAM_RETRY_BASE_MS: '10',
     });
     app = await NestFactory.create(AppModule.forRoot(config), { logger: false });
@@ -141,6 +146,7 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
   });
 
   afterAll(async () => {
+    rmSync(UPLOAD_DIR, { recursive: true, force: true });
     await prisma.$executeRawUnsafe(`DELETE FROM catalog.stock_movements WHERE product_id IN (SELECT id FROM catalog.products WHERE slug LIKE 'it-%')`);
     await prisma.$executeRawUnsafe(`DELETE FROM catalog.products WHERE slug LIKE 'it-%'`);
     await prisma.$executeRawUnsafe(`DELETE FROM catalog.categories WHERE slug LIKE 'it-%'`);
@@ -289,7 +295,104 @@ describe.skipIf(!enabled)('service catalog (HTTP + Postgres + RabbitMQ thật)',
   });
 
   // ═════════════════════════ Admin: sản phẩm ═════════════════════════
+  describe('ảnh sản phẩm tải lên', () => {
+    const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64, 7)]);
+    const upload = async (body: Buffer | string, contentType: string | null, token?: string) => {
+      const res = await fetch(`${base}/products/images`, {
+        method: 'POST',
+        headers: { ...(contentType ? { 'content-type': contentType } : {}), ...(token ? { authorization: `Bearer ${token}` } : {}) },
+        body: typeof body === 'string' ? body : new Uint8Array(body),
+      });
+      return { status: res.status, body: (await res.json()) as any };
+    };
+
+    it('admin tải ảnh PNG lên: trả đường dẫn công khai; mở được, đúng loại, cache lâu, không cho đoán loại', async () => {
+      const r = await upload(PNG, 'image/png', admin());
+      expect(r.status).toBe(201);
+      expect(r.body.data.url).toMatch(/^\/api\/public\/uploads\/[0-9a-f-]{36}\.png$/);
+      expect(r.body.data).toMatchObject({ size: PNG.length, contentType: 'image/png' });
+      const name = r.body.data.url.split('/').pop();
+      expect(readdirSync(UPLOAD_DIR)).toContain(name);
+
+      const got = await fetch(`${base}/public/uploads/${name}`); // công khai, không cần token
+      expect(got.status).toBe(200);
+      expect(got.headers.get('content-type')).toBe('image/png');
+      expect(got.headers.get('cache-control')).toContain('immutable');
+      expect(got.headers.get('x-content-type-options')).toBe('nosniff');
+      expect(Buffer.from(await got.arrayBuffer()).equals(PNG)).toBe(true);
+    });
+
+    it('từ chối: không đăng nhập, không phải ADMIN, loại không hỗ trợ, nội dung giả ảnh, rỗng, quá lớn', async () => {
+      expect((await upload(PNG, 'image/png')).status).toBe(401);
+      expect((await upload(PNG, 'image/png', token('AFFILIATE'))).status).toBe(403);
+      expect((await upload(PNG, 'application/json', admin())).status).toBe(400);
+      expect((await upload(PNG, null, admin())).status).toBe(400);
+      expect((await upload('<svg onload="alert(1)"></svg>', 'image/png', admin())).status).toBe(400); // khai PNG nhưng không phải
+      expect((await upload(PNG, 'image/jpeg', admin())).status).toBe(400); // khai JPEG nhưng là PNG
+      expect((await upload(Buffer.alloc(0), 'image/png', admin())).status).toBe(400);
+      const big = await upload(Buffer.concat([PNG, Buffer.alloc(1_048_576)]), 'image/png', admin());
+      expect(big.status).toBe(400);
+      expect(big.body.error.message).toBeDefined();
+    });
+
+    it('phục vụ ảnh: tên lạ, thoát thư mục, ảnh không có đều 404', async () => {
+      for (const name of ['abc.png', '..%2F..%2Fetc%2Fpasswd', '0190f4a2-7b3c-7d1e-9a2b-3c4d5e6f7a8b.png', '0190f4a2-7b3c-7d1e-9a2b-3c4d5e6f7a8b.svg']) {
+        expect((await fetch(`${base}/public/uploads/${name}`)).status, name).toBe(404);
+      }
+    });
+
+    it('sản phẩm dùng ảnh đã tải lên làm imageUrl; đường dẫn tương đối tùy ý bị từ chối', async () => {
+      const t = admin();
+      const url = (await upload(PNG, 'image/png', t)).body.data.url as string;
+      const key = rand(5);
+      const ok = await api('POST', '/products', { token: t, body: { name: `IT ${key} Có ảnh`, price: 10_000, stockQuantity: 1, imageUrl: url } });
+      expect(ok.status).toBe(201);
+      expect(ok.body.data.imageUrl).toBe(url);
+      expect((await api('GET', `/public/products/${ok.body.data.slug}`)).body.data.imageUrl).toBe(url);
+      for (const bad of ['/api/public/uploads/../x.png', '/etc/passwd', 'javascript:alert(1)', '/api/public/uploads/khong-phai-uuid.png']) {
+        const r = await api('POST', '/products', { token: t, body: { name: `IT ${rand(5)} Ảnh xấu`, price: 10_000, stockQuantity: 1, imageUrl: bad } });
+        expect(r.status, bad).toBe(400);
+      }
+      const link = await api('POST', '/products', { token: t, body: { name: `IT ${rand(5)} Ảnh link`, price: 10_000, stockQuantity: 1, imageUrl: 'https://cdn.example.com/a.jpg' } });
+      expect(link.status).toBe(201); // link http(s) vẫn dùng được
+    });
+  });
+
   describe('admin: sản phẩm', () => {
+    it('sản phẩm không bắt buộc có danh mục: tạo không kèm danh mục, hiện ở cửa hàng, giữ hàng được; gán rồi bỏ danh mục', async () => {
+      const t = admin();
+      const key = rand(5);
+      const created = await api('POST', '/products', { token: t, body: { name: `IT ${key} Không danh mục`, price: 50_000, stockQuantity: 5 } });
+      expect(created.status).toBe(201);
+      expect(created.body.data.categoryId).toBeNull();
+      expect(created.body.data.category).toBeUndefined();
+      const id = created.body.data.id;
+      const slug = created.body.data.slug;
+
+      // cửa hàng thấy sản phẩm (danh sách, theo slug), không có thông tin danh mục
+      const pub = await api('GET', `/public/products/${slug}`);
+      expect(pub.status).toBe(200);
+      expect(pub.body.data.category).toBeUndefined();
+      expect((await api('GET', `/public/products?q=${encodeURIComponent(`IT ${key}`)}`)).body.data.map((x: any) => x.id)).toContain(id);
+
+      // giữ hàng cho đơn (API nội bộ) hoạt động như sản phẩm có danh mục
+      const orderId = uuidv7();
+      expect((await reserve(orderId, [{ productId: id, quantity: 2 }])).status).toBe(200);
+      expect((await api('GET', `/products/${id}`, { token: t })).body.data.stockQuantity).toBe(3);
+      expect((await release(orderId)).status).toBe(200);
+
+      // gán danh mục rồi bỏ danh mục (null); danh mục không tồn tại bị từ chối
+      const cat = await dbCategory();
+      const assigned = await api('PATCH', `/products/${id}`, { token: t, body: { categoryId: cat.id } });
+      expect(assigned.body.data.category).toMatchObject({ id: cat.id });
+      expect((await api('PATCH', `/products/${id}`, { token: t, body: { categoryId: uuidv7() } })).status).toBe(400);
+      const cleared = await api('PATCH', `/products/${id}`, { token: t, body: { categoryId: null } });
+      expect(cleared.status).toBe(200);
+      expect(cleared.body.data.categoryId).toBeNull();
+      expect((await api('GET', `/public/products/${slug}`)).status).toBe(200);
+      expect((await api('GET', `/products?filter[categoryId]=${cat.id}&q=${encodeURIComponent(`IT ${key}`)}`, { token: t })).body.data).toEqual([]);
+    });
+
     it('tạo sản phẩm: slug tự sinh, giảm giá, tồn đầu kỳ ghi vào sổ cái', async () => {
       const t = admin();
       const cat = await dbCategory();
