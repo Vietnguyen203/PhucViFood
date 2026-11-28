@@ -1072,3 +1072,8 @@ a.home-circle-link:hover .home-circle { transform: translateY(-3px); box-shadow:
 .home-category-tabs button { padding: 8px 18px; border: 1px solid #e5d3b3; border-radius: 999px; background: #fff; color: #4a0a0d; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; transition: background 0.2s, color 0.2s; }
 .home-category-tabs button:hover { background: #fbf1dc; }
 .home-category-tabs button.active { background: #8f1d22; border-color: #8f1d22; color: #fff; }
+/* Hàng cuộn ngang trên điện thoại: ẩn thanh cuộn (vẫn vuốt được) */
+@media (max-width: 760px) {
+  .home-circles ul, .home-creator-row, .home-video-list { scrollbar-width: none; }
+  .home-circles ul::-webkit-scrollbar, .home-creator-row::-webkit-scrollbar, .home-video-list::-webkit-scrollbar { display: none; }
+}

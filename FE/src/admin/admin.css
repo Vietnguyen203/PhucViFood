@@ -31,7 +31,7 @@
 .ad-table tbody tr:hover { background: #fffaf2; }
 .ad-table .num, .ad-table th.num { text-align: right; white-space: nowrap; }
 .ad-table .actions { white-space: nowrap; text-align: right; }
-.ad-table td.actions { width: 1%; } /* cột nút thao tác vừa nội dung, các cột còn lại chia đều chỗ dư */
+@media (min-width: 601px) { .ad-table td.actions { width: 1%; } } /* cột nút thao tác vừa nội dung, các cột còn lại chia đều chỗ dư (điện thoại: bảng thành thẻ nên không áp dụng) */
 .ad-sort { background: none; border: 0; font: inherit; color: inherit; cursor: pointer; padding: 0; }
 .ad-muted { color: var(--ad-muted); }
 .ad-count { color: var(--ad-muted); margin: 8px 2px; }
@@ -213,3 +213,9 @@
 .ad-editor-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .ad-editor-zoom { display: flex; align-items: center; gap: 8px; flex: 1 1 160px; font-size: 13px; }
 .ad-editor-zoom input { flex: 1; min-width: 80px; }
+.ad-filters input[type=date] { min-width: 0; width: 100%; }
+@media (max-width: 600px) {
+  /* Ghi chú trong ô nhập (vd = 339.000 ₫) xuống dưới ô để không che chữ gợi ý */
+  .ad-note-input input { padding-right: 12px; }
+  .ad-note-input span { position: static; transform: none; display: block; margin-top: 4px; }
+}
