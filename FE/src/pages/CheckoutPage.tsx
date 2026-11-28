@@ -84,9 +84,9 @@ export default function CheckoutPage() {
       const order = await placeOrder(buildOrderPayload(form, cart, referral), idempotencyKey.current);
       try { sessionStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ code: order.code, phone: form.phone.trim() })); } catch { /* không lưu được thì khách tự nhập SĐT */ }
       clear();
-      // Đơn VNPay: chuyển khách sang cổng thanh toán ngay (rời trang; thanh toán xong cổng đưa về /thanh-toan/vnpay). Link lạ thì ở lại trang đơn để thanh toán lại.
+      // Đơn VNPay: chuyển khách sang cổng thanh toán ngay (rời trang; thanh toán xong cổng đưa về /checkout/vnpay). Link lạ thì ở lại trang đơn để thanh toán lại.
       if (order.paymentUrl && isPaymentGatewayUrl(order.paymentUrl)) { window.location.assign(order.paymentUrl); return; }
-      navigate(`/don-hang/${order.code}`, { replace: true, state: { justPlaced: true } });
+      navigate(`/orders/${order.code}`, { replace: true, state: { justPlaced: true } });
     } catch (e) {
       if (e instanceof ApiError) {
         if (e.code === "VALIDATION_FAILED") setErrors((prev) => ({ ...prev, ...mapServerFieldErrors(e.details) }));

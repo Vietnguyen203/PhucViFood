@@ -3,9 +3,9 @@ import { bannerTarget, DEFAULT_MAIN_BANNERS } from './banner';
 
 describe('đích bấm của banner', () => {
   it('trang trong cửa hàng', () => {
-    expect(bannerTarget('/san-pham/kho-ca-loc')).toEqual({ kind: 'internal', to: '/san-pham/kho-ca-loc' });
+    expect(bannerTarget('/products/kho-ca-loc')).toEqual({ kind: 'internal', to: '/products/kho-ca-loc' });
     expect(bannerTarget('/#best-sellers')).toEqual({ kind: 'internal', to: '/#best-sellers' });
-    expect(bannerTarget('  /danh-muc/tra  ')).toEqual({ kind: 'internal', to: '/danh-muc/tra' });
+    expect(bannerTarget('  /categories/tra  ')).toEqual({ kind: 'internal', to: '/categories/tra' });
   });
   it('link ngoài http(s)', () => {
     expect(bannerTarget('https://shop.example.vn/km')).toEqual({ kind: 'external', href: 'https://shop.example.vn/km' });

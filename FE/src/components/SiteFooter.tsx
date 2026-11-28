@@ -27,17 +27,17 @@ export function HomeFooter() {
           <strong>Khám phá</strong>
           <a href="/#categories">Danh mục sản phẩm</a>
           <a href="/#best-sellers">Sản phẩm bán chạy</a>
-          <Link to="/thong-tin/gioi-thieu">Câu chuyện Phúc Vị</Link>
-          <Link to="/tin-tuc">Tin tức & Blog</Link>
+          <Link to="/info/about">Câu chuyện Phúc Vị</Link>
+          <Link to="/news">Tin tức & Blog</Link>
         </div>
         <div className="home-footer-column">
           <strong>Hỗ trợ khách hàng</strong>
-          <Link to="/thong-tin/giao-hang">Chính sách giao hàng</Link>
-          <Link to="/thong-tin/doi-tra">Chính sách đổi trả</Link>
-          <Link to="/thong-tin/thanh-toan">Hướng dẫn thanh toán</Link>
-          <Link to="/thong-tin/lien-he">Liên hệ</Link>
-          <Link to="/thong-tin/gioi-thieu">Về Phúc Vị</Link>
-          <Link to="/ctv">Chương trình CTV</Link>
+          <Link to="/info/shipping">Chính sách giao hàng</Link>
+          <Link to="/info/returns">Chính sách đổi trả</Link>
+          <Link to="/info/checkout">Hướng dẫn thanh toán</Link>
+          <Link to="/info/contact">Liên hệ</Link>
+          <Link to="/info/about">Về Phúc Vị</Link>
+          <Link to="/affiliate">Chương trình CTV</Link>
         </div>
         <div className="home-footer-column home-contact">
           <strong>Liên hệ</strong>

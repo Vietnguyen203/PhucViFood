@@ -7,7 +7,7 @@ import { useDocumentTitle } from "../lib/pageTitle";
 import { NotFoundPage } from "./InfoPages";
 import "../home.css";
 
-/** Danh sách bài viết: /tin-tuc */
+/** Danh sách bài viết: /news */
 export function NewsListPage() {
   useDocumentTitle("Tin tức");
   return (
@@ -18,14 +18,14 @@ export function NewsListPage() {
         <div className="home-article-grid">
           {articles.map((a) => (
             <article className="home-article-card" key={a.slug}>
-              <Link to={`/tin-tuc/${a.slug}`} className="home-article-image">
+              <Link to={`/news/${a.slug}`} className="home-article-image">
                 <img src={a.image} alt={a.title} />
                 <span>Đọc bài viết</span>
               </Link>
               <div className="home-article-meta"><span>{a.category}</span><i /><time>{a.date}</time></div>
               <h3>{a.title}</h3>
               <p>{a.excerpt}</p>
-              <Link to={`/tin-tuc/${a.slug}`}>Xem chi tiết <HomeIcon name="arrow" size={15} /></Link>
+              <Link to={`/news/${a.slug}`}>Xem chi tiết <HomeIcon name="arrow" size={15} /></Link>
             </article>
           ))}
         </div>
@@ -35,7 +35,7 @@ export function NewsListPage() {
   );
 }
 
-/** Chi tiết bài viết: /tin-tuc/:slug */
+/** Chi tiết bài viết: /news/:slug */
 export function NewsDetailPage() {
   const { slug = "" } = useParams();
   const article = findArticle(slug);
@@ -46,7 +46,7 @@ export function NewsDetailPage() {
     <div className="home-page">
       <HomeHeader />
       <main className="shop-page shop-article">
-        <p className="shop-muted"><Link to="/">Trang chủ</Link> / <Link to="/tin-tuc">Tin tức</Link> / <span>{article.title}</span></p>
+        <p className="shop-muted"><Link to="/">Trang chủ</Link> / <Link to="/news">Tin tức</Link> / <span>{article.title}</span></p>
         <div className="home-article-meta"><span>{article.category}</span><i /><time>{article.date}</time></div>
         <h1 className="shop-title">{article.title}</h1>
         <img className="shop-article-cover" src={article.image} alt={article.title} />
@@ -62,7 +62,7 @@ export function NewsDetailPage() {
         </div>
         <h2 className="shop-article-more">Bài viết khác</h2>
         <ul className="shop-article-list">
-          {others.map((a) => <li key={a.slug}><Link to={`/tin-tuc/${a.slug}`}>{a.title}</Link> <span className="shop-muted">· {a.date}</span></li>)}
+          {others.map((a) => <li key={a.slug}><Link to={`/news/${a.slug}`}>{a.title}</Link> <span className="shop-muted">· {a.date}</span></li>)}
         </ul>
       </main>
       <HomeFooter />

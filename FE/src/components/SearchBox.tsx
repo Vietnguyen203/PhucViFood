@@ -46,8 +46,8 @@ export function SearchBox({ onClose }: { onClose: () => void }) {
 
   function onSubmit(ev: FormEvent) {
     ev.preventDefault();
-    if (open && active >= 0 && items[active]) return go(`/san-pham/${encodeURIComponent(items[active].slug)}`);
-    if (q) go(`/tim-kiem?q=${encodeURIComponent(q)}`);
+    if (open && active >= 0 && items[active]) return go(`/products/${encodeURIComponent(items[active].slug)}`);
+    if (q) go(`/search?q=${encodeURIComponent(q)}`);
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -72,14 +72,14 @@ export function SearchBox({ onClose }: { onClose: () => void }) {
           {items.length === 0 && <li className="shop-suggest-empty" role="option" aria-selected="false">Không có sản phẩm khớp "{q}"</li>}
           {items.map((p, i) => (
             <li key={p.id} id={`${listId}-${i}`} role="option" aria-selected={i === active} className={i === active ? "active" : ""}
-              onMouseEnter={() => setActive(i)} onMouseDown={(e) => { e.preventDefault(); go(`/san-pham/${encodeURIComponent(p.slug)}`); }}>
+              onMouseEnter={() => setActive(i)} onMouseDown={(e) => { e.preventDefault(); go(`/products/${encodeURIComponent(p.slug)}`); }}>
               <img src={p.imageUrl ?? PRODUCT_PLACEHOLDER} alt="" />
               <span>{p.name}</span>
               <b>{formatVnd(p.price)}</b>
             </li>
           ))}
           {items.length > 0 && (
-            <li className="shop-suggest-all" role="option" aria-selected="false" onMouseDown={(e) => { e.preventDefault(); go(`/tim-kiem?q=${encodeURIComponent(q)}`); }}>
+            <li className="shop-suggest-all" role="option" aria-selected="false" onMouseDown={(e) => { e.preventDefault(); go(`/search?q=${encodeURIComponent(q)}`); }}>
               Xem tất cả kết quả cho "{q}"
             </li>
           )}

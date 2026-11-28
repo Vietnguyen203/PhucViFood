@@ -24,8 +24,8 @@ function ShortcutForm({ shortcut, onClose, onSaved }: { shortcut?: AdminShortcut
             <Field label="Tên hiển thị *" error={err.title}><input value={f.title} onChange={(e) => set("title", e.target.value)} maxLength={40} autoFocus placeholder="Ngắn gọn, vd Công thức, Mẹo vặt" /></Field>
             <Field label="Thứ tự (nhỏ hiện trước)" error={err.sortOrder}><input value={f.sortOrder} onChange={(e) => set("sortOrder", e.target.value)} inputMode="numeric" /></Field>
           </div>
-          <Field label="Bấm vào đi đâu" error={err.linkUrl} hint="Đường dẫn trang trong cửa hàng (vd /tin-tuc, /danh-muc/kho-ca) hoặc link http(s) tới bài viết. Bỏ trống thì ô chỉ để xem.">
-            <input value={f.linkUrl} onChange={(e) => set("linkUrl", e.target.value)} maxLength={300} placeholder="/tin-tuc/ten-bai-viet" />
+          <Field label="Bấm vào đi đâu" error={err.linkUrl} hint="Đường dẫn trang trong cửa hàng (vd /news, /categories/kho-ca) hoặc link http(s) tới bài viết. Bỏ trống thì ô chỉ để xem.">
+            <input value={f.linkUrl} onChange={(e) => set("linkUrl", e.target.value)} maxLength={300} placeholder="/news/ten-bai-viet" />
           </Field>
           <ImageField label="Ảnh biểu tượng *" value={f.imageUrl} onChange={(v) => set("imageUrl", v)} error={err.imageUrl} maxSide={400} aspect="1:1" hint="Hiện trong vòng tròn; dùng ảnh vuông, biểu tượng ở giữa." />
           <label className="ad-check"><input type="checkbox" checked={f.isActive} onChange={(e) => set("isActive", e.target.checked)} /> Đang bật (hiện ở trang chủ)</label>

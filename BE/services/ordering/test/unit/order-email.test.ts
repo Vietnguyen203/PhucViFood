@@ -14,8 +14,8 @@ describe('thư xác nhận đơn', () => {
   it('tiêu đề, người nhận và link theo dõi', () => {
     expect(m.to).toBe('khach@example.com');
     expect(m.subject).toBe('Phúc Vị Foods: đã nhận đơn PV-261127-AB12');
-    expect(m.html).toContain('href="https://phucvifoods.vn/don-hang/PV-261127-AB12"');
-    expect(m.text).toContain('https://phucvifoods.vn/don-hang/PV-261127-AB12');
+    expect(m.html).toContain('href="https://phucvifoods.vn/orders/PV-261127-AB12"');
+    expect(m.text).toContain('https://phucvifoods.vn/orders/PV-261127-AB12');
   });
   it('có sản phẩm, tiền, địa chỉ và hướng dẫn chuyển khoản', () => {
     for (const part of ['240.000₫', '30.000₫', '270.000₫', 'Vietcombank', '0123456789', 'PV-261127-AB12']) {

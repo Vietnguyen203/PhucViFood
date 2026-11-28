@@ -118,7 +118,7 @@ function PartnerCTA() {
       <div className="home-cta-action">
         <strong>Hoa hồng cố định 10%</strong>
         <small>Thanh toán mỗi tuần</small>
-        <Link to="/ctv">
+        <Link to="/affiliate">
           Khám phá chương trình CTV <HomeIcon name="arrow" size={17} />
         </Link>
       </div>

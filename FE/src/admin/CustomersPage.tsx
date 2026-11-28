@@ -89,7 +89,7 @@ export default function CustomersPage() {
             <tbody>
               {list.data.items.map((c) => (
                 <tr key={c.id}>
-                  <td><Link className="ad-link" to={`/admin/khach-hang/${c.id}`}><b>{c.fullName}</b></Link><div className="ad-muted">{c.phone}</div></td>
+                  <td><Link className="ad-link" to={`/admin/customers/${c.id}`}><b>{c.fullName}</b></Link><div className="ad-muted">{c.phone}</div></td>
                   <td>{c.province ?? "—"}</td>
                   <td className="num">{c.orders ? c.orders.validOrders : "—"}</td>
                   <td className="num">{c.orders ? formatVnd(c.orders.totalSpent) : "—"}</td>

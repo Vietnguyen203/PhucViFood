@@ -11,7 +11,7 @@ export function ProductCard({ product }: { product: Product }) {
   const { add } = useCart();
   const wish = useWishlist();
   const liked = wish.has(product.id);
-  const to = `/san-pham/${encodeURIComponent(product.slug)}`;
+  const to = `/products/${encodeURIComponent(product.slug)}`;
   return (
     <article className="home-product-card">
       <div className="home-product-image">

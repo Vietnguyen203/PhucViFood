@@ -47,7 +47,7 @@ export default function OverviewPage() {
             <div className="ad-card" key={k}><div className="ad-muted">{COMMISSION_STATUS_LABEL[k]}</div><h1 style={{ margin: "4px 0" }}>{formatVnd(s.byStatus[k]?.amount ?? 0)}</h1><small className="ad-muted">{s.byStatus[k]?.count ?? 0} đơn</small></div>
           ))}
           {s.pendingAdjustments.count > 0 && (
-            <div className="ad-card"><div className="ad-muted">Khoản trừ chờ</div><h1 style={{ margin: "4px 0", color: "#c0392b" }}>−{formatVnd(s.pendingAdjustments.amount)}</h1><small className="ad-muted">Đơn hoàn sau khi đã chi, trừ vào đợt tới. <Link className="ad-link" to="/ctv/tai-khoan/chi-tra">Xem</Link></small></div>
+            <div className="ad-card"><div className="ad-muted">Khoản trừ chờ</div><h1 style={{ margin: "4px 0", color: "#c0392b" }}>−{formatVnd(s.pendingAdjustments.amount)}</h1><small className="ad-muted">Đơn hoàn sau khi đã chi, trừ vào đợt tới. <Link className="ad-link" to="/affiliate/account/payouts">Xem</Link></small></div>
           )}
         </div>
       )}
@@ -96,7 +96,7 @@ export default function OverviewPage() {
               </table>
             </div>
           )}
-          {stats.data.clicks.total === 0 && <p className="ad-muted">Chưa có lượt bấm trong khoảng này. Chia sẻ <Link className="ad-link" to="/ctv/tai-khoan/link">link giới thiệu</Link> để bắt đầu.</p>}
+          {stats.data.clicks.total === 0 && <p className="ad-muted">Chưa có lượt bấm trong khoảng này. Chia sẻ <Link className="ad-link" to="/affiliate/account/links">link giới thiệu</Link> để bắt đầu.</p>}
         </>
       )}
     </>

@@ -49,7 +49,7 @@ export class PasswordResetService {
     await this.prisma.passwordResetToken.create({
       data: { userId: user.id, tokenHash: sha256(token), expiresAt: new Date(Date.now() + this.config.resetTtlMinutes * 60_000) },
     });
-    const link = `${this.config.mail.publicBaseUrl}/dat-lai-mat-khau?token=${encodeURIComponent(token)}`;
+    const link = `${this.config.mail.publicBaseUrl}/reset-password?token=${encodeURIComponent(token)}`;
     // Gửi nền: thời gian phản hồi không khác nhau giữa email có và không có tài khoản.
     void sendSafely(this.mailer, buildResetMail(user.email, link, this.config.resetTtlMinutes), (e) => this.logger.warn(`Không gửi được thư đặt lại mật khẩu: ${e instanceof Error ? e.message : e}`));
     return { sent: true };

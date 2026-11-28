@@ -4,7 +4,7 @@ Web bán thực phẩm có chương trình cộng tác viên (CTV/affiliate). B�
 
 ## Quy ước
 - Trả lời tiếng Việt, ngắn gọn, có cấu trúc.
-- Tên bảng/cột/biến bằng tiếng Anh; comment và tài liệu bằng tiếng Việt.
+- Tên bảng/cột/biến và đường dẫn URL (cả API lẫn trang web) bằng tiếng Anh; comment và tài liệu bằng tiếng Việt. Nội dung hiển thị cho người dùng vẫn tiếng Việt.
 - Chỉ commit khi người dùng nói rõ. Không push. Không sửa file `.env`.
 - HwinGroup (`C:\Users\Admin\Desktop\HwinGroup`) chỉ để tham khảo, không sao chép.
 

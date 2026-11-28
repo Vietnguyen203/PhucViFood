@@ -14,8 +14,8 @@ import { ProfileForm } from "./ProfilePage";
 import "../admin/admin.css";
 
 const NAV: Array<[string, string]> = [
-  ["/ctv/tai-khoan", "Tổng quan"], ["/ctv/tai-khoan/link", "Link giới thiệu"], ["/ctv/tai-khoan/hoa-hong", "Hoa hồng"],
-  ["/ctv/tai-khoan/chi-tra", "Chi trả và khoản trừ"], ["/ctv/tai-khoan/don-hang", "Đơn hàng"], ["/ctv/tai-khoan/ho-so", "Hồ sơ"],
+  ["/affiliate/account", "Tổng quan"], ["/affiliate/account/links", "Link giới thiệu"], ["/affiliate/account/commissions", "Hoa hồng"],
+  ["/affiliate/account/payouts", "Chi trả và khoản trừ"], ["/affiliate/account/orders", "Đơn hàng"], ["/affiliate/account/profile", "Hồ sơ"],
 ];
 
 function Shell() {
@@ -34,7 +34,7 @@ function Shell() {
       throw e;
     }
   }, [session?.user.id]);
-  if (!session) return <Navigate to="/dang-nhap" replace />;
+  if (!session) return <Navigate to="/login" replace />;
 
   const profile = state.data;
   const active = profile?.status === "ACTIVE";
@@ -44,8 +44,8 @@ function Shell() {
         <Link className="ad-brand" to="/" title="Về trang chủ cửa hàng" aria-label="Phúc Vị Cộng tác viên, về trang chủ cửa hàng">Phúc Vị <small>Cộng tác viên</small></Link>
         <nav onClick={() => setOpen(false)}>
           <div>
-            {active && NAV.map(([to, label]) => <NavLink key={to} to={to} end={to === "/ctv/tai-khoan"} className={({ isActive }) => (isActive ? "active" : "")}>{label}</NavLink>)}
-            {!active && <NavLink to="/ctv/tai-khoan" className="active">Hồ sơ</NavLink>}
+            {active && NAV.map(([to, label]) => <NavLink key={to} to={to} end={to === "/affiliate/account"} className={({ isActive }) => (isActive ? "active" : "")}>{label}</NavLink>)}
+            {!active && <NavLink to="/affiliate/account" className="active">Hồ sơ</NavLink>}
             <Link to="/">← Về cửa hàng</Link>
           </div>
         </nav>

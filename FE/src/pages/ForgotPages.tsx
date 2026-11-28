@@ -59,7 +59,7 @@ export function ForgotPasswordPage() {
     return (
       <Shell title="Kiểm tra email của bạn">
         <p className="shop-note" role="status">Nếu <b>{email.trim()}</b> có tài khoản, chúng tôi vừa gửi một liên kết đặt lại mật khẩu (có hiệu lực 60 phút). Hãy kiểm tra cả thư mục thư rác.</p>
-        <p className="shop-auth-links"><Link to="/dang-nhap">Quay lại đăng nhập</Link></p>
+        <p className="shop-auth-links"><Link to="/login">Quay lại đăng nhập</Link></p>
       </Shell>
     );
   }
@@ -70,7 +70,7 @@ export function ForgotPasswordPage() {
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" autoFocus />
         </Field>
         <button className="shop-btn primary" type="submit" disabled={busy}>{busy ? "Đang gửi..." : "Gửi liên kết đặt lại"}</button>
-        <p className="shop-auth-links"><Link to="/dang-nhap">Quay lại đăng nhập</Link></p>
+        <p className="shop-auth-links"><Link to="/login">Quay lại đăng nhập</Link></p>
       </form>
     </Shell>
   );
@@ -100,7 +100,7 @@ export function ResetPasswordPage() {
     setBusy(true);
     try {
       await api("/auth/reset-password", { method: "POST", body: { token, newPassword: password } });
-      navigate("/dang-nhap", { replace: true, state: { passwordReset: true } });
+      navigate("/login", { replace: true, state: { passwordReset: true } });
     } catch (e) {
       setMessage(e instanceof ApiError && e.status === 400 ? "Liên kết không hợp lệ hoặc đã hết hạn." : describeError(e));
     } finally { setBusy(false); }
@@ -110,7 +110,7 @@ export function ResetPasswordPage() {
     return (
       <Shell title="Liên kết không hợp lệ">
         <p className="shop-error" role="alert">Liên kết đặt lại mật khẩu thiếu hoặc không đúng.</p>
-        <p className="shop-auth-links"><Link to="/quen-mat-khau">Yêu cầu liên kết mới</Link></p>
+        <p className="shop-auth-links"><Link to="/forgot-password">Yêu cầu liên kết mới</Link></p>
       </Shell>
     );
   }
@@ -123,7 +123,7 @@ export function ResetPasswordPage() {
         <Field label="Nhập lại mật khẩu mới" error={errors.confirm}>
           <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
         </Field>
-        {message && <p className="shop-error" role="alert">{message} <Link to="/quen-mat-khau">Yêu cầu liên kết mới</Link></p>}
+        {message && <p className="shop-error" role="alert">{message} <Link to="/forgot-password">Yêu cầu liên kết mới</Link></p>}
         <button className="shop-btn primary" type="submit" disabled={busy}>{busy ? "Đang lưu..." : "Đặt mật khẩu"}</button>
       </form>
     </Shell>

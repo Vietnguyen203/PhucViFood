@@ -15,7 +15,7 @@ export default function VnpayResultPage() {
   const valid = hasVnpayParams(search);
   const { data, loading, error } = useAsync((signal) => (valid ? confirmVnpay(search, signal) : Promise.resolve(null)), [search]);
   const code = data?.orderCode ?? null;
-  const orderLink = code ? `/don-hang/${encodeURIComponent(code)}` : "/don-hang";
+  const orderLink = code ? `/orders/${encodeURIComponent(code)}` : "/orders";
 
   return (
     <div className="home-page">
@@ -26,14 +26,14 @@ export default function VnpayResultPage() {
           {!valid ? (
             <>
               <p>Không tìm thấy thông tin thanh toán. Nếu bạn vừa thanh toán, hãy tra cứu đơn hàng để kiểm tra.</p>
-              <Link className="shop-btn primary" to="/don-hang">Tra cứu đơn hàng</Link>
+              <Link className="shop-btn primary" to="/orders">Tra cứu đơn hàng</Link>
             </>
           ) : loading ? (
             <p>Đang xác nhận thanh toán...</p>
           ) : error ? (
             <>
               <p>{describeError(error, "Chưa xác nhận được kết quả thanh toán.")} Nếu tài khoản ngân hàng đã bị trừ tiền, đơn sẽ được cập nhật trong ít phút; bạn có thể tra cứu đơn để kiểm tra.</p>
-              <Link className="shop-btn primary" to="/don-hang">Tra cứu đơn hàng</Link>
+              <Link className="shop-btn primary" to="/orders">Tra cứu đơn hàng</Link>
             </>
           ) : data?.success ? (
             <>

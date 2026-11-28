@@ -16,7 +16,7 @@ const SORTS: Array<{ value: NonNullable<ProductQuery["sort"]>; label: string }> 
   { value: "-createdAt", label: "Mới nhất" }, { value: "price", label: "Giá tăng dần" }, { value: "-price", label: "Giá giảm dần" }, { value: "name", label: "Tên A → Z" },
 ];
 
-/** Sản phẩm theo danh mục: /danh-muc/{slug}?sort=... Danh mục không tồn tại hoặc đã tắt thì báo không tìm thấy. */
+/** Sản phẩm theo danh mục: /categories/{slug}?sort=... Danh mục không tồn tại hoặc đã tắt thì báo không tìm thấy. */
 export default function CategoryPage() {
   const { slug = "" } = useParams();
   const [params, setParams] = useSearchParams();

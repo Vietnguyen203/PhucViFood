@@ -190,7 +190,7 @@ export default function OrderPage() {
       if (ctl.signal.aborted) return;
       setOrder(found);
       try { sessionStorage.setItem(LAST_ORDER_KEY, JSON.stringify({ code: found.code, phone: p.trim() })); } catch { /* bỏ qua */ }
-      if (!codeParam || codeParam.toUpperCase() !== found.code) navigate(`/don-hang/${found.code}`, { replace: true });
+      if (!codeParam || codeParam.toUpperCase() !== found.code) navigate(`/orders/${found.code}`, { replace: true });
     } catch (e) {
       if (ctl.signal.aborted) return;
       setOrder(null);
@@ -238,7 +238,7 @@ export default function OrderPage() {
         {order && (
           <>
             <OrderDetail order={order} phone={phone || remembered?.phone || ""} onChange={setOrder} />
-            <p><button className="shop-link" onClick={() => { setOrder(null); setCode(""); navigate("/don-hang"); }}>Tra cứu đơn khác</button> · <Link className="shop-link" to="/">Về trang chủ</Link></p>
+            <p><button className="shop-link" onClick={() => { setOrder(null); setCode(""); navigate("/orders"); }}>Tra cứu đơn khác</button> · <Link className="shop-link" to="/">Về trang chủ</Link></p>
           </>
         )}
       </main>

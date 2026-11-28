@@ -41,8 +41,8 @@ export function toOrderCookie(r: StoredReferral): OrderCookie {
   return { code: r.code, ...(r.channelCode ? { channelCode: r.channelCode } : {}), clickedAt: r.clickedAt, maxAgeDays: r.maxAgeDays };
 }
 
-/** Nơi đưa khách tới sau khi ghi nhận link giới thiệu: chỉ trang sản phẩm trong cửa hàng (`to=/san-pham/{slug}`), còn lại về trang chủ.
+/** Nơi đưa khách tới sau khi ghi nhận link giới thiệu: chỉ trang sản phẩm trong cửa hàng (`to=/products/{slug}`), còn lại về trang chủ.
  *  Không nhận địa chỉ tùy ý để link giới thiệu không bị lợi dụng làm link chuyển hướng. */
 export function landingTarget(to: string | null | undefined): string {
-  return typeof to === 'string' && /^\/san-pham\/[a-z0-9-]{1,120}$/.test(to) ? to : '/';
+  return typeof to === 'string' && /^\/products\/[a-z0-9-]{1,120}$/.test(to) ? to : '/';
 }

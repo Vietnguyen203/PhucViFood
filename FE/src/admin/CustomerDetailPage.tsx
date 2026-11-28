@@ -46,11 +46,11 @@ export default function CustomerDetailPage() {
   const c = local && local.id === id ? local : state.data;
 
   if (state.loading && !c) return <Loading loading />;
-  if (!c) return <><p><Link className="ad-link" to="/admin/khach-hang">← Khách hàng</Link></p><ErrorBox error={state.error} onRetry={state.reload} /></>;
+  if (!c) return <><p><Link className="ad-link" to="/admin/customers">← Khách hàng</Link></p><ErrorBox error={state.error} onRetry={state.reload} /></>;
 
   return (
     <>
-      <p><Link className="ad-link" to="/admin/khach-hang">← Khách hàng</Link></p>
+      <p><Link className="ad-link" to="/admin/customers">← Khách hàng</Link></p>
       <div className="ad-head">
         <h1>{c.fullName} {c.tier && <Badge tone={tierTone(c.tier)}>{TIER_LABEL[c.tier] ?? c.tier}</Badge>} {c.activity && <Badge tone={activityTone(c.activity)}>{ACTIVITY_LABEL[c.activity] ?? c.activity}</Badge>}</h1>
         <button className="ad-btn" onClick={() => setEdit(true)}>Sửa thông tin</button>
@@ -88,7 +88,7 @@ export default function CustomerDetailPage() {
         <div className="ad-table-wrap">
           <table className="ad-table">
             <thead><tr><th>Mã đơn</th><th>Đặt lúc</th><th className="num">Tổng tiền</th><th>Trạng thái</th></tr></thead>
-            <tbody>{orders.data.items.map((o) => <tr key={o.id}><td><Link className="ad-link" to={`/admin/don-hang/${o.id}`}><b>{o.code}</b></Link></td><td>{fmtDateTime(o.placedAt)}</td><td className="num">{formatVnd(o.totalAmount)}</td><td><Badge tone={statusTone(o.status)}>{ORDER_STATUS_LABEL[o.status]}</Badge></td></tr>)}</tbody>
+            <tbody>{orders.data.items.map((o) => <tr key={o.id}><td><Link className="ad-link" to={`/admin/orders/${o.id}`}><b>{o.code}</b></Link></td><td>{fmtDateTime(o.placedAt)}</td><td className="num">{formatVnd(o.totalAmount)}</td><td><Badge tone={statusTone(o.status)}>{ORDER_STATUS_LABEL[o.status]}</Badge></td></tr>)}</tbody>
           </table>
         </div>
       )}

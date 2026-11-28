@@ -16,7 +16,7 @@ const SORTS: Array<{ value: NonNullable<ProductQuery["sort"]>; label: string }> 
   { value: "-createdAt", label: "Mới nhất" }, { value: "price", label: "Giá tăng dần" }, { value: "-price", label: "Giá giảm dần" }, { value: "name", label: "Tên A → Z" },
 ];
 
-/** Kết quả tìm kiếm: /tim-kiem?q=từ khóa&sort=... Từ khóa nằm trên đường dẫn nên chia sẻ và tải lại được. */
+/** Kết quả tìm kiếm: /search?q=từ khóa&sort=... Từ khóa nằm trên đường dẫn nên chia sẻ và tải lại được. */
 export default function SearchPage() {
   const [params, setParams] = useSearchParams();
   const q = normalizeSearch(params.get("q"));

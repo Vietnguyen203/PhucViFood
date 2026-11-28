@@ -11,6 +11,8 @@ import CTVPage from "./pages/CTVPage";
 import HomePage from "./pages/HomePage";
 import { InfoPage, NotFoundPage } from "./pages/InfoPages";
 import OrderPage from "./pages/OrderPage";
+import { LegacyInfoRedirect, LegacyRedirect } from "./components/LegacyRedirect";
+import { LEGACY_REDIRECTS } from "./lib/legacyRoutes";
 import VnpayResultPage from "./pages/VnpayResultPage";
 import ProductPage from "./pages/ProductPage";
 import ReferralLanding from "./pages/ReferralLanding";
@@ -31,31 +33,32 @@ const router = createBrowserRouter([
     Component: RootLayout,
     children: [
       { path: "/", Component: HomePage },
-      { path: "/ctv", Component: CTVPage },
-      { path: "/san-pham/:slug", Component: ProductPage },
-      { path: "/tim-kiem", Component: SearchPage },
-      { path: "/danh-muc/:slug", Component: CategoryPage },
-      { path: "/gio-hang", Component: CartPage },
-      { path: "/yeu-thich", Component: WishlistPage },
-      { path: "/tin-tuc", Component: NewsListPage },
-      { path: "/tin-tuc/:slug", Component: NewsDetailPage },
-      { path: "/dang-nhap", Component: LoginPage },
-      { path: "/dang-ky", Component: RegisterPage },
-      { path: "/quen-mat-khau", Component: ForgotPasswordPage },
-      { path: "/dat-lai-mat-khau", Component: ResetPasswordPage },
-      // Đường dẫn đăng nhập cũ của từng khu: dùng chung một trang đăng nhập
-      { path: "/ctv/dang-nhap", element: <Navigate to="/dang-nhap" replace /> },
-      { path: "/ctv/dang-ky", Component: RegisterPartnerPage },
-      { path: "/tai-khoan", Component: AccountPage },
-      { path: "/thong-tin/:page", Component: InfoPage },
-      { path: "/thanh-toan", Component: CheckoutPage },
+      { path: "/affiliate", Component: CTVPage },
+      { path: "/products/:slug", Component: ProductPage },
+      { path: "/search", Component: SearchPage },
+      { path: "/categories/:slug", Component: CategoryPage },
+      { path: "/cart", Component: CartPage },
+      { path: "/wishlist", Component: WishlistPage },
+      { path: "/news", Component: NewsListPage },
+      { path: "/news/:slug", Component: NewsDetailPage },
+      { path: "/login", Component: LoginPage },
+      { path: "/register", Component: RegisterPage },
+      { path: "/forgot-password", Component: ForgotPasswordPage },
+      { path: "/reset-password", Component: ResetPasswordPage },
+      { path: "/affiliate/register", Component: RegisterPartnerPage },
+      { path: "/account", Component: AccountPage },
+      { path: "/info/:page", Component: InfoPage },
+      { path: "/checkout", Component: CheckoutPage },
       // Cổng VNPay đưa khách về đây sau khi thanh toán.
-      { path: "/thanh-toan/vnpay", Component: VnpayResultPage },
+      { path: "/checkout/vnpay", Component: VnpayResultPage },
       // Tra cứu đơn bằng mã đơn + SĐT; có mã trên đường dẫn thì tự tra cứu khi vừa đặt hàng xong.
-      { path: "/don-hang/:code?", Component: OrderPage },
+      { path: "/orders/:code?", Component: OrderPage },
       // Link giới thiệu của cộng tác viên: /r/{mã}?c={kênh}
       { path: "/r/:code", Component: ReferralLanding },
-      // Đường dẫn lạ: báo không tìm thấy (các khu /admin và /ctv/... khớp cụ thể hơn nên không bị ảnh hưởng).
+      // Đường dẫn lạ: báo không tìm thấy (các khu /admin và /affiliate/... khớp cụ thể hơn nên không bị ảnh hưởng).
+      // Đường dẫn cũ (tiếng Việt) chuyển sang đường dẫn mới; trang thông tin đổi cả khóa.
+      { path: "/thong-tin/:page", Component: LegacyInfoRedirect },
+      ...LEGACY_REDIRECTS.map(([from, to]) => ({ path: from, element: <LegacyRedirect to={to} /> })),
       { path: "*", Component: NotFoundPage },
     ],
   },
@@ -64,48 +67,48 @@ const router = createBrowserRouter([
     path: "/admin",
     ...admin(() => import("./admin/AdminLayout").then((m) => ({ default: m.AdminRoot }))),
     children: [
-      { path: "login", element: <Navigate to="/dang-nhap" replace /> },
+      { path: "login", element: <Navigate to="/login" replace /> },
       {
         ...admin(() => import("./admin/AdminLayout")),
         children: [
           { index: true, ...admin(() => import("./admin/DashboardPage")) },
-          { path: "bao-cao", ...admin(() => import("./admin/ReportPage")) },
-          { path: "cai-dat-cua-hang", ...admin(() => import("./admin/ShopSettingsPage")) },
-          { path: "don-hang", ...admin(() => import("./admin/OrdersPage")) },
-          { path: "don-hang/:id", ...admin(() => import("./admin/OrderDetailPage")) },
-          { path: "cskh", ...admin(() => import("./admin/CskhPage")) },
-          { path: "ctv", ...admin(() => import("./admin/AffiliatesPage")) },
-          { path: "hoa-hong", ...admin(() => import("./admin/CommissionsPage")) },
-          { path: "chi-tra", ...admin(() => import("./admin/PayoutsPage")) },
-          { path: "khoan-tru", ...admin(() => import("./admin/AdjustmentsPage")) },
-          { path: "khach-hang", ...admin(() => import("./admin/CustomersPage")) },
-          { path: "khach-hang/:id", ...admin(() => import("./admin/CustomerDetailPage")) },
-          { path: "tai-khoan", ...admin(() => import("./admin/AccountsPage")) },
-          { path: "banner", ...admin(() => import("./admin/BannersPage")) },
-          { path: "kol-koc", ...admin(() => import("./admin/CreatorsPage")) },
-          { path: "video", ...admin(() => import("./admin/VideosPage")) },
-          { path: "o-tron", ...admin(() => import("./admin/ShortcutsPage")) },
-          { path: "san-pham", ...admin(() => import("./admin/ProductsPage")) },
-          { path: "danh-muc", ...admin(() => import("./admin/CategoriesPage")) },
+          { path: "reports", ...admin(() => import("./admin/ReportPage")) },
+          { path: "settings", ...admin(() => import("./admin/ShopSettingsPage")) },
+          { path: "orders", ...admin(() => import("./admin/OrdersPage")) },
+          { path: "orders/:id", ...admin(() => import("./admin/OrderDetailPage")) },
+          { path: "care-queue", ...admin(() => import("./admin/CskhPage")) },
+          { path: "affiliates", ...admin(() => import("./admin/AffiliatesPage")) },
+          { path: "commissions", ...admin(() => import("./admin/CommissionsPage")) },
+          { path: "payouts", ...admin(() => import("./admin/PayoutsPage")) },
+          { path: "adjustments", ...admin(() => import("./admin/AdjustmentsPage")) },
+          { path: "customers", ...admin(() => import("./admin/CustomersPage")) },
+          { path: "customers/:id", ...admin(() => import("./admin/CustomerDetailPage")) },
+          { path: "accounts", ...admin(() => import("./admin/AccountsPage")) },
+          { path: "banners", ...admin(() => import("./admin/BannersPage")) },
+          { path: "creators", ...admin(() => import("./admin/CreatorsPage")) },
+          { path: "videos", ...admin(() => import("./admin/VideosPage")) },
+          { path: "shortcuts", ...admin(() => import("./admin/ShortcutsPage")) },
+          { path: "products", ...admin(() => import("./admin/ProductsPage")) },
+          { path: "categories", ...admin(() => import("./admin/CategoriesPage")) },
         ],
       },
     ],
   },
-  // Khu cộng tác viên: đăng nhập, đăng ký và bảng điều khiển (trang giới thiệu /ctv nằm trong khung cửa hàng).
+  // Khu cộng tác viên: đăng nhập, đăng ký và bảng điều khiển (trang giới thiệu /affiliate nằm trong khung cửa hàng).
   {
-    // Cha không có path: /ctv (trang giới thiệu) vẫn thuộc khung cửa hàng, chỉ các đường dẫn con dưới đây dùng khu CTV.
+    // Cha không có path: /affiliate (trang giới thiệu) vẫn thuộc khung cửa hàng, chỉ các đường dẫn con dưới đây dùng khu CTV.
     ...admin(() => import("./partner/PartnerLayout").then((m) => ({ default: m.PartnerRoot }))),
     children: [
       {
-        path: "/ctv/tai-khoan",
+        path: "/affiliate/account",
         ...admin(() => import("./partner/PartnerLayout")),
         children: [
           { index: true, ...admin(() => import("./partner/OverviewPage")) },
-          { path: "link", ...admin(() => import("./partner/LinksPage")) },
-          { path: "hoa-hong", ...named(() => import("./partner/EarningsPages"), "CommissionsPage") },
-          { path: "chi-tra", ...named(() => import("./partner/EarningsPages"), "PayoutsPage") },
-          { path: "don-hang", ...named(() => import("./partner/EarningsPages"), "OrdersPage") },
-          { path: "ho-so", ...admin(() => import("./partner/ProfilePage")) },
+          { path: "links", ...admin(() => import("./partner/LinksPage")) },
+          { path: "commissions", ...named(() => import("./partner/EarningsPages"), "CommissionsPage") },
+          { path: "payouts", ...named(() => import("./partner/EarningsPages"), "PayoutsPage") },
+          { path: "orders", ...named(() => import("./partner/EarningsPages"), "OrdersPage") },
+          { path: "profile", ...admin(() => import("./partner/ProfilePage")) },
         ],
       },
     ],

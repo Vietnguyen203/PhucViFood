@@ -147,7 +147,7 @@ describe('ngày theo giờ Việt Nam (thống kê tổng quan)', () => {
     });
     it('đủ mã TMN và khóa thì bật, mặc định cổng sandbox và trang kết quả của cửa hàng', () => {
       const c = loadConfig({ ...env, VNPAY_TMN_CODE: 'ABC123', VNPAY_HASH_SECRET: 'secret', PUBLIC_BASE_URL: 'https://shop.example.vn' });
-      expect(c.vnpay).toEqual({ tmnCode: 'ABC123', hashSecret: 'secret', payUrl: 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html', returnUrl: 'https://shop.example.vn/thanh-toan/vnpay' });
+      expect(c.vnpay).toEqual({ tmnCode: 'ABC123', hashSecret: 'secret', payUrl: 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html', returnUrl: 'https://shop.example.vn/checkout/vnpay' });
     });
     it('chỉ có một trong hai thì báo lỗi cấu hình dở dang', () => {
       expect(() => loadConfig({ ...env, VNPAY_TMN_CODE: 'ABC123' })).toThrow(/VNPAY_HASH_SECRET/);

@@ -32,9 +32,9 @@ export default function CartPage() {
             <ul className="shop-cart-lines shop-card">
               {cart.lines.map((l) => (
                 <li key={l.productId}>
-                  <Link to={`/san-pham/${l.slug}`} tabIndex={-1} aria-hidden="true"><img src={l.imageUrl ?? PRODUCT_PLACEHOLDER} alt="" /></Link>
+                  <Link to={`/products/${l.slug}`} tabIndex={-1} aria-hidden="true"><img src={l.imageUrl ?? PRODUCT_PLACEHOLDER} alt="" /></Link>
                   <div className="shop-cart-info">
-                    <Link className="shop-card-link" to={`/san-pham/${l.slug}`}><strong>{l.name}</strong></Link>
+                    <Link className="shop-card-link" to={`/products/${l.slug}`}><strong>{l.name}</strong></Link>
                     {l.unit && <small>{l.unit}</small>}
                     <span>{formatVnd(l.price)}</span>
                     <div className="shop-qty" role="group" aria-label={`Số lượng ${l.name}`}>
@@ -59,7 +59,7 @@ export default function CartPage() {
                 <div className="total"><dt>Tổng cộng</dt><dd>{formatVnd(subtotal + shipping)}</dd></div>
               </dl>
               {remaining > 0 && <p className="shop-hint">Mua thêm {formatVnd(remaining)} để được miễn phí giao hàng.</p>}
-              <button className="shop-btn primary" onClick={() => navigate("/thanh-toan")}>Tiến hành thanh toán</button>
+              <button className="shop-btn primary" onClick={() => navigate("/checkout")}>Tiến hành thanh toán</button>
               <Link className="shop-btn" to="/#best-sellers">Tiếp tục mua sắm</Link>
               <button className="shop-link-btn" onClick={clear}>Xóa toàn bộ giỏ hàng</button>
             </aside>

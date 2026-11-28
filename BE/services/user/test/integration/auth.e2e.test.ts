@@ -171,7 +171,7 @@ describe.skipIf(!enabled)('service user: đăng nhập JWT (HTTP thật)', () =>
       for (let i = 0; i < 40; i++) { const m = mailer().to(to); if (m.length >= count) return m; await new Promise((r) => setTimeout(r, 50)); }
       return mailer().to(to);
     };
-    const tokenOf = (mail: { text: string }) => decodeURIComponent(/dat-lai-mat-khau\?token=([^\s]+)/.exec(mail.text)![1]);
+    const tokenOf = (mail: { text: string }) => decodeURIComponent(/reset-password\?token=([^\s]+)/.exec(mail.text)![1]);
     const NEW = 'MatKhauMoi2027';
 
     it('email có tài khoản: gửi thư kèm link; đặt lại xong đăng nhập bằng mật khẩu mới, mật khẩu cũ và phiên cũ hết hiệu lực', async () => {
@@ -182,7 +182,7 @@ describe.skipIf(!enabled)('service user: đăng nhập JWT (HTTP thật)', () =>
       const mails = await waitMail(s.email);
       expect(mails).toHaveLength(1);
       expect(mails[0].subject).toBe('Phúc Vị Foods: đặt lại mật khẩu');
-      expect(mails[0].text).toContain('https://shop.example.vn/dat-lai-mat-khau?token=');
+      expect(mails[0].text).toContain('https://shop.example.vn/reset-password?token=');
       const token = tokenOf(mails[0]);
 
       expect((await call('POST', '/auth/reset-password', { token, newPassword: NEW })).status).toBe(200);

@@ -68,8 +68,8 @@ export function CartDrawer() {
                 <div className="total"><dt>Tổng cộng</dt><dd>{formatVnd(subtotal + shipping)}</dd></div>
               </dl>
               {remaining > 0 && <p className="shop-hint">Mua thêm {formatVnd(remaining)} để được miễn phí giao hàng.</p>}
-              <button className="shop-btn primary" onClick={() => { closeCart(); navigate("/thanh-toan"); }}>Tiến hành thanh toán</button>
-              <button className="shop-link-btn" onClick={() => { closeCart(); navigate("/gio-hang"); }}>Xem giỏ hàng đầy đủ</button>
+              <button className="shop-btn primary" onClick={() => { closeCart(); navigate("/checkout"); }}>Tiến hành thanh toán</button>
+              <button className="shop-link-btn" onClick={() => { closeCart(); navigate("/cart"); }}>Xem giỏ hàng đầy đủ</button>
             </footer>
           </>
         )}

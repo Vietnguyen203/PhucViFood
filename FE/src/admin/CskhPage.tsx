@@ -26,7 +26,7 @@ export default function CskhPage() {
             <tbody>
               {list.data.items.map((o) => (
                 <tr key={o.id}>
-                  <td><Link className="ad-link" to={`/admin/don-hang/${o.id}`}><b>{o.code}</b></Link></td>
+                  <td><Link className="ad-link" to={`/admin/orders/${o.id}`}><b>{o.code}</b></Link></td>
                   <td>{o.shipName}<div className="ad-muted">{o.shipPhone}</div></td>
                   <td>{fmtDateTime(o.deliveredAt)}</td>
                   <td><Badge tone={o.daysWaiting >= 7 ? "red" : o.daysWaiting >= 3 ? "amber" : "gray"}>{o.daysWaiting} ngày</Badge></td>

@@ -113,7 +113,7 @@ function OrderDetail({ code }: { code: string }) {
           {o.history.map((h, i) => <li key={i}><span>{ORDER_STATUS_LABEL[h.status as OrderStatus] ?? h.status}</span><time>{fmtDate(h.at)}</time></li>)}
         </ol>
       )}
-      <p><Link to={`/don-hang/${encodeURIComponent(o.code)}`}>Mở trang theo dõi đơn (hủy đơn, xác nhận đã nhận hàng)</Link></p>
+      <p><Link to={`/orders/${encodeURIComponent(o.code)}`}>Mở trang theo dõi đơn (hủy đơn, xác nhận đã nhận hàng)</Link></p>
     </div>
   );
 }
@@ -170,7 +170,7 @@ export default function AccountPage() {
   useDocumentTitle("Tài khoản của tôi");
   const navigate = useNavigate();
   const [session, setSession] = useState(() => customerAuth.session());
-  if (!session) return <Navigate to="/dang-nhap" replace />;
+  if (!session) return <Navigate to="/login" replace />;
 
   async function logout() {
     await customerAuth.logout();

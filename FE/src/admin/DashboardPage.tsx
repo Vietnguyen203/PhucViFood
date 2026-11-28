@@ -69,24 +69,24 @@ export default function DashboardPage() {
 
           <h2>Đơn hàng đang xử lý</h2>
           <div className="ad-cols ad-stat-grid">
-            {PIPELINE.map((s) => <Stat key={s} label={ORDER_STATUS_LABEL[s]} value={o.byStatus[s] ?? 0} to="/admin/don-hang" tone={s === "PLACED" && o.byStatus.PLACED > 0 ? "amber" : undefined} />)}
+            {PIPELINE.map((s) => <Stat key={s} label={ORDER_STATUS_LABEL[s]} value={o.byStatus[s] ?? 0} to="/admin/orders" tone={s === "PLACED" && o.byStatus.PLACED > 0 ? "amber" : undefined} />)}
           </div>
         </>
       )}
 
       <h2>Cần xử lý</h2>
       <div className="ad-cols ad-stat-grid">
-        <Stat label="Đơn chờ chuyển khoản" value={o?.awaitingPayment ?? 0} loading={!o} sub="Đang giữ hàng" to="/admin/don-hang" tone={o && o.awaitingPayment > 0 ? "amber" : undefined} />
-        <Stat label="Đơn chờ CSKH" value={o?.cskhWaiting ?? 0} loading={!o} sub="Đã giao, chưa hoàn tất" to="/admin/cskh" tone={o && o.cskhWaiting > 0 ? "amber" : undefined} />
-        <Stat label="CTV chờ duyệt" value={pendingAffiliates.data ?? 0} loading={pendingAffiliates.loading} to="/admin/ctv" tone={(pendingAffiliates.data ?? 0) > 0 ? "amber" : undefined} />
-        <Stat label="Hoa hồng chờ chi trả" value={payable.data ?? 0} loading={payable.loading} sub="Đã xác nhận" to="/admin/chi-tra" />
-        <Stat label="Khoản trừ chờ" value={adjustments.data ?? 0} loading={adjustments.loading} to="/admin/khoan-tru" />
+        <Stat label="Đơn chờ chuyển khoản" value={o?.awaitingPayment ?? 0} loading={!o} sub="Đang giữ hàng" to="/admin/orders" tone={o && o.awaitingPayment > 0 ? "amber" : undefined} />
+        <Stat label="Đơn chờ CSKH" value={o?.cskhWaiting ?? 0} loading={!o} sub="Đã giao, chưa hoàn tất" to="/admin/care-queue" tone={o && o.cskhWaiting > 0 ? "amber" : undefined} />
+        <Stat label="CTV chờ duyệt" value={pendingAffiliates.data ?? 0} loading={pendingAffiliates.loading} to="/admin/affiliates" tone={(pendingAffiliates.data ?? 0) > 0 ? "amber" : undefined} />
+        <Stat label="Hoa hồng chờ chi trả" value={payable.data ?? 0} loading={payable.loading} sub="Đã xác nhận" to="/admin/payouts" />
+        <Stat label="Khoản trừ chờ" value={adjustments.data ?? 0} loading={adjustments.loading} to="/admin/adjustments" />
       </div>
       <ErrorBox error={pendingAffiliates.error ?? payable.error ?? adjustments.error} />
 
       <div className="ad-head" style={{ marginTop: 20 }}>
         <h2 style={{ margin: 0 }}>Hàng sắp hết (còn từ {LOW_STOCK} trở xuống)</h2>
-        <Link className="ad-link" to="/admin/san-pham">Quản lý tồn kho →</Link>
+        <Link className="ad-link" to="/admin/products">Quản lý tồn kho →</Link>
       </div>
       <ErrorBox error={lowStock.error} onRetry={lowStock.reload} />
       <Loading loading={lowStock.loading && !lowStock.data} />

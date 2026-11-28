@@ -1,4 +1,4 @@
-// Đăng nhập chung cho cửa hàng: một trang đăng nhập, vào đúng khu theo vai trò (ADMIN -> /admin, AFFILIATE -> /ctv/tai-khoan).
+// Đăng nhập chung cho cửa hàng: một trang đăng nhập, vào đúng khu theo vai trò (ADMIN -> /admin, AFFILIATE -> /affiliate/account).
 import type { createApi } from './api';
 import { createSessionStore, SESSION_KEY as ADMIN_KEY, type Session } from './admin/auth';
 import type { KeyValueStore } from './storage';
@@ -11,8 +11,8 @@ export const CUSTOMER_KEY = 'pv.customer.session';
 /** Khóa lưu phiên và trang đích theo vai trò; vai trò lạ thì không có khu để vào. */
 const AREAS: Record<string, { key: string; to: string }> = {
   ADMIN: { key: ADMIN_KEY, to: '/admin' },
-  AFFILIATE: { key: PARTNER_KEY, to: '/ctv/tai-khoan' },
-  CUSTOMER: { key: CUSTOMER_KEY, to: '/tai-khoan' },
+  AFFILIATE: { key: PARTNER_KEY, to: '/affiliate/account' },
+  CUSTOMER: { key: CUSTOMER_KEY, to: '/account' },
 };
 
 export const areaFor = (role: string): { key: string; to: string } | null => AREAS[role] ?? null;

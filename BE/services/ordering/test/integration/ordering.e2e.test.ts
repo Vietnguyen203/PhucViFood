@@ -768,7 +768,7 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
       const mails = await waitMail(email);
       expect(mails).toHaveLength(1);
       expect(mails[0].subject).toBe(`Phúc Vị Foods: đã nhận đơn ${r.body.data.code}`);
-      expect(mails[0].text).toContain(`https://shop.example.vn/don-hang/${r.body.data.code}`);
+      expect(mails[0].text).toContain(`https://shop.example.vn/orders/${r.body.data.code}`);
       expect(mails[0].text).toContain('Khách Có Thư');
     });
 
@@ -985,7 +985,7 @@ describe.skipIf(!enabled)('service ordering (HTTP + Postgres + RabbitMQ thật, 
       const url = new URL(r.body.data.paymentUrl);
       const p = Object.fromEntries(url.searchParams.entries());
       expect(`${url.origin}${url.pathname}`).toBe('https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
-      expect(p).toMatchObject({ vnp_TmnCode: 'ITTMN001', vnp_TxnRef: o.code, vnp_Amount: String(total * 100), vnp_ReturnUrl: 'https://shop.example.vn/thanh-toan/vnpay' });
+      expect(p).toMatchObject({ vnp_TmnCode: 'ITTMN001', vnp_TxnRef: o.code, vnp_Amount: String(total * 100), vnp_ReturnUrl: 'https://shop.example.vn/checkout/vnpay' });
       expect(verifySignature(p, VNPAY_SECRET)).toBe(true);
       // COD và chuyển khoản không có link thanh toán online
       expect((await place()).body.data.paymentUrl).toBeUndefined();

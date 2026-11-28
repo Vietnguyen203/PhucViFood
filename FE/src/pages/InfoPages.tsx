@@ -9,9 +9,9 @@ import "../home.css";
 
 interface Info { title: string; body: ReactNode }
 
-/** Nội dung các trang thông tin tĩnh: /thong-tin/{khóa}. Số liệu phí ship lấy cùng nguồn với giỏ hàng. */
+/** Nội dung các trang thông tin tĩnh: /info/{khóa}. Số liệu phí ship lấy cùng nguồn với giỏ hàng. */
 const PAGES: Record<string, Info> = {
-  "gioi-thieu": {
+  "about": {
     title: "Giới thiệu Phúc Vị Foods",
     body: (
       <>
@@ -23,11 +23,11 @@ const PAGES: Record<string, Info> = {
           <li>Hỗ trợ khách hàng qua điện thoại và email.</li>
         </ul>
         <h2>Chương trình cộng tác viên</h2>
-        <p>Bạn có thể chia sẻ sản phẩm Phúc Vị và nhận hoa hồng khi khách mua qua link của bạn. <Link to="/ctv">Tìm hiểu chương trình CTV</Link>.</p>
+        <p>Bạn có thể chia sẻ sản phẩm Phúc Vị và nhận hoa hồng khi khách mua qua link của bạn. <Link to="/affiliate">Tìm hiểu chương trình CTV</Link>.</p>
       </>
     ),
   },
-  "lien-he": {
+  "contact": {
     title: "Liên hệ",
     body: (
       <>
@@ -37,18 +37,18 @@ const PAGES: Record<string, Info> = {
           <dt>Điện thoại</dt><dd>097 265 82 93</dd>
           <dt>Email</dt><dd>hello@phucvifoods.vn</dd>
         </dl>
-        <p>Khi hỏi về đơn hàng, vui lòng cung cấp mã đơn và số điện thoại đặt hàng để chúng tôi hỗ trợ nhanh hơn. Bạn cũng có thể tự <Link to="/don-hang">tra cứu đơn hàng</Link>.</p>
+        <p>Khi hỏi về đơn hàng, vui lòng cung cấp mã đơn và số điện thoại đặt hàng để chúng tôi hỗ trợ nhanh hơn. Bạn cũng có thể tự <Link to="/orders">tra cứu đơn hàng</Link>.</p>
       </>
     ),
   },
-  "giao-hang": {
+  "shipping": {
     title: "Chính sách giao hàng",
     body: (
       <>
         <h2>Phí giao hàng</h2>
         <p>Đồng giá {formatVnd(SHIPPING_ESTIMATE.flatFee)} cho mỗi đơn. Đơn có tổng tiền sản phẩm từ {formatVnd(SHIPPING_ESTIMATE.freeThreshold)} được miễn phí giao hàng. Phí chính thức được chốt khi bạn đặt hàng và giữ nguyên cho đơn đó.</p>
         <h2>Theo dõi đơn hàng</h2>
-        <p>Sau khi đặt hàng, bạn nhận mã đơn. Dùng mã đơn và số điện thoại đặt hàng để <Link to="/don-hang">tra cứu trạng thái</Link>: đã đặt, đã xác nhận, đang giao, đã giao.</p>
+        <p>Sau khi đặt hàng, bạn nhận mã đơn. Dùng mã đơn và số điện thoại đặt hàng để <Link to="/orders">tra cứu trạng thái</Link>: đã đặt, đã xác nhận, đang giao, đã giao.</p>
         <h2>Lưu ý</h2>
         <ul>
           <li>Vui lòng nhập đúng địa chỉ và số điện thoại để nhân viên giao hàng liên hệ.</li>
@@ -57,7 +57,7 @@ const PAGES: Record<string, Info> = {
       </>
     ),
   },
-  "doi-tra": {
+  "returns": {
     title: "Chính sách đổi trả",
     body: (
       <>
@@ -69,11 +69,11 @@ const PAGES: Record<string, Info> = {
         </ul>
         <h2>Hoàn tiền</h2>
         <p>Đơn được duyệt hoàn trả sẽ được hoàn tiền theo hình thức bạn đã thanh toán. Với thực phẩm, chúng tôi không nhận đổi trả khi sản phẩm đã mở và sử dụng mà không có lỗi từ phía cửa hàng.</p>
-        <p>Liên hệ hỗ trợ tại trang <Link to="/thong-tin/lien-he">Liên hệ</Link>.</p>
+        <p>Liên hệ hỗ trợ tại trang <Link to="/info/contact">Liên hệ</Link>.</p>
       </>
     ),
   },
-  "thanh-toan": {
+  "payment": {
     title: "Hướng dẫn thanh toán",
     body: (
       <>
@@ -91,8 +91,8 @@ const PAGES: Record<string, Info> = {
           <li>Bạn được chuyển sang cổng VNPay để trả bằng thẻ ATM nội địa, thẻ quốc tế hoặc quét mã QR qua ứng dụng ngân hàng.</li>
           <li>Thanh toán xong, bạn được đưa về Phúc Vị và đơn hàng tự cập nhật là đã thanh toán.</li>
         </ol>
-        <p>Chưa thanh toán xong hoặc thoát giữa chừng thì vào <Link to="/don-hang">Tra cứu đơn hàng</Link> và bấm "Thanh toán qua VNPay" để thanh toán lại, trước khi đơn hết hạn.</p>
-        <p>Đơn chuyển khoản và đơn VNPay được giữ hàng trong một thời hạn nhất định (hiện tại 24 giờ). Quá hạn mà chưa nhận được tiền, đơn tự hủy và hàng được trả về kho. <Link to="/don-hang">Tra cứu đơn hàng</Link> để xem hạn thanh toán.</p>
+        <p>Chưa thanh toán xong hoặc thoát giữa chừng thì vào <Link to="/orders">Tra cứu đơn hàng</Link> và bấm "Thanh toán qua VNPay" để thanh toán lại, trước khi đơn hết hạn.</p>
+        <p>Đơn chuyển khoản và đơn VNPay được giữ hàng trong một thời hạn nhất định (hiện tại 24 giờ). Quá hạn mà chưa nhận được tiền, đơn tự hủy và hàng được trả về kho. <Link to="/orders">Tra cứu đơn hàng</Link> để xem hạn thanh toán.</p>
       </>
     ),
   },

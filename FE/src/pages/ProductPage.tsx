@@ -66,7 +66,7 @@ export default function ProductPage() {
         {p && (
           <>
             <nav className="shop-crumbs" aria-label="Đường dẫn">
-              <Link to="/">Trang chủ</Link> / {p.category ? <Link to={`/danh-muc/${p.category.slug}`}>{p.category.name}</Link> : <span>Sản phẩm</span>} / <span>{p.name}</span>
+              <Link to="/">Trang chủ</Link> / {p.category ? <Link to={`/categories/${p.category.slug}`}>{p.category.name}</Link> : <span>Sản phẩm</span>} / <span>{p.name}</span>
             </nav>
             <div className="shop-detail">
               <div className="shop-detail-image">
@@ -94,7 +94,7 @@ export default function ProductPage() {
                       <button type="button" onClick={() => setQty((q) => Math.min(MAX_QTY, q + 1))} disabled={qty >= MAX_QTY} aria-label="Tăng">+</button>
                     </div>
                     <button className="shop-btn primary" onClick={() => add(p, qty)}>Thêm vào giỏ</button>
-                    <button className="shop-btn" onClick={() => { add(p, qty); navigate("/thanh-toan"); }}>Mua ngay</button>
+                    <button className="shop-btn" onClick={() => { add(p, qty); navigate("/checkout"); }}>Mua ngay</button>
                   </div>
                 )}
                 <button className={`shop-wish${wish.has(p.id) ? " liked" : ""}`} aria-pressed={wish.has(p.id)} onClick={() => wish.toggle({ productId: p.id, slug: p.slug })}>

@@ -26,7 +26,7 @@ type Mode = "login" | "register" | "register-partner";
 
 /**
  * Đăng nhập (mọi vai trò, tự vào đúng khu) và hai kiểu đăng ký cùng một khung:
- * "register" cho khách mua hàng (/dang-ky), "register-partner" cho cộng tác viên (/ctv/dang-ky).
+ * "register" cho khách mua hàng (/register), "register-partner" cho cộng tác viên (/affiliate/register).
  */
 function AuthForm({ mode }: { mode: Mode }) {
   const isPartner = mode === "register-partner";
@@ -105,14 +105,14 @@ function AuthForm({ mode }: { mode: Mode }) {
           {error && <p className="shop-error" role="alert">{error}</p>}
           <button className="shop-btn primary" type="submit" disabled={busy}>{busy ? "Đang xử lý..." : isRegister ? "Tạo tài khoản" : "Đăng nhập"}</button>
           <p className="shop-auth-links">
-            {mode === "login" && <><Link to="/quen-mat-khau">Quên mật khẩu?</Link><br /></>}
+            {mode === "login" && <><Link to="/forgot-password">Quên mật khẩu?</Link><br /></>}
             {isRegister
-              ? <>Đã có tài khoản? <Link to="/dang-nhap">Đăng nhập</Link></>
-              : <>Chưa có tài khoản? <Link to="/dang-ky">Đăng ký</Link></>}
+              ? <>Đã có tài khoản? <Link to="/login">Đăng nhập</Link></>
+              : <>Chưa có tài khoản? <Link to="/register">Đăng ký</Link></>}
             <br />
             {isPartner
-              ? <Link to="/ctv">Tìm hiểu chương trình cộng tác viên</Link>
-              : <>Muốn nhận hoa hồng? <Link to="/ctv/dang-ky">Đăng ký làm cộng tác viên</Link></>}
+              ? <Link to="/affiliate">Tìm hiểu chương trình cộng tác viên</Link>
+              : <>Muốn nhận hoa hồng? <Link to="/affiliate/register">Đăng ký làm cộng tác viên</Link></>}
           </p>
         </form>
       </main>

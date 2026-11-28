@@ -11,7 +11,7 @@ const SLOT_HINT: Record<BannerSlot, string> = {
   MAIN: "Khung lớn: nên dùng ảnh ngang tỷ lệ khoảng 2:1 (vd 1600×800). Nhiều ảnh sẽ tự trượt.",
   SIDE: "Ô khuyến mãi bên phải: nên dùng ảnh tỷ lệ khoảng 3:2 (vd 800×530). Trang chủ hiện tối đa 2 ô.",
 };
-const LINK_EXAMPLES: Array<[string, string]> = [["Khu sản phẩm", "/#best-sellers"], ["Giỏ hàng", "/gio-hang"], ["Tin tức", "/tin-tuc"], ["Chương trình CTV", "/ctv"]];
+const LINK_EXAMPLES: Array<[string, string]> = [["Khu sản phẩm", "/#best-sellers"], ["Giỏ hàng", "/cart"], ["Tin tức", "/news"], ["Chương trình CTV", "/affiliate"]];
 
 function BannerForm({ banner, onClose, onSaved }: { banner?: AdminBanner; onClose: () => void; onSaved: () => void }) {
   const { adm, notify } = useAdmin();
@@ -41,13 +41,13 @@ function BannerForm({ banner, onClose, onSaved }: { banner?: AdminBanner; onClos
                 {(Object.keys(BANNER_SLOT_LABEL) as BannerSlot[]).map((k) => <option key={k} value={k}>{BANNER_SLOT_LABEL[k]}</option>)}
               </select>
             </Field>
-            <Field label="Bấm vào đi đâu" error={err.linkUrl}><input value={f.linkUrl} onChange={(e) => set("linkUrl", e.target.value)} placeholder="/san-pham/ten-san-pham hoặc https://..." maxLength={300} /></Field>
+            <Field label="Bấm vào đi đâu" error={err.linkUrl}><input value={f.linkUrl} onChange={(e) => set("linkUrl", e.target.value)} placeholder="/products/ten-san-pham hoặc https://..." maxLength={300} /></Field>
             <Field label="Thứ tự (nhỏ hiện trước)" error={err.sortOrder}><input value={f.sortOrder} onChange={(e) => set("sortOrder", e.target.value)} inputMode="numeric" /></Field>
             <Field label="Bắt đầu hiển thị" error={err.startsAt}><input type="datetime-local" value={f.startsAt} onChange={(e) => set("startsAt", e.target.value)} /></Field>
             <Field label="Ngừng hiển thị" error={err.endsAt}><input type="datetime-local" value={f.endsAt} onChange={(e) => set("endsAt", e.target.value)} /></Field>
           </div>
           <p className="ad-muted" style={{ marginTop: 0 }}>
-            Gợi ý đích bấm: {LINK_EXAMPLES.map(([label, link], i) => <span key={link}>{i > 0 && " · "}<button type="button" className="ad-link" onClick={() => set("linkUrl", link)}>{label}</button></span>)}. Trang sản phẩm: <code>/san-pham/</code> kèm đường dẫn của sản phẩm; để trống thì banner chỉ là ảnh. Ô ngày giờ để trống nghĩa là không giới hạn.
+            Gợi ý đích bấm: {LINK_EXAMPLES.map(([label, link], i) => <span key={link}>{i > 0 && " · "}<button type="button" className="ad-link" onClick={() => set("linkUrl", link)}>{label}</button></span>)}. Trang sản phẩm: <code>/products/</code> kèm đường dẫn của sản phẩm; để trống thì banner chỉ là ảnh. Ô ngày giờ để trống nghĩa là không giới hạn.
           </p>
           <ImageField label="Ảnh banner *" value={f.imageUrl} onChange={(v) => set("imageUrl", v)} error={err.imageUrl} maxSide={2000} hint={SLOT_HINT[f.slot]} />
           <label className="ad-check"><input type="checkbox" checked={f.isActive} onChange={(e) => set("isActive", e.target.checked)} /> Đang bật</label>

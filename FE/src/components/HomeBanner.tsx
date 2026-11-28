@@ -63,7 +63,7 @@ export function HomeBanner() {
   const auto = useAsync(async (signal) => {
     if (!needAuto) return [] as Slide[];
     const page = await fetchProducts({ page: 1, pageSize: AUTO_PRODUCT_SLIDES, sort: "-createdAt" }, signal);
-    return page.items.filter((p) => p.imageUrl).map((p): Slide => ({ id: p.id, title: p.name, imageUrl: p.imageUrl!, linkUrl: `/san-pham/${encodeURIComponent(p.slug)}`, product: true }));
+    return page.items.filter((p) => p.imageUrl).map((p): Slide => ({ id: p.id, title: p.name, imageUrl: p.imageUrl!, linkUrl: `/products/${encodeURIComponent(p.slug)}`, product: true }));
   }, [needAuto]);
   if ((loading && !data) || (needAuto && auto.loading && !auto.data)) return <section className="home-banner"><div className="home-banner-main home-banner-skeleton" aria-hidden="true" /></section>;
   const main: Slide[] = data && data.main.length > 0 ? data.main : auto.data && auto.data.length > 0 ? auto.data : DEFAULT_MAIN_BANNERS;

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildPaymentUrl, hmacSha512, isSuccessful, pickVnpParams, responseMessage, signingString, verifySignature, vnpDate } from '../../src/payments/vnpay';
 
 const SECRET = 'THIS_IS_A_TEST_SECRET_FOR_VNPAY_0123456789';
-const base = { tmnCode: 'TESTTMN1', hashSecret: SECRET, payUrl: 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html', returnUrl: 'https://shop.example.vn/thanh-toan/vnpay' };
+const base = { tmnCode: 'TESTTMN1', hashSecret: SECRET, payUrl: 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html', returnUrl: 'https://shop.example.vn/checkout/vnpay' };
 
 const parse = (url: string) => Object.fromEntries(new URL(url).searchParams.entries());
 

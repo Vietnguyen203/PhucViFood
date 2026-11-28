@@ -24,14 +24,14 @@ export const IsImageRef = (options?: ValidationOptions) => (object: object, prop
   });
 };
 
-/** Đích bấm của banner: trang trong cửa hàng (bắt đầu bằng một dấu /, vd /san-pham/kho-ca-loc) hoặc link http(s). Không nhận javascript:, //host, ký tự điều khiển. */
+/** Đích bấm của banner: trang trong cửa hàng (bắt đầu bằng một dấu /, vd /products/kho-ca-loc) hoặc link http(s). Không nhận javascript:, //host, ký tự điều khiển. */
 export const BANNER_LINK_RE = /^\/(?!\/)[A-Za-z0-9\-_./?=&#%]{0,298}$/;
 export const IsBannerLink = (options?: ValidationOptions) => (object: object, propertyName: string): void => {
   registerDecorator({
     name: 'isBannerLink', target: object.constructor, propertyName, options,
     validator: {
       validate: (v: unknown) => typeof v === 'string' && v.length <= 300 && (BANNER_LINK_RE.test(v) || isURL(v, { require_protocol: true, protocols: ['http', 'https'] })),
-      defaultMessage: () => 'linkUrl phải là trang trong cửa hàng (vd /san-pham/ten-san-pham) hoặc link http(s)',
+      defaultMessage: () => 'linkUrl phải là trang trong cửa hàng (vd /products/ten-san-pham) hoặc link http(s)',
     },
   });
 };

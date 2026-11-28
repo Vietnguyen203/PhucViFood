@@ -8,12 +8,12 @@ import { Toasts, useTableLabels } from "./ui";
 import "./admin.css";
 
 const NAV: Array<{ group: string; items: Array<[string, string]> }> = [
-  { group: "Tổng quan", items: [["/admin", "Tổng quan"], ["/admin/bao-cao", "Báo cáo"]] },
-  { group: "Bán hàng", items: [["/admin/don-hang", "Đơn hàng"], ["/admin/cskh", "Hàng chờ CSKH"], ["/admin/khach-hang", "Khách hàng"]] },
-  { group: "Sản phẩm", items: [["/admin/san-pham", "Sản phẩm"], ["/admin/danh-muc", "Danh mục"]] },
-  { group: "Nội dung", items: [["/admin/banner", "Banner trang chủ"], ["/admin/o-tron", "Ô tròn trang chủ"], ["/admin/kol-koc", "KOL / KOC"], ["/admin/video", "Video trang chủ"]] },
-  { group: "Cộng tác viên", items: [["/admin/ctv", "Cộng tác viên"], ["/admin/hoa-hong", "Hoa hồng"], ["/admin/chi-tra", "Đợt chi trả"], ["/admin/khoan-tru", "Khoản trừ"]] },
-  { group: "Hệ thống", items: [["/admin/tai-khoan", "Tài khoản"], ["/admin/cai-dat-cua-hang", "Cấu hình bán hàng"]] },
+  { group: "Tổng quan", items: [["/admin", "Tổng quan"], ["/admin/reports", "Báo cáo"]] },
+  { group: "Bán hàng", items: [["/admin/orders", "Đơn hàng"], ["/admin/care-queue", "Hàng chờ CSKH"], ["/admin/customers", "Khách hàng"]] },
+  { group: "Sản phẩm", items: [["/admin/products", "Sản phẩm"], ["/admin/categories", "Danh mục"]] },
+  { group: "Nội dung", items: [["/admin/banners", "Banner trang chủ"], ["/admin/shortcuts", "Ô tròn trang chủ"], ["/admin/creators", "KOL / KOC"], ["/admin/videos", "Video trang chủ"]] },
+  { group: "Cộng tác viên", items: [["/admin/affiliates", "Cộng tác viên"], ["/admin/commissions", "Hoa hồng"], ["/admin/payouts", "Đợt chi trả"], ["/admin/adjustments", "Khoản trừ"]] },
+  { group: "Hệ thống", items: [["/admin/accounts", "Tài khoản"], ["/admin/settings", "Cấu hình bán hàng"]] },
 ];
 
 function Shell() {
@@ -25,7 +25,7 @@ function Shell() {
   const { pathname } = useLocation();
   const section = NAV.flatMap((g) => g.items).filter(([to]) => pathname === to || pathname.startsWith(to + "/")).sort((a, b) => b[0].length - a[0].length)[0];
   useEffect(() => { document.title = formatTitle(`${section ? section[1] : "Quản trị"} (quản trị)`); }, [section]);
-  if (!session) return <Navigate to="/dang-nhap" replace />;
+  if (!session) return <Navigate to="/login" replace />;
   return (
     <div className="ad-shell">
       <aside className={`ad-side${open ? " open" : ""}`}>

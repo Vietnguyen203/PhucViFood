@@ -84,10 +84,10 @@ describe('safeStorage', () => {
 
 describe('đích của link giới thiệu', () => {
   it('chỉ nhận trang sản phẩm trong cửa hàng', () => {
-    expect(landingTarget('/san-pham/tom-kho-ca-mau-200g')).toBe('/san-pham/tom-kho-ca-mau-200g');
+    expect(landingTarget('/products/tom-kho-ca-mau-200g')).toBe('/products/tom-kho-ca-mau-200g');
   });
   it('mọi giá trị khác về trang chủ', () => {
-    for (const v of [null, undefined, '', '/', 'https://evil.example/', '//evil.example', '/admin', '/san-pham/../admin', '/san-pham/A', '/san-pham/' + 'a'.repeat(200), 'javascript:alert(1)']) {
+    for (const v of [null, undefined, '', '/', 'https://evil.example/', '//evil.example', '/admin', '/products/../admin', '/products/A', '/products/' + 'a'.repeat(200), 'javascript:alert(1)']) {
       expect(landingTarget(v as string | null), String(v)).toBe('/');
     }
   });

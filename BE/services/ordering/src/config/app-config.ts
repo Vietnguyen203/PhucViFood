@@ -86,7 +86,7 @@ export function loadConfig(env: Env = process.env): AppConfig {
     if (!tmnCode) problems.push('Thiếu VNPAY_TMN_CODE (đã có VNPAY_HASH_SECRET)');
     if (!hashSecret) problems.push('Thiếu VNPAY_HASH_SECRET (đã có VNPAY_TMN_CODE)');
     const payUrl = url('VNPAY_URL', VNPAY_SANDBOX_URL);
-    const returnUrl = url('VNPAY_RETURN_URL', `${mail.publicBaseUrl}/thanh-toan/vnpay`);
+    const returnUrl = url('VNPAY_RETURN_URL', `${mail.publicBaseUrl}/checkout/vnpay`);
     if (tmnCode && hashSecret) vnpay = { tmnCode, hashSecret, payUrl, returnUrl };
   }
 

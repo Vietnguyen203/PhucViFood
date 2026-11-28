@@ -286,10 +286,10 @@ function Header() {
           <Icon name="cart" size={19} />
           {count > 0 && <span>{count > 99 ? "99+" : count}</span>}
         </button>
-        <a className="login-link" href="/ctv/dang-nhap">
+        <a className="login-link" href="/login">
           Đăng nhập
         </a>
-        <a className="header-signup" href="/ctv/dang-ky">
+        <a className="header-signup" href="/affiliate/register">
           Đăng ký CTV
         </a>
         <button className="menu-button" onClick={() => setOpen(true)} aria-label="Mở menu">
@@ -365,7 +365,7 @@ function PhoneMockup() {
             />
           </svg>
         </div>
-        <a className="phone-button" href="/ctv/tai-khoan/chi-tra">Rút hoa hồng</a>
+        <a className="phone-button" href="/affiliate/account/payouts">Rút hoa hồng</a>
       </div>
     </div>
   );
@@ -391,7 +391,7 @@ function Hero() {
             nhận thu nhập khi có đơn thành công.
           </p>
           <div className="hero-actions">
-            <a className="button primary-button" href="/ctv/dang-ky">
+            <a className="button primary-button" href="/affiliate/register">
               Đăng ký làm cộng tác viên <Icon name="arrow" size={18} />
             </a>
             <a className="button secondary-button" href="#products">
@@ -504,7 +504,7 @@ const ESTIMATE_RATE = 10;
 
 function ProductCard({ product, code }: { product: Product; code: string | null }) {
   const [copied, setCopied] = useState(false);
-  const path = `/san-pham/${product.slug}`;
+  const path = `/products/${product.slug}`;
   // CTV đã đăng nhập: link giới thiệu kèm mã của mình, khách vào thẳng trang sản phẩm. Khách vãng lai: link sản phẩm thường.
   const url = `${window.location.origin}${code ? `/r/${code}?c=web&to=${encodeURIComponent(path)}` : path}`;
   const copy = () => {
@@ -534,7 +534,7 @@ function ProductCard({ product, code }: { product: Product; code: string | null 
               {copied ? "Đã sao chép" : "Sao chép link giới thiệu"}
             </button>
           ) : (
-            <a className="button secondary-button" href="/ctv/dang-ky">Đăng ký để lấy link giới thiệu</a>
+            <a className="button secondary-button" href="/affiliate/register">Đăng ký để lấy link giới thiệu</a>
           )}
           <ShareButtons url={url} onCopy={copy} />
         </div>
@@ -637,7 +637,7 @@ function DashboardPreview() {
             <Icon name="check" size={16} /> Tạo link giới thiệu trong vài giây
           </li>
         </ul>
-        <a className="button primary-button" href="/ctv/dang-ky">
+        <a className="button primary-button" href="/affiliate/register">
           Trở thành đối tác <Icon name="arrow" size={17} />
         </a>
       </div>
@@ -768,7 +768,7 @@ function Tiers() {
                 </li>
               ))}
             </ul>
-            <a href="/ctv/dang-ky">
+            <a href="/affiliate/register">
               Bắt đầu ngay <Icon name="arrow" size={16} />
             </a>
           </article>
@@ -854,7 +854,7 @@ function FinalCTA() {
         <h2>Sẵn sàng kiếm tiền cùng Phúc Vị?</h2>
         <p>Tạo tài khoản trong 1 phút và chia sẻ sản phẩm đầu tiên ngay hôm nay.</p>
       </div>
-      <a className="button gold-button" href="/ctv/dang-ky">
+      <a className="button gold-button" href="/affiliate/register">
         Đăng ký làm cộng tác viên <Icon name="arrow" size={18} />
       </a>
     </section>
@@ -888,7 +888,7 @@ function Footer() {
           <a href="#steps">Cách hoạt động</a>
           <a href="#tiers">Chính sách hoa hồng</a>
           <a href="#videos">Kho nội dung</a>
-          <a href="/ctv/dang-ky">Đăng ký CTV</a>
+          <a href="/affiliate/register">Đăng ký CTV</a>
         </div>
         <div className="footer-column">
           <strong>Hỗ trợ</strong>

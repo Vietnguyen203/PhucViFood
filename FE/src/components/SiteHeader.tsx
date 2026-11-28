@@ -34,16 +34,16 @@ export function HomeHeader() {
           <a href="/#best-sellers" onClick={() => setOpen(false)}>
             Sản phẩm
           </a>
-          <Link to="/thong-tin/gioi-thieu" onClick={() => setOpen(false)}>
+          <Link to="/info/about" onClick={() => setOpen(false)}>
             Về Phúc Vị
           </Link>
-          <Link to="/tin-tuc" onClick={() => setOpen(false)}>
+          <Link to="/news" onClick={() => setOpen(false)}>
             Tin tức
           </Link>
-          <Link to="/don-hang" onClick={() => setOpen(false)}>
+          <Link to="/orders" onClick={() => setOpen(false)}>
             Tra cứu đơn
           </Link>
-          <Link className="partner-nav-link" to="/ctv" onClick={() => setOpen(false)}>
+          <Link className="partner-nav-link" to="/affiliate" onClick={() => setOpen(false)}>
             Cộng tác viên
           </Link>
         </nav>
@@ -55,18 +55,18 @@ export function HomeHeader() {
               <HomeIcon name="search" size={18} />
             </button>
           )}
-          <Link className="home-wish" to="/yeu-thich" aria-label={`Yêu thích, ${wishCount} sản phẩm`}>
+          <Link className="home-wish" to="/wishlist" aria-label={`Yêu thích, ${wishCount} sản phẩm`}>
             <HomeIcon name="heart" size={18} />
             {wishCount > 0 && <span>{wishCount > 99 ? "99+" : wishCount}</span>}
           </Link>
-          <Link className="home-account" to={account ?? "/dang-nhap"} aria-label={account ? "Tài khoản của tôi" : "Đăng nhập"} title={account ? "Tài khoản của tôi" : "Đăng nhập"}>
+          <Link className="home-account" to={account ?? "/login"} aria-label={account ? "Tài khoản của tôi" : "Đăng nhập"} title={account ? "Tài khoản của tôi" : "Đăng nhập"}>
             <HomeIcon name="user" size={18} />
           </Link>
           <button className="home-cart" onClick={openCart} aria-label={`Giỏ hàng, ${count} sản phẩm`}>
             <HomeIcon name="cart" size={18} />
             {count > 0 && <span>{count > 99 ? "99+" : count}</span>}
           </button>
-          <Link className="home-ctv-button" to="/ctv">
+          <Link className="home-ctv-button" to="/affiliate">
             Đăng ký CTV
           </Link>
           <button className="home-menu-button" onClick={() => setOpen(true)} aria-label="Mở menu">

@@ -55,7 +55,7 @@ export default function OrdersPage() {
             <tbody>
               {list.data.items.map((o) => (
                 <tr key={o.id}>
-                  <td><Link className="ad-link" to={`/admin/don-hang/${o.id}`}><b>{o.code}</b></Link></td>
+                  <td><Link className="ad-link" to={`/admin/orders/${o.id}`}><b>{o.code}</b></Link></td>
                   <td>{fmtDateTime(o.placedAt)}</td>
                   <td>{o.shipping.name}<div className="ad-muted">{o.shipping.phone}</div></td>
                   <td className="num">{formatVnd(o.totalAmount)}</td>

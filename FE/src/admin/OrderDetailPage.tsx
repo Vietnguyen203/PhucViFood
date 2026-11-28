@@ -45,7 +45,7 @@ export default function OrderDetailPage() {
   const order = local && local.id === id ? local : state.data;
 
   if (state.loading && !order) return <Loading loading />;
-  if (!order) return <><p><Link className="ad-link" to="/admin/don-hang">← Đơn hàng</Link></p><ErrorBox error={state.error} onRetry={state.reload} /></>;
+  if (!order) return <><p><Link className="ad-link" to="/admin/orders">← Đơn hàng</Link></p><ErrorBox error={state.error} onRetry={state.reload} /></>;
 
   const transitions = ORDER_TRANSITIONS[order.status];
   const canPay = (order.paymentStatus === "UNPAID" || order.paymentStatus === "PENDING") && order.status !== "CANCELLED" && order.status !== "RETURNED";
@@ -54,7 +54,7 @@ export default function OrderDetailPage() {
 
   return (
     <>
-      <p><Link className="ad-link" to="/admin/don-hang">← Đơn hàng</Link></p>
+      <p><Link className="ad-link" to="/admin/orders">← Đơn hàng</Link></p>
       <div className="ad-head">
         <h1>{order.code} <Badge tone={statusTone(order.status)}>{ORDER_STATUS_LABEL[order.status]}</Badge></h1>
         <div className="ad-row-actions">
@@ -89,7 +89,7 @@ export default function OrderDetailPage() {
             <dt>Kênh</dt><dd>{order.attribution.channelCode ?? "—"}</dd>
             <dt>Tự mua</dt><dd>{order.attribution.isSelfPurchase ? "Có (không tính hoa hồng)" : "Không"}</dd>
           </dl>
-          {order.customerId && <p><Link className="ad-link" to={`/admin/khach-hang/${order.customerId}`}>Xem khách hàng →</Link></p>}
+          {order.customerId && <p><Link className="ad-link" to={`/admin/customers/${order.customerId}`}>Xem khách hàng →</Link></p>}
           {order.cancelReason && <p className="ad-error">Lý do hủy/hoàn: {order.cancelReason}</p>}
         </section>
       </div>

@@ -10,7 +10,7 @@ describe('mã video YouTube', () => {
     ]) expect(youtubeId(u), u).toBe('dQw4w9WgXcQ');
   });
   it('không phải YouTube thì null', () => {
-    for (const u of [null, undefined, '', '/san-pham/abc', 'https://vimeo.com/123456789', 'https://youtube.com.evil.example/watch?v=dQw4w9WgXcQ', 'https://evil.example/youtu.be/dQw4w9WgXcQ', 'https://youtu.be/short', 'javascript:alert(1)']) {
+    for (const u of [null, undefined, '', '/products/abc', 'https://vimeo.com/123456789', 'https://youtube.com.evil.example/watch?v=dQw4w9WgXcQ', 'https://evil.example/youtu.be/dQw4w9WgXcQ', 'https://youtu.be/short', 'javascript:alert(1)']) {
       expect(youtubeId(u), String(u)).toBeNull();
     }
   });
@@ -44,7 +44,7 @@ describe('cách phát link video', () => {
   });
   it('link lạ chỉ mở tab mới; không phải http(s) thì null', () => {
     expect(resolveVideo('https://example.com/xem-video')).toEqual({ kind: 'link', href: 'https://example.com/xem-video' });
-    for (const u of [null, '', '   ', '/san-pham/abc', 'javascript:alert(1)', 'data:text/html,x', 'ftp://x.vn/a.mp4', 'khong phai link']) expect(resolveVideo(u), String(u)).toBeNull();
+    for (const u of [null, '', '   ', '/products/abc', 'javascript:alert(1)', 'data:text/html,x', 'ftp://x.vn/a.mp4', 'khong phai link']) expect(resolveVideo(u), String(u)).toBeNull();
   });
   it('link giả mạo tên miền không được nhúng', () => {
     for (const u of ['https://vimeo.com.evil.example/123456789', 'https://evil.example/vimeo.com/123456789', 'https://tiktok.com.evil.example/@a/video/7301234567890123456', 'https://facebook.com.evil.example/a/videos/1']) {
@@ -53,7 +53,7 @@ describe('cách phát link video', () => {
   });
   it('playableVideo bỏ qua link chỉ mở tab mới', () => {
     expect(playableVideo('https://example.com/xem-video')).toBeNull();
-    expect(playableVideo('/san-pham/abc')).toBeNull();
+    expect(playableVideo('/products/abc')).toBeNull();
     expect(playableVideo('https://cdn.example.com/a.mp4')).toMatchObject({ kind: 'file' });
   });
 });

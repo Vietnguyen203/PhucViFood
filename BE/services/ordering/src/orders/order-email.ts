@@ -23,7 +23,7 @@ const fmtDue = (d: Date | string): string => new Date(d).toLocaleString('vi-VN',
  * Mọi dữ liệu khách nhập đều được thoát HTML.
  */
 export function buildOrderConfirmation(o: OrderMailData, to: string, publicBaseUrl: string): MailMessage {
-  const trackUrl = `${publicBaseUrl}/don-hang/${encodeURIComponent(o.code)}`;
+  const trackUrl = `${publicBaseUrl}/orders/${encodeURIComponent(o.code)}`;
   const items = o.items ?? [];
   const t = o.transferInstructions;
   const addr = `${o.shipping.addressLine}, ${o.shipping.ward}, ${o.shipping.province}`;

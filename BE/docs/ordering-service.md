@@ -96,7 +96,7 @@ Job `OrderExpiryService` (mỗi `ORDER_EXPIRY_INTERVAL_MS`, mặc định 60 gi�
 Bật khi đặt `VNPAY_TMN_CODE` và `VNPAY_HASH_SECRET` (xem `.env.example`); thiếu một trong hai thì service không khởi động, không đặt cả hai thì tắt VNPay (`GET /public/payments/options` trả `vnpay: false`).
 
 1. Khách chọn `VNPAY` khi đặt hàng: đơn `UNPAID`, có hạn như chuyển khoản; phản hồi kèm `paymentUrl` (link sang cổng VNPay đã ký HMAC-SHA512) và `onlinePayment`. Giao diện chuyển khách sang cổng ngay.
-2. Thanh toán xong VNPay đưa khách về `VNPAY_RETURN_URL` (mặc định `${PUBLIC_BASE_URL}/thanh-toan/vnpay`); trang này gọi `GET /public/payments/vnpay/return` với nguyên query. VNPay cũng có thể gọi IPN. Cả hai đi qua cùng một xử lý: **chỉ tin dữ liệu có chữ ký hợp lệ**, kiểm tra mã đơn (`vnp_TxnRef`) và số tiền (`vnp_Amount` = tổng × 100), thành công (`vnp_ResponseCode` và `vnp_TransactionStatus` đều `00`) thì chuyển `UNPAID -> PAID` bằng cập nhật có điều kiện (IPN và trang kết quả đến cùng lúc chỉ ghi một lần), ghi lịch sử do SYSTEM kèm mã giao dịch. Gọi lặp an toàn.
+2. Thanh toán xong VNPay đưa khách về `VNPAY_RETURN_URL` (mặc định `${PUBLIC_BASE_URL}/checkout/vnpay`); trang này gọi `GET /public/payments/vnpay/return` với nguyên query. VNPay cũng có thể gọi IPN. Cả hai đi qua cùng một xử lý: **chỉ tin dữ liệu có chữ ký hợp lệ**, kiểm tra mã đơn (`vnp_TxnRef`) và số tiền (`vnp_Amount` = tổng × 100), thành công (`vnp_ResponseCode` và `vnp_TransactionStatus` đều `00`) thì chuyển `UNPAID -> PAID` bằng cập nhật có điều kiện (IPN và trang kết quả đến cùng lúc chỉ ghi một lần), ghi lịch sử do SYSTEM kèm mã giao dịch. Gọi lặp an toàn.
 3. Thất bại hoặc khách hủy: đơn giữ nguyên `UNPAID`, khách thanh toán lại qua `POST /public/orders/:code/pay-url` đến hết hạn. Quá hạn thì job tự hủy như chuyển khoản.
 4. Khách trả tiền **sau khi đơn đã hủy**: vẫn ghi nhận `PAID` kèm ghi chú "cần hoàn tiền" trong lịch sử; admin hoàn tiền qua `PAID -> REFUNDED` (hoàn tiền thật tại cổng VNPay làm tay, hệ thống chưa gọi API hoàn tiền).
 5. Chưa `PAID` thì không giao hàng được (như chuyển khoản).
@@ -134,7 +134,7 @@ Sự kiện ordering phát ra: `ordering.order.placed` (kèm `commissionRateBps`
 | `ORDER_EXPIRY_ENABLED` | `true` | Bật job tự hủy đơn chuyển khoản và VNPay quá hạn thanh toán |
 | `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET` | (trống = tắt VNPay) | Mã website và khóa bí mật VNPay; phải đặt cả hai |
 | `VNPAY_URL` | sandbox VNPay | Cổng thanh toán |
-| `VNPAY_RETURN_URL` | `${PUBLIC_BASE_URL}/thanh-toan/vnpay` | Trang cửa hàng VNPay đưa khách về |
+| `VNPAY_RETURN_URL` | `${PUBLIC_BASE_URL}/checkout/vnpay` | Trang cửa hàng VNPay đưa khách về |
 | `ORDER_EXPIRY_INTERVAL_MS` | 60000 | Khoảng giữa hai lượt chạy của job |
 
 Cấu hình trong DB (`ordering.settings`): `shipping.flat_fee`, `shipping.free_threshold`, `payment.hold_minutes` (số phút giữ hàng cho đơn chuyển khoản chưa trả, mặc định 1440 = 24 giờ), `payment.bank_name`, `payment.bank_account_no`, `payment.bank_account_holder` (giá trị mẫu, cần thay bằng tài khoản thật của công ty).
